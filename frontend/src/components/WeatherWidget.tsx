@@ -9,7 +9,7 @@ interface WeatherDay {
 }
 
 export default function WeatherWidget({ days }: { days: WeatherDay[] }) {
-  if (!days?.length) return <p className="text-sm text-gray-400">لا توجد بيانات طقس بعد.</p>;
+  if (!days?.length) return <p className="text-sm text-gray-400">No weather data yet.</p>;
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
@@ -20,8 +20,8 @@ export default function WeatherWidget({ days }: { days: WeatherDay[] }) {
             {Math.round(d.temperatureMaxC)}°
             <span className="text-sm font-normal text-gray-400">/{Math.round(d.temperatureMinC)}°</span>
           </p>
-          <p className="mt-1 text-xs text-blue-600">💧 {d.precipitationMm} مم</p>
-          <p className="text-xs text-gray-400">💨 {Math.round(d.windSpeedMaxKmh)} كم/س</p>
+          <p className="mt-1 text-xs text-blue-600">💧 {d.precipitationMm} mm</p>
+          <p className="text-xs text-gray-400">💨 {Math.round(d.windSpeedMaxKmh)} km/h</p>
         </div>
       ))}
     </div>

@@ -50,70 +50,70 @@ export type NavGroupData = {
   items: NavItemData[];
 };
 
-// ====== بيانات التنقّل الفعلية لمنصة AgroCloud Vision ======
+// ====== AgroCloud Vision navigation data ======
 export const agroCloudNavGroups: NavGroupData[] = [
   {
     items: [
-      { id: 'search', title: 'بحث', icon: Search, shortcut: '⌘K' },
-      { id: 'home', title: 'الرئيسية', icon: LayoutDashboard },
-      { id: 'farms', title: 'المزارع', icon: Warehouse },
+      { id: 'search', title: 'Search', icon: Search, shortcut: '⌘K' },
+      { id: 'home', title: 'Home', icon: LayoutDashboard },
+      { id: 'farms', title: 'Farms', icon: Warehouse },
       {
         id: 'fields',
-        title: 'الحقول والخرائط',
+        title: 'Fields & Maps',
         icon: MapIcon,
         children: [
-          { id: 'fields-boundaries', title: 'حدود الحقول', icon: Hash },
-          { id: 'fields-zoning', title: 'تقسيم المناطق (Zoning)', icon: Hash },
+          { id: 'fields-boundaries', title: 'Field Boundaries', icon: Hash },
+          { id: 'fields-zoning', title: 'Zoning', icon: Hash },
         ],
       },
     ],
   },
   {
-    heading: 'المراقبة والذكاء',
+    heading: 'Monitoring & Intelligence',
     items: [
       {
         id: 'satellite',
-        title: 'الأقمار الصناعية',
+        title: 'Satellite',
         icon: Satellite,
-        badge: 'قريباً',
+        badge: 'Soon',
         children: [
           { id: 'ndvi', title: 'NDVI', icon: Hash },
           { id: 'ndmi', title: 'NDMI', icon: Hash },
           { id: 'ndwi', title: 'NDWI', icon: Hash },
         ],
       },
-      { id: 'weather', title: 'الطقس', icon: CloudSun },
-      { id: 'ai-insights', title: 'الذكاء الاصطناعي', icon: BrainCircuit, badge: 'قريباً' },
+      { id: 'weather', title: 'Weather', icon: CloudSun },
+      { id: 'ai-insights', title: 'AI Insights', icon: BrainCircuit, badge: 'Soon' },
     ],
   },
   {
-    heading: 'العمليات الزراعية',
+    heading: 'Farm Operations',
     items: [
-      { id: 'operations', title: 'الأنشطة والعمليات', icon: Sprout },
-      { id: 'iot', title: 'أجهزة IoT', icon: Radio, badge: 'قريباً' },
-      { id: 'reports', title: 'التقارير', icon: FileBarChart },
+      { id: 'operations', title: 'Activities & Operations', icon: Sprout },
+      { id: 'iot', title: 'IoT Devices', icon: Radio, badge: 'Soon' },
+      { id: 'reports', title: 'Reports', icon: FileBarChart },
     ],
   },
   {
-    heading: 'المؤسسة',
+    heading: 'Organization',
     items: [
       {
         id: 'team',
-        title: 'الفريق والصلاحيات',
+        title: 'Team & Roles',
         icon: Users,
         children: [
-          { id: 'team-members', title: 'الأعضاء', icon: Hash },
-          { id: 'team-roles', title: 'الأدوار (RBAC)', icon: Hash },
+          { id: 'team-members', title: 'Members', icon: Hash },
+          { id: 'team-roles', title: 'Roles (RBAC)', icon: Hash },
         ],
       },
-      { id: 'billing', title: 'الاشتراك والفوترة', icon: CreditCard, badge: 'قريباً' },
+      { id: 'billing', title: 'Billing & Subscription', icon: CreditCard, badge: 'Soon' },
     ],
   },
 ];
 
 export const agroCloudBottomItems: NavItemData[] = [
-  { id: 'settings', title: 'الإعدادات', icon: Settings, shortcut: '⌘,' },
-  { id: 'logout', title: 'تسجيل الخروج', icon: LogOut },
+  { id: 'settings', title: 'Settings', icon: Settings, shortcut: '⌘,' },
+  { id: 'logout', title: 'Log Out', icon: LogOut },
 ];
 
 function WorkspaceSwitcher({
@@ -124,7 +124,7 @@ function WorkspaceSwitcher({
   onSelect?: (ws: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [internalSelected, setInternalSelected] = useState('مزرعة الوادي الأخضر');
+  const [internalSelected, setInternalSelected] = useState('Green Valley Farm');
 
   const current = selected || internalSelected;
   const handleSelect = onSelect || setInternalSelected;
@@ -143,7 +143,7 @@ function WorkspaceSwitcher({
             <span className="text-[13px] font-medium leading-none mb-1 text-foreground truncate max-w-[130px]">
               {current}
             </span>
-            <span className="text-[11px] text-muted-foreground leading-none">الخطة الاحترافية</span>
+            <span className="text-[11px] text-muted-foreground leading-none">Professional Plan</span>
           </div>
         </div>
         <ChevronDown
@@ -156,7 +156,7 @@ function WorkspaceSwitcher({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute top-[52px] left-0 w-full bg-card border border-border/50 rounded-lg shadow-xl z-50 py-1 flex flex-col gap-0.5">
-            {['مزرعة الوادي الأخضر', 'مزرعة النخيل الذهبي', 'مزرعة دلتا الحصاد'].map((ws) => (
+            {['Green Valley Farm', 'Golden Palm Farm', 'Harvest Delta Farm'].map((ws) => (
               <div
                 key={ws}
                 onClick={() => {
@@ -172,7 +172,7 @@ function WorkspaceSwitcher({
             ))}
             <div className="h-px bg-border/50 my-1 mx-2" />
             <div className="px-3 py-2 mx-1 text-[13px] text-muted-foreground hover:bg-white/5 rounded-md cursor-pointer flex items-center gap-2 transition-colors">
-              <span className="text-[16px] leading-none mb-0.5">+</span> إضافة مزرعة جديدة
+              <span className="text-[16px] leading-none mb-0.5">+</span> Add new farm
             </div>
           </div>
         </>
@@ -382,7 +382,7 @@ export function AppShell({
               <input
                 autoFocus
                 className="flex-1 bg-transparent py-4 outline-none text-[14px] text-gray-800 placeholder:text-gray-400"
-                placeholder="ابحث عن مزرعة، حقل، أو إجراء..."
+                placeholder="Search for a farm, field, or action..."
               />
               <button
                 onClick={() => setIsSearchOpen(false)}
@@ -393,7 +393,7 @@ export function AppShell({
             </div>
             <div className="p-2 py-8 flex flex-col items-center justify-center">
               <Command className="w-6 h-6 text-gray-300 mb-2" strokeWidth={1.5} />
-              <p className="text-[13px] text-gray-500 font-medium">اكتب أمراً أو ابحث...</p>
+              <p className="text-[13px] text-gray-500 font-medium">Type a command or search...</p>
             </div>
           </div>
         </div>

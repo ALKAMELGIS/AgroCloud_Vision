@@ -69,37 +69,37 @@ export default function FarmDetailPage() {
     }
   }
 
-  if (!farm) return <main className="p-6 text-gray-400">جارٍ التحميل...</main>;
+  if (!farm) return <main className="p-6 text-gray-400">Loading...</main>;
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <button onClick={() => router.push('/dashboard')} className="mb-4 text-sm text-brand-700 underline">
-        ← رجوع إلى المزارع
+        ← Back to Farms
       </button>
 
       <h1 className="mb-4 text-xl font-bold text-brand-900">{farm.name}</h1>
 
       <section className="mb-6">
-        <h2 className="mb-2 font-semibold text-gray-700">الطقس (7 أيام قادمة)</h2>
+        <h2 className="mb-2 font-semibold text-gray-700">Weather (next 7 days)</h2>
         <WeatherWidget days={weatherDays} />
       </section>
 
       <section>
-        <h2 className="mb-2 font-semibold text-gray-700">خريطة الحقول</h2>
+        <h2 className="mb-2 font-semibold text-gray-700">Field Map</h2>
         {farm.latitude && farm.longitude ? (
           <FieldMap center={[farm.latitude, farm.longitude]} fields={fieldsWithBoundary} />
         ) : (
-          <p className="text-sm text-gray-400">لم يتم تحديد إحداثيات المزرعة بعد.</p>
+          <p className="text-sm text-gray-400">No coordinates set for this farm yet.</p>
         )}
       </section>
 
       <section className="mt-6">
-        <h2 className="mb-2 font-semibold text-gray-700">الحقول ({farm.fields?.length || 0})</h2>
+        <h2 className="mb-2 font-semibold text-gray-700">Fields ({farm.fields?.length || 0})</h2>
         <ul className="divide-y rounded-lg border bg-white">
           {farm.fields?.map((f) => (
             <li key={f.id} className="flex justify-between p-3 text-sm">
               <span>{f.name}</span>
-              <span className="text-gray-400">{f.areaHectares?.toFixed(2)} هكتار</span>
+              <span className="text-gray-400">{f.areaHectares?.toFixed(2)} ha</span>
             </li>
           ))}
         </ul>

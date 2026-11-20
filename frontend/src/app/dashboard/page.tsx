@@ -49,31 +49,31 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppShell title="الرئيسية">
-      <main className="p-6" dir="rtl">
+    <AppShell title="Home">
+      <main className="p-6">
         <div className="mb-6 flex items-center justify-between">
-          <p className="text-sm text-gray-500">نظرة عامة على مزارعك</p>
+          <p className="text-sm text-gray-500">Overview of your farms</p>
           <button onClick={handleLogout} className="text-sm text-gray-500 underline">
-            تسجيل الخروج
+            Log out
           </button>
         </div>
 
         <form onSubmit={createFarm} className="mb-6 flex gap-2">
           <input
             className="flex-1 rounded-lg border p-3"
-            placeholder="اسم مزرعة جديدة"
+            placeholder="New farm name"
             value={newFarmName}
             onChange={(e) => setNewFarmName(e.target.value)}
           />
           <button className="rounded-lg bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">
-            + إضافة مزرعة
+            + Add Farm
           </button>
         </form>
 
         {loading ? (
-          <p className="text-gray-400">جارٍ التحميل...</p>
+          <p className="text-gray-400">Loading...</p>
         ) : farms.length === 0 ? (
-          <p className="text-gray-400">لا توجد مزارع بعد. أضف أول مزرعة لك أعلاه.</p>
+          <p className="text-gray-400">No farms yet. Add your first farm above.</p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {farms.map((farm) => (
@@ -83,7 +83,7 @@ export default function DashboardPage() {
                 className="rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md"
               >
                 <h2 className="text-lg font-semibold text-brand-900">{farm.name}</h2>
-                <p className="mt-1 text-sm text-gray-500">{farm.fields?.length || 0} حقل مسجّل</p>
+                <p className="mt-1 text-sm text-gray-500">{farm.fields?.length || 0} registered field(s)</p>
               </Link>
             ))}
           </div>

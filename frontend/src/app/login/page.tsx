@@ -26,7 +26,7 @@ export default function LoginPage() {
       saveSession(response);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'حدث خطأ أثناء المصادقة');
+      setError(err?.response?.data?.message || 'An error occurred during authentication');
     } finally {
       setLoading(false);
     }
@@ -37,7 +37,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
         <h1 className="mb-1 text-2xl font-bold text-brand-900">AgroCloud Vision</h1>
         <p className="mb-6 text-sm text-gray-500">
-          {mode === 'login' ? 'تسجيل الدخول إلى حسابك' : 'إنشاء مؤسسة جديدة'}
+          {mode === 'login' ? 'Sign in to your account' : 'Create a new organization'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -45,14 +45,14 @@ export default function LoginPage() {
             <>
               <input
                 className="w-full rounded-lg border p-3"
-                placeholder="اسم المؤسسة / المزرعة"
+                placeholder="Organization / Farm name"
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
                 required
               />
               <input
                 className="w-full rounded-lg border p-3"
-                placeholder="الاسم الكامل"
+                placeholder="Full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -62,7 +62,7 @@ export default function LoginPage() {
           <input
             type="email"
             className="w-full rounded-lg border p-3"
-            placeholder="البريد الإلكتروني"
+            placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -70,7 +70,7 @@ export default function LoginPage() {
           <input
             type="password"
             className="w-full rounded-lg border p-3"
-            placeholder="كلمة المرور"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -83,7 +83,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-lg bg-brand-600 p-3 font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
           >
-            {loading ? '...' : mode === 'login' ? 'دخول' : 'إنشاء الحساب'}
+            {loading ? '...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
         </form>
 
@@ -91,7 +91,7 @@ export default function LoginPage() {
           className="mt-4 w-full text-center text-sm text-brand-700 underline"
           onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
         >
-          {mode === 'login' ? 'ليس لديك حساب؟ أنشئ مؤسسة جديدة' : 'لديك حساب بالفعل؟ سجّل الدخول'}
+          {mode === 'login' ? "Don't have an account? Create an organization" : 'Already have an account? Sign in'}
         </button>
       </div>
     </main>
