@@ -44,6 +44,7 @@
     from: iso(Date.now() - 365 * DAY), to: iso(Date.now()),
     points: [], crops: [], weatherDays: null, weatherKey: '', view: null,
     token: 0, done: 0, total: 0, hover: null,
+    seen: new Set(), sweepAt: -1e9,   // entry animation: new marks once, full sweep when a load finishes
   };
   if (!ts.indices.length) ts.indices = ['ndvi'];
   const keysOrdered = () => INDEX_KEYS.filter((k) => ts.indices.includes(k));
@@ -92,7 +93,7 @@
         <button type="button" id="tsCsv" class="ts-icon" title="Download CSV">${icon('download')}</button>
         <button type="button" id="tsClose" class="ts-icon" title="Close">${icon('x')}</button>
       </div>
-      <div class="ts-chart" id="tsChart"><svg id="tsSvg" role="img" aria-label="Index over time"></svg><div class="ts-tip" id="tsTip" hidden></div></div>
+      <div class="ts-chart" id="tsChart"><div class="ts-progress" id="tsProgress" hidden><i></i></div><svg id="tsSvg" role="img" aria-label="Index over time"></svg><div class="ts-tip" id="tsTip" hidden></div></div>
       <div class="ts-brush" id="tsBrush">
         <svg id="tsMini" aria-hidden="true"></svg>
         <div class="ts-window" id="tsWindow"><span class="ts-handle" data-h="a"></span><span class="ts-handle" data-h="b"></span></div>
@@ -165,7 +166,7 @@
     store('tsIndices', keysOrdered().join(','));
     fillIndices(); placeMenu(); load();
   });
-  $('tsChartType').addEventListener('change', (e) => { ts.chart = e.target.value; store('tsChart', ts.chart); draw(); });
+  $('tsChartType').addEventListener('change', (e) => { ts.chart = e.target.value; store('tsChart', ts.chart); ts.sweepAt = performance.now(); draw(); });
   /** ReCI next to other layers takes the right axis, so weather has nowhere to go. */
   function syncWeather() {
     const off = reciMixed();
@@ -222,7 +223,7 @@
     const I = window.Imagery;
     const field = fieldOf(ts.fieldId);
     const token = ++ts.token;
-    ts.points = []; ts.crops = []; ts.view = null; ts.done = 0; ts.total = 0; ts.hover = null;
+    ts.points = []; ts.crops = []; ts.view = null; ts.done = 0; ts.total = 0; ts.hover = null; ts.seen.clear();
     if (!I || !field || !field.geometry) { status(I ? 'Pick a field' : 'Satellite tools are loading'); draw(); return; }
     fillIndices();
     status('Finding images');
@@ -244,13 +245,16 @@
       while (next < list.length) {
         const s = list[next++];
         try {
+          // all layers of a date at once: they share the same band reads
+          const keys = keysOrdered();
+          const res = await Promise.all(keys.map((k) => I.analyse(field, s, k).catch(() => null)));
+          if (token !== ts.token) return;
           const v = {}; let cloud = null;
-          for (const k of keysOrdered()) {
-            const r = await I.analyse(field, s, k);
-            if (token !== ts.token) return;
+          res.forEach((r, i) => {
+            if (!r) return;
             if (cloud === null) cloud = r.cloudPct;
-            if (Number.isFinite(r.mean)) v[k] = { mean: r.mean, p10: r.p10, p90: r.p90 };
-          }
+            if (Number.isFinite(r.mean)) v[keys[i]] = { mean: r.mean, p10: r.p10, p90: r.p90 };
+          });
           if (cloud <= 40 && Object.keys(v).length) {
             ts.points.push({ day: s.day, t: t0(s.day), sceneId: s.id, scene: s, v, cloud });
             ts.points.sort((a, b) => a.t - b.t);
@@ -262,7 +266,9 @@
         schedule();
       }
     };
-    await Promise.all([work(), work(), work()]);
+    await Promise.all(Array.from({ length: 6 }, work));
+    if (token !== ts.token) return;
+    ts.sweepAt = performance.now(); cancelAnimationFrame(raf); draw();
   }
 
   async function loadWeather() {
@@ -416,6 +422,13 @@
 
     const hov = ts.hover && inView.find((p) => p.t === ts.hover);
     const isCur = (p) => Imagery.state.sceneId === p.sceneId;
+    const loading = ts.total > 0 && ts.done < ts.total;
+    // a redraw during the sweep (hover, resize) continues it: negative delays pick up where it was
+    const el = performance.now() - ts.sweepAt, sweep = !loading && el < 900;
+    const off = sweep ? Math.round(el) : 0;
+    // a mark animates in once: the first time it is drawn, or on a full sweep
+    const enter = (k, t) => { const id = ts.chart + k + t; if (sweep || !ts.seen.has(id)) { ts.seen.add(id); return ' is-enter'; } return ''; };
+    const dly = (i, n) => ` style="animation-delay:${sweep ? Math.round((i / Math.max(1, n)) * 260) - off : 0}ms`;
     // bar width from the tightest spacing between dates
     let gap = Infinity; for (let i = 1; i < inView.length; i++) gap = Math.min(gap, X(inView[i].t) - X(inView[i - 1].t));
     const groupW = Math.max(3, Math.min(22, (Number.isFinite(gap) ? gap : 40) * 0.72));
@@ -426,26 +439,27 @@
       const base = Y(Math.max(lo, Math.min(hi, 0)));
       if (ts.chart === 'area' || ts.chart === 'line') {
         const line = smoothPath(data.map((d) => [X(d.p.t), Y(d.val)]));
-        if (single && data.length > 1) {
+        if (single && data.length > 1 && !loading) {
           const band = `${smoothPath(data.map((d) => [X(d.p.t), Y(d.hi)]))} L${data.slice().reverse().map((d) => `${X(d.p.t).toFixed(1)} ${Y(d.lo).toFixed(1)}`).join(' L')} Z`;
-          back += `<path d="${band}" fill="${c}" opacity=".1" class="ts-band"/>`;
+          back += `<path d="${band}" fill="${c}" opacity=".1" class="ts-band${sweep ? ' is-enter' : ''}" style="animation-delay:${-off}ms"/>`;
         }
-        if (ts.chart === 'area' && data.length > 1) {
+        if (ts.chart === 'area' && data.length > 1 && !loading) {
           defs += `<linearGradient id="tsFill-${k}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity="${single ? 0.22 : 0.12}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient>`;
-          back += `<path d="${line} L${X(data[data.length - 1].p.t).toFixed(1)} ${base.toFixed(1)} L${X(data[0].p.t).toFixed(1)} ${base.toFixed(1)} Z" fill="url(#tsFill-${k})"/>`;
+          back += `<path d="${line} L${X(data[data.length - 1].p.t).toFixed(1)} ${base.toFixed(1)} L${X(data[0].p.t).toFixed(1)} ${base.toFixed(1)} Z" fill="url(#tsFill-${k})" class="ts-area${sweep ? ' is-enter' : ''}" style="animation-delay:${-off}ms"/>`;
         }
-        if (line) front += `<path d="${line}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" class="ts-line" data-k="${k}"/>`;
-        front += vis.map((d) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 4.5 : 2.75}" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}" style="--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        // while dates stream in only the points show; the line sweeps in once the load is done
+        if (line && !loading) front += `<path d="${line}" pathLength="1" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" class="ts-line${sweep ? ' is-enter' : ''}" style="animation-delay:${ki * 60 - off}ms" data-k="${k}"/>`;
+        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 4.5 : 2.75}" class="ts-dot${enter(k, d.p.t)}${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else if (ts.chart === 'scatter') {
         front += vis.map((d) => `<line x1="${X(d.p.t).toFixed(1)}" x2="${X(d.p.t).toFixed(1)}" y1="${Y(d.lo).toFixed(1)}" y2="${Y(d.hi).toFixed(1)}" stroke="${c}" stroke-width="1.5" opacity=".35" class="ts-whisker"/>`).join('');
-        front += vis.map((d) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 5 : 3.5}" class="ts-dot is-solid${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}" style="--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 5 : 3.5}" class="ts-dot is-solid${enter(k, d.p.t)}${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else {
         // bar and change: grouped bars from zero
         const n = ax.keys.length, bw = Math.max(1.5, groupW / n - (n > 1 ? 1 : 0));
-        front += vis.map((d) => {
+        front += vis.map((d, i) => {
           const x = X(d.p.t) - groupW / 2 + ki * (groupW / n), y = Y(d.val);
           const top = Math.min(y, base), h = Math.max(1, Math.abs(base - y));
-          return `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(2, bw / 3).toFixed(1)}" fill="${c}" opacity="${d.p === hov || !hov ? (ts.chart === 'change' && d.val < 0 ? 0.6 : 0.9) : 0.35}" class="ts-bar${isCur(d.p) ? ' is-current' : ''}" data-k="${k}" data-t="${d.p.t}"/>`;
+          return `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(2, bw / 3).toFixed(1)}" fill="${c}" opacity="${d.p === hov || !hov ? (ts.chart === 'change' && d.val < 0 ? 0.6 : 0.9) : 0.35}" class="ts-bar${enter(k, d.p.t)}${y > base ? ' is-neg' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)}" data-k="${k}" data-t="${d.p.t}"/>`;
         }).join('');
       }
     });
@@ -464,6 +478,7 @@
       </g>
       ${rightAxis}
       ${!pts.length && ts.done >= ts.total && ts.total ? `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" class="ts-empty">No clear dates in this period</text>` : ''}`;
+    const pr = $('tsProgress'); pr.hidden = !loading; if (loading) pr.firstChild.style.width = Math.round((100 * ts.done) / ts.total) + '%';
     legend(ax, w);
     tip(hov, X, (p) => { const k = ax.keys.find((x) => p.v[x]); const d = k && seriesOf(k, [p])[0]; return d ? Yk(k)(d.val) : (H - P.b) / 2; });
     drawMini();

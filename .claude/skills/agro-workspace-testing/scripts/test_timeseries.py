@@ -47,6 +47,13 @@ with sync_playwright() as p:
     check('opens on the selected field', pg.locator('#tsField option:checked').inner_text() == 'Pivot 1', pg.locator('#tsField option:checked').inner_text())
     expect(pg.locator('#tsSvg .ts-dot')).to_have_count(3, timeout=30000)   # 26 Oct is cloudy over the field
     check('status counts clear dates', 'clear dates' in pg.inner_text('#tsStatus'), pg.inner_text('#tsStatus'))
+    check('progress bar gone once loaded', pg.locator('#tsProgress').is_hidden())
+    pg.select_option('#tsChartType', 'line'); pg.wait_for_timeout(120)
+    mid = pg.evaluate("(() => { const l = document.querySelector('#tsSvg path.ts-line'); return l ? [l.classList.contains('is-enter'), parseFloat(getComputedStyle(l).strokeDashoffset)] : null; })()")
+    pg.wait_for_timeout(900)
+    end = pg.evaluate("parseFloat(getComputedStyle(document.querySelector('#tsSvg path.ts-line')).strokeDashoffset)")
+    check('line sweeps in quickly (mid-way at 120 ms, done by 1 s)', mid and mid[0] and 0 < mid[1] < 1 and end == 0, (mid, end))
+    pg.select_option('#tsChartType', 'area'); pg.wait_for_timeout(900)
     check('smooth line and P10-P90 band drawn', pg.locator('#tsSvg path.ts-line[stroke="#7cc46a"]').count() == 1 and pg.locator('#tsSvg path.ts-band').count() == 1)
     check('crop season band', 'Alfalfa' in pg.text_content('#tsSvg'))
     check('month labels on the axis', pg.locator('#tsSvg text.ts-axis').count() >= 10)

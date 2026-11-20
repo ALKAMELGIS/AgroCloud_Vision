@@ -436,3 +436,23 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
 .ts-key i.is-dash { height: 0; border-top: 1.5px dashed #9aa3ad; background: none; }
 .ts-key i.is-whisker { width: 2px; height: 10px; background: rgba(255,255,255,.35); }
 .ts-seg button:disabled { opacity: .35; cursor: not-allowed; }
+
+/* time series motion: quick, once, from the data outward */
+.ts-progress { position: absolute; left: 40px; right: 16px; top: 0; height: 2px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; z-index: 1; }
+.ts-progress[hidden] { display: none; }
+.ts-progress i { display: block; height: 100%; background: #9aa3ad; transition: width .2s ease-out; }
+.ts-line.is-enter { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ts-sweep .62s cubic-bezier(.22,.61,.36,1) forwards; }
+.ts-area.is-enter, .ts-band.is-enter { opacity: 0; animation: ts-fade .5s ease-out .18s forwards; }
+.ts-band.is-enter { animation-name: ts-fade-band; }
+.ts-dot.is-enter { transform-box: fill-box; transform-origin: center; animation: ts-pop .32s cubic-bezier(.34,1.4,.64,1) backwards; }
+.ts-bar.is-enter { transform-box: fill-box; transform-origin: center bottom; animation: ts-grow .42s cubic-bezier(.22,.61,.36,1) backwards; }
+.ts-bar.is-enter.is-neg { transform-origin: center top; }
+@keyframes ts-sweep { to { stroke-dashoffset: 0; } }
+@keyframes ts-fade { to { opacity: 1; } }
+@keyframes ts-fade-band { to { opacity: .1; } }
+@keyframes ts-pop { from { transform: scale(0); opacity: 0; } }
+@keyframes ts-grow { from { transform: scaleY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .ts-line.is-enter, .ts-area.is-enter, .ts-band.is-enter, .ts-dot.is-enter, .ts-bar.is-enter { animation: none; stroke-dashoffset: 0; opacity: unset; }
+  .ts-band.is-enter { opacity: .1; }
+}
