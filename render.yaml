@@ -1,0 +1,60 @@
+databases:
+  - name: agrocloud-db
+    databaseName: agrocloud_vision
+    user: agrocloud
+    plan: free
+    postgresMajorVersion: 15
+
+services:
+  - type: web
+    name: agrocloud-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: agrocloud-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: agrocloud-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: agrocloud-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: agrocloud-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: agrocloud-db
+          property: database
+      - key: DB_SYNCHRONIZE
+        value: "true"
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 7d
+      - key: WEATHER_PROVIDER
+        value: open-meteo
+      - key: OPEN_METEO_FORECAST_URL
+        value: ""
+      - key: OPEN_METEO_ARCHIVE_URL
+        value: ""
+      - key: EOS_API_KEY
+        sync: false
+      - key: EOS_API_ID
+        sync: false
+      - key: EOS_API_BASE_URL
+        value: https://api-connect.eos.com
