@@ -46,8 +46,8 @@
           <h2 class="font-semibold text-gray-700">Field Map</h2>
           <span class="text-xs text-gray-400">Use "Add Field" to draw a boundary directly on the map</span>
         </div>
-        <div class="relative h-[460px] w-full overflow-hidden rounded-xl border">
-          <div id="mapContainer" class="h-full w-full"></div>
+        <div class="relative w-full overflow-hidden rounded-xl border" style="height:460px">
+          <div id="mapContainer" style="height:100%;width:100%"></div>
 
           <div class="absolute right-3 top-3 z-[500] flex flex-col items-end gap-2">
             <button id="addFieldBtn" type="button"
@@ -238,26 +238,46 @@ function renderMap(center, fieldsWithBoundary, farmId) {
     const mapContainer = document.getElementById('mapContainer');
     const map = L.map(mapContainer).setView(center, 15);
     mapInstance = map;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
+
+    // قاعدة خريطة قمر صناعي (Esri World Imagery, مجانية بدون مفتاح API) —
+    // أنسب لعمل زراعي حقيقي من خريطة شوارع عادية، لأنها تُظهر نسيج الأرض
+    // والحقول فعلياً بدل الأسماء والطرق فقط.
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics',
       maxZoom: 19,
     }).addTo(map);
 
-    map.on(L.Draw.Event.CREATED, (event) => {
-      const layer = event.layer;
-      pendingGeometry = layerToPolygonGeoJson(layer, event.layerType);
-      if (drawnLayer) map.removeLayer(drawnLayer);
-      layer.setStyle && layer.setStyle({ color: '#16a34a', weight: 2, fillOpacity: 0.12, dashArray: '4 4' });
-      layer.addTo(map);
-      drawnLayer = layer;
+    // تحصين ضد تأخّر/فشل تحميل Leaflet.draw من الـ CDN: الخريطة وحدودها تبقى
+    // تعمل حتى لو تعطّلت أدوات الرسم تحديداً، فلا يفشل تحميل الصفحة كلها لهذا السبب.
+    if (window.L && L.Draw) {
+      map.on(L.Draw.Event.CREATED, (event) => {
+        const layer = event.layer;
+        pendingGeometry = layerToPolygonGeoJson(layer, event.layerType);
+        if (drawnLayer) map.removeLayer(drawnLayer);
+        layer.setStyle && layer.setStyle({ color: '#16a34a', weight: 2, fillOpacity: 0.12, dashArray: '4 4' });
+        layer.addTo(map);
+        drawnLayer = layer;
 
-      document.getElementById('fieldNameInput').value = '';
-      document.getElementById('fieldSaveError').classList.add('hidden');
-      document.getElementById('savePanel').classList.remove('hidden');
-      document.getElementById('fieldNameInput').focus();
-    });
+        document.getElementById('fieldNameInput').value = '';
+        document.getElementById('fieldSaveError').classList.add('hidden');
+        document.getElementById('savePanel').classList.remove('hidden');
+        document.getElementById('fieldNameInput').focus();
+      });
 
-    setupDrawControls(map);
+      try {
+        setupDrawControls(map);
+      } catch (err) {
+        console.error('Could not set up field-drawing tools:', err);
+      }
+    } else {
+      document.getElementById('addFieldBtn').title = 'Drawing tools failed to load — try reloading the page.';
+      document.getElementById('addFieldBtn').classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    // إصلاح مشكلة شائعة مع Leaflet + Tailwind (Play CDN): إذا هُيّئت الخريطة
+    // قبل أن يُطبَّق ارتفاع الحاوية فعلياً، تظهر رمادية بدون بلاطات. نجبرها
+    // على إعادة حساب حجمها بعد لحظة قصيرة من التحميل.
+    setTimeout(() => map.invalidateSize(), 150);
   }
 
   boundaryLayers.forEach((l) => mapInstance.removeLayer(l));
@@ -337,60 +357,71 @@ function setupDrawControls(map) {
 }
 
 async function loadFarm() {
+  // المرحلة الحرجة فقط: جلب بيانات المزرعة نفسها. أي فشل هنا فعلاً يمنع فتح
+  // الصفحة، فيستحق رسالة "Could not load this farm".
+  let farm;
   try {
-    const farm = await apiGet(`/farms/${farmId}`);
-    document.getElementById('farmName').textContent = farm.name;
-    document.getElementById('loadingMsg').classList.add('hidden');
-    document.getElementById('content').classList.remove('hidden');
-
-    const fields = farm.fields || [];
-    renderFieldsList(fields);
-
-    const fieldsWithBoundary = await Promise.all(
-      fields.map(async (field) => {
-        try {
-          const geojson = await apiGet(`/fields/${field.id}/boundary.geojson`);
-          return { ...field, boundaryGeoJson: geojson };
-        } catch {
-          return field;
-        }
-      }),
-    );
-
-    // الخريطة تُفتح دائماً — رسم الحقول لا يحتاج إحداثيات مُسبقة للمزرعة.
-    // إذا لم تملك المزرعة إحداثيات بعد: نتمركز على أول حقل مرسوم فعلاً، وإلا
-    // نحاول موقع المتصفح الحالي، وإلا مركز افتراضي معقول — فقط لعرض الخريطة
-    // ليرسم المستخدم حقله الأول عليها مباشرة عبر أيقونة "Add Field".
-    const hasFarmCoords = !!(farm.latitude && farm.longitude);
-    const center = hasFarmCoords
-      ? [farm.latitude, farm.longitude]
-      : computeFieldsCentroid(fieldsWithBoundary) || (await getFallbackCenter());
-
-    renderMap(center, fieldsWithBoundary, farm.id);
-
-    if (hasFarmCoords) {
-      const today = new Date();
-      const in7Days = new Date(Date.now() + 7 * 86400000);
-      const fmt = (d) => d.toISOString().slice(0, 10);
-      const firstFieldId = fields[0]?.id;
-      if (firstFieldId) {
-        try {
-          const weather = await apiGet(
-            `/weather/field/${firstFieldId}/forecast?lat=${farm.latitude}&lng=${farm.longitude}&start=${fmt(today)}&end=${fmt(in7Days)}`,
-          );
-          renderWeather(weather.days);
-        } catch {
-          renderWeather([]);
-        }
-      }
-    } else {
-      renderWeather([]);
-    }
+    farm = await apiGet(`/farms/${farmId}`);
   } catch (err) {
     document.getElementById('loadingMsg').classList.add('hidden');
     const errorMsg = document.getElementById('errorMsg');
     errorMsg.textContent = 'Could not load this farm. The server may be waking up from sleep (free tier) — try reloading in a moment.';
     errorMsg.classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('farmName').textContent = farm.name;
+  document.getElementById('loadingMsg').classList.add('hidden');
+  document.getElementById('errorMsg').classList.add('hidden');
+  document.getElementById('content').classList.remove('hidden');
+
+  const fields = farm.fields || [];
+  renderFieldsList(fields);
+
+  // من هنا فصاعداً كل خطوة اختيارية بذاتها: فشل خريطة/طقس/أداة رسم لا يجب أن
+  // يُخفي بيانات المزرعة التي نجح تحميلها فعلاً، فكل واحدة بمعزل عن الأخرى.
+  const fieldsWithBoundary = await Promise.all(
+    fields.map(async (field) => {
+      try {
+        const geojson = await apiGet(`/fields/${field.id}/boundary.geojson`);
+        return { ...field, boundaryGeoJson: geojson };
+      } catch {
+        return field;
+      }
+    }),
+  );
+
+  // الخريطة تُفتح دائماً — رسم الحقول لا يحتاج إحداثيات مُسبقة للمزرعة.
+  // إذا لم تملك المزرعة إحداثيات بعد: نتمركز على أول حقل مرسوم فعلاً، وإلا
+  // نحاول موقع المتصفح الحالي، وإلا مركز افتراضي معقول — فقط لعرض الخريطة
+  // ليرسم المستخدم حقله الأول عليها مباشرة عبر أيقونة "Add Field".
+  const hasFarmCoords = !!(farm.latitude && farm.longitude);
+  try {
+    const center = hasFarmCoords
+      ? [farm.latitude, farm.longitude]
+      : computeFieldsCentroid(fieldsWithBoundary) || (await getFallbackCenter());
+    renderMap(center, fieldsWithBoundary, farm.id);
+  } catch (err) {
+    console.error('Could not render the field map:', err);
+  }
+
+  if (hasFarmCoords) {
+    const today = new Date();
+    const in7Days = new Date(Date.now() + 7 * 86400000);
+    const fmt = (d) => d.toISOString().slice(0, 10);
+    const firstFieldId = fields[0]?.id;
+    if (firstFieldId) {
+      try {
+        const weather = await apiGet(
+          `/weather/field/${firstFieldId}/forecast?lat=${farm.latitude}&lng=${farm.longitude}&start=${fmt(today)}&end=${fmt(in7Days)}`,
+        );
+        renderWeather(weather.days);
+      } catch {
+        renderWeather([]);
+      }
+    }
+  } else {
+    renderWeather([]);
   }
 }
 
