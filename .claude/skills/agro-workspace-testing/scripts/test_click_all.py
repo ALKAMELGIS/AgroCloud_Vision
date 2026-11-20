@@ -3,7 +3,7 @@ import sys, os, json, urllib.request
 sys.path.insert(0, os.path.dirname(__file__))
 from playwright.sync_api import sync_playwright, expect
 import cdn_routes
-S = os.environ.get('WORK', os.getcwd()) + '/'
+S = os.environ.get('WORK', '/tmp/claude-0/-home-claude/765c94d1-5370-5f2f-8b07-c1be612c5cd8/scratchpad') + '/'
 API = 'http://localhost:4000/api/v1'
 def call(m, p, b=None, tok=None):
     r = urllib.request.Request(API + p, data=json.dumps(b).encode() if b is not None else None, method=m, headers={'Content-Type': 'application/json', **({'Authorization': 'Bearer ' + tok} if tok else {})})
@@ -45,7 +45,7 @@ with sync_playwright() as p:
     for v in views:
         pg.click(f'#navItems [data-view="{v}"]'); pg.wait_for_timeout(1200)
         # run the main action first where there is one
-        for sel in ['#vraCalc', '#ssCalc', '#faSeries', '#lbBuild']:
+        for sel in ['#vraCalc', '#ssCalc', '#lbBuild']:
             if pg.locator(f'#sidePanel {sel}:visible').count():
                 try: pg.click(f'#sidePanel {sel}', timeout=2000); pg.wait_for_timeout(2500)
                 except Exception: pass

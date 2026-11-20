@@ -1,6 +1,6 @@
 ---
 name: agro-satellite-ndvi
-description: How AgroCloud Vision reads Sentinel-2 in the browser (js/imagery.js) — the map timeline, source/index toolbar, indices (NDVI, NDRE, MSAVI, NDMI, ReCI, VMI, natural colour), SCL cloud masking with per-field cloud %, swipe between dates, per-field risks (NDVI change vs previous clear date), and the field Analytics tab (js/analytics.js) with value classes, compare/anomalies and season curve, sharpening to 5 m / 2.5 m with super-resolution models (js/superres.js) — plus offline testing with mock scenes. Use it for anything about satellite imagery, vegetation indices (NDVI, NDMI, NDRE), cloud masking, monitoring, anomalies, zones/VRA built on NDVI, super-resolution, higher resolution or 1 m requests, or when imagery fails to load, looks wrong, or a new index/source must be added.
+description: How AgroCloud Vision reads Sentinel-2 in the browser (js/imagery.js) — the map timeline, source/index toolbar, indices (NDVI, NDRE, MSAVI, NDMI, ReCI, VMI, natural colour), SCL cloud masking with per-field cloud %, swipe between dates, per-field risks (NDVI change vs previous clear date), and the field Analytics tab (js/analytics.js) with the date's value and value classes (compare and the season curve were removed from it on request: use swipe and the time series instead), sharpening to 5 m / 2.5 m with super-resolution models (js/superres.js) — plus offline testing with mock scenes. Use it for anything about satellite imagery, vegetation indices (NDVI, NDMI, NDRE), cloud masking, monitoring, anomalies, zones/VRA built on NDVI, super-resolution, higher resolution or 1 m requests, or when imagery fails to load, looks wrong, or a new index/source must be added.
 ---
 
 # Satellite imagery (indices, timeline, swipe, risks)
@@ -115,7 +115,7 @@ All tunables are in `CONFIG` at the top of `js/imagery.js` (`Imagery.config`): c
 - **Cloud % is measured inside the field from SCL**, keeping classes 4/5/6/7. The tile's `eo:cloud_cover` describes 110 km and is shown only as `~x%` until the field is read.
 - **Comparing two dates needs the same tile grid.** The date list prefers the field's dominant MGRS tile, and the compare list only offers dates on the same tile. `compare()` throws if windows differ.
 - **Anomaly rule (starting values, tune per crop):** take ΔNDVI minus the field's median Δ, flag ≤ −0.10, skip edge pixels, keep 8-connected clusters ≥ 0.1 ha. No vendor publishes theirs; see the research report in `reports/`.
-- **The season curve only uses dates with ≥ 60% clear pixels in the field**, up to 16 of the clearest.
+- The field Analytics tab no longer has "Compare with an earlier date" or the season curve (owner asked to remove them there). `Imagery.compare/showDelta` and `ScoutTasks.createFromAnomaly` still exist for other callers.
 - **NDVI colours are RdYlGn with fixed stops**; "Contrast" stretches P2–P98 within the field. Δ uses a diverging ramp, and flagged pixels are solid red.
 
 ## Offline test with mock scenes

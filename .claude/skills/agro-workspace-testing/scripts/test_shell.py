@@ -67,12 +67,10 @@ with sync_playwright() as p:
     check('10 value classes', pg.locator('[data-pane=monitoring] .space-y-1 > div').count() == 10)
     pg.screenshot(path=SH + 's2_field.png')
 
-    # compare + scout task from anomaly
-    pg.select_option('#faCmp', index=1)
-    expect(pg.locator('#faCmpOut')).to_contain_text('compared' if False else 'Field change', timeout=30000)
-    ha = num(pg.inner_text('#faCmpOut'), r'([\d.]+) ha dropped')
-    check('anomaly ≈ 7 ha', ha is not None and 5.5 <= ha <= 7.5, ha)
-    pg.click('#faTask')
+    # compare and season chart were removed from the field Analytics tab
+    check('no compare or season chart in field analytics', pg.locator('#faCmp').count() == 0 and pg.locator('#faSeries').count() == 0 and 'over the season' not in pg.inner_text('[data-pane=monitoring]'))
+    # scout task (anomaly entry point kept in ScoutTasks)
+    pg.evaluate("(() => { const f = state.fieldsById.get(FieldPanel.fieldId); const c = L.geoJSON(f.geometry).getBounds().getCenter(); ScoutTasks.createFromAnomaly(f, { lat: c.lat, lng: c.lng, ha: 1, meanDrop: -0.2 }, 'check'); })()")
     expect(pg.locator('#scDraft')).to_be_visible()
     pg.fill('#scWho', 'Ahmed'); pg.click('#scDraft button[type=submit]')
     expect(pg.locator('#toast')).to_contain_text('Scout task created')

@@ -49,7 +49,7 @@
 
   // ------------------------------------------------------------ field analytics
 
-  const fa = { unit: 'ha', cmp: '', series: new Map() };
+  const fa = { unit: 'ha' };
   function renderField(el, field) {
     const img = I();
     if (!img) { el.innerHTML = status('Loading satellite tools'); return; }
@@ -67,8 +67,6 @@
     const img = I(); const idx = img.indices[r.indexKey];
     const total = r.classes.reduce((a, b) => a + b, 0) || 1;
     const lo = idx.range[0], hi = idx.range[1];
-    const sameTile = img.state.scenes.filter((s) => s.day < r.scene.day && s.tile === r.scene.tile && s.tileCloud < 80);
-    const series = fa.series.get(field.id + '|' + r.indexKey);
     el.innerHTML = `
       <div class="space-y-5">
         <div class="flex items-end justify-between">
@@ -99,77 +97,11 @@
             }).join('')}
           </div>
         </div>
-        <div>
-          <div class="fp-h">Compare with an earlier date</div>
-          <select id="faCmp" class="fp-input"><option value="">No comparison</option>${sameTile.map((s) => `<option value="${s.id}" ${s.id === fa.cmp ? 'selected' : ''}>${fmtDay(s.day)} · ~${Math.round(s.tileCloud)}% tile cloud</option>`).join('')}</select>
-          <div id="faCmpOut" class="mt-3"></div>
-        </div>
-        <div>
-          <div class="mb-2 flex items-center justify-between"><span class="fp-h !mb-0">${idx.label} over the season</span>${series ? '' : '<button type="button" id="faSeries" class="text-[12px] font-medium text-brand-700">Build chart</button>'}</div>
-          <div id="faSeriesOut">${series ? seriesHtml(series, idx) : ''}</div>
-        </div>
       </div>`;
     el.querySelectorAll('[data-unit]').forEach((b) => b.addEventListener('click', () => { fa.unit = b.dataset.unit; draw(el, field, r); }));
-    el.querySelector('#faCmp').addEventListener('change', (e) => { fa.cmp = e.target.value; runCompare(el, field, r); });
-    const sb = el.querySelector('#faSeries'); if (sb) sb.addEventListener('click', () => buildSeries(el, field, r));
-    if (fa.cmp && sameTile.some((s) => s.id === fa.cmp)) runCompare(el, field, r); else { fa.cmp = ''; img.clearDelta(); }
+    img.clearDelta();
   }
 
-  async function runCompare(el, field, cur) {
-    const img = I(); const out = el.querySelector('#faCmpOut');
-    if (!fa.cmp) { out.innerHTML = ''; img.clearDelta(); return; }
-    out.innerHTML = status('Reading the earlier date');
-    try {
-      const prev = await img.analyse(field, img.sceneById(fa.cmp), cur.indexKey);
-      const c = img.compare(cur, prev);
-      img.showDelta(cur, c);
-      out.innerHTML = `
-        <div class="rounded-lg ${c.clusters.length ? 'bg-amber-50 ring-1 ring-amber-100' : 'bg-gray-50'} p-3">
-          <div class="text-[13px] font-medium ${c.clusters.length ? 'text-amber-900' : 'text-gray-900'}">${c.clusters.length ? `${formatHa(c.anomalyHa)} dropped more than ${img.config.anomalyDrop.toFixed(2)} against the field` : 'No area dropped against the rest of the field'}</div>
-          <div class="num mt-1 font-mono text-[12px] text-gray-600">Field change ${sgn(c.median)} · ${fmtDay(prev.scene.day)} → ${fmtDay(cur.scene.day)}</div>
-          ${c.clusters.length ? `<div class="mt-2 space-y-1">${c.clusters.slice(0, 5).map((cl, i) => `<button type="button" data-cl="${i}" class="num flex w-full items-center justify-between rounded-md px-1.5 py-1 text-left font-mono text-[12px] text-gray-700 transition-colors hover:bg-amber-100/60"><span>Area ${i + 1} · ${formatHa(cl.ha)}</span><span>${cl.meanDrop.toFixed(2)}</span></button>`).join('')}</div>
-          <div class="mt-3 grid grid-cols-2 gap-2">
-            <button type="button" id="faTask" class="h-8 rounded-lg bg-white text-[12px] font-medium text-gray-900 ring-1 ring-gray-200 transition-colors hover:bg-gray-50">Create scout task</button>
-            <button type="button" id="faScout" class="h-8 rounded-lg bg-white text-[12px] font-medium text-gray-900 ring-1 ring-gray-200 transition-colors hover:bg-gray-50">Log scouting visit</button>
-          </div>` : ''}
-        </div>
-        <div class="mt-2 flex items-center gap-2 text-[11px] text-gray-500"><span class="h-2 w-16 rounded-full" style="background:linear-gradient(90deg,#b2182b,#f4a582,#f7f7f7,#a6dba0,#1b7837)"></span><span class="num font-mono">−0.3 … +0.3</span><span class="flex items-center gap-1">· <span class="h-2 w-2 rounded-sm bg-red-600"></span>flagged drop</span></div>`;
-      out.querySelectorAll('[data-cl]').forEach((b) => b.addEventListener('click', () => { const cl = c.clusters[+b.dataset.cl]; mapInstance.setView([cl.lat, cl.lng], Math.max(mapInstance.getZoom(), 16)); }));
-      const note = `NDVI drop ${fmtDay(prev.scene.day)} → ${fmtDay(cur.scene.day)}: ` + c.clusters.slice(0, 5).map((cl, i) => `area ${i + 1} ${cl.ha.toFixed(2)} ha (${cl.meanDrop.toFixed(2)}) at ${cl.lat.toFixed(5)}, ${cl.lng.toFixed(5)}`).join('; ');
-      const sc = out.querySelector('#faScout');
-      if (sc) sc.addEventListener('click', async () => {
-        try {
-          await apiPost('/activities', { fieldId: field.id, type: 'scouting_visit', date: new Date().toISOString().slice(0, 10), notes: note.slice(0, 2000) });
-          showToast('Scouting visit logged'); document.dispatchEvent(new CustomEvent('activities:changed'));
-        } catch (err) { showError(err.message || 'Could not log the visit'); }
-      });
-      const tk = out.querySelector('#faTask');
-      if (tk) tk.addEventListener('click', () => window.ScoutTasks && ScoutTasks.createFromAnomaly(field, c.clusters[0], note));
-    } catch (err) { out.innerHTML = errBox(img.friendly(err)); }
-  }
-
-  async function buildSeries(el, field, cur) {
-    const img = I(); const out = el.querySelector('#faSeriesOut');
-    const picks = img.state.scenes.filter((s) => s.covers && s.tile === cur.scene.tile).slice().sort((a, b) => a.tileCloud - b.tileCloud).slice(0, 16).sort((a, b) => (a.day < b.day ? -1 : 1));
-    const pts = [];
-    for (let i = 0; i < picks.length; i++) {
-      if (window.FieldPanel.fieldId !== field.id) return;
-      out.innerHTML = status(`Reading date ${i + 1} of ${picks.length}`);
-      try { const r = await img.analyse(field, picks[i], cur.indexKey); if (r.cloudPct <= 40 && Number.isFinite(r.mean)) pts.push({ day: picks[i].day, mean: r.mean, p10: r.p10, p90: r.p90 }); } catch { /* skip */ }
-    }
-    fa.series.set(field.id + '|' + cur.indexKey, pts);
-    draw(el, field, cur);
-  }
-  function seriesHtml(pts, idx) {
-    if (pts.length < 2) return '<p class="text-[12px] text-gray-400">Not enough clear dates to draw a curve yet</p>';
-    const t = (d) => +new Date(d);
-    return lineChart([
-      { points: pts.map((p) => ({ x: t(p.day), y: p.p90 })), color: '#22c55e', width: 1, dash: true },
-      { points: pts.map((p) => ({ x: t(p.day), y: p.p10 })), color: '#22c55e', width: 1, dash: true },
-      { points: pts.map((p) => ({ x: t(p.day), y: p.mean, label: `${fmtDay(p.day)} · ${p.mean.toFixed(2)}` })), color: '#4ade80', width: 2, dots: true },
-    ], { yMin: idx.range[0], yMax: idx.range[1], fmt: (v) => v.toFixed(2), xLabel0: fmtDay(pts[0].day), xLabel1: fmtDay(pts[pts.length - 1].day) })
-      + legend([['#4ade80', 'Mean'], ['#22c55e', 'P10 – P90']]) + `<p class="num mt-1 font-mono text-[11px] text-gray-400">${pts.length} clear dates</p>`;
-  }
   window.FieldAnalytics = { render: renderField };
 
   // ------------------------------------------------------------ Leaderboard
