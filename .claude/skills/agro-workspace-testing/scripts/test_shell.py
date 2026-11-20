@@ -82,6 +82,20 @@ with sync_playwright() as p:
     pg.click('#moduleBody [data-f=done]')
     check('task marked done', pg.locator('#moduleBody [data-task]').count() == 1)
 
+    # fields panel folds away and comes back
+    w0 = pg.locator('#mapMain').bounding_box()['width']
+    pg.screenshot(path=SH + 'p1_panel_open.png', clip={'x': 200, 'y': 300, 'width': 520, 'height': 300})
+    pg.click('#panelToggle'); pg.wait_for_timeout(450)
+    check('panel folds to zero width', pg.locator('#sidePanel').bounding_box()['width'] < 1 and pg.locator('#mapMain').bounding_box()['width'] > w0 + 300, pg.locator('#sidePanel').bounding_box()['width'])
+    check('tab stays on the map edge to reopen', pg.locator('#panelToggle').is_visible() and pg.get_attribute('#panelToggle', 'aria-expanded') == 'false')
+    pg.screenshot(path=SH + 'p2_panel_folded.png', clip={'x': 200, 'y': 300, 'width': 520, 'height': 300})
+    pg.click('#panelToggle'); pg.wait_for_timeout(450)
+    check('panel opens again', abs(pg.locator('#sidePanel').bounding_box()['width'] - 320) < 2)
+    pg.click('#panelToggle'); pg.wait_for_timeout(450)
+    pg.click('#navItems [data-view=leaderboard]'); pg.wait_for_timeout(450)
+    check('choosing a view reopens the panel', abs(pg.locator('#sidePanel').bounding_box()['width'] - 320) < 2)
+    pg.click('#navItems [data-view=fields]')
+
     # split view: two screens, each with its own date and layer
     pg.click('#navItems [data-view=fields]')
     pg.click('#swipeBtn'); pg.click('#compareMenu [data-compare=split]')

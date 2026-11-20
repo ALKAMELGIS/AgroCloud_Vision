@@ -119,7 +119,7 @@
     'Full name': 'الاسم الكامل', 'Organization or farm name': 'اسم المؤسسة أو المزرعة', 'Create an organization': 'أنشئ مؤسسة', 'No account yet?': 'لا تملك حساباً؟',
     'At least 8 characters': '8 أحرف على الأقل', 'e.g. Al Khatim Farms': 'مثال: مزارع الختم', 'Your farms and fields open on the map right after': 'تفتح مزارعك وحقولك على الخريطة مباشرة بعد ذلك',
     'e.g. North pivots': 'مثال: المحاور الشمالية',
-    'Add layer': 'إضافة طبقة', 'ha': 'هكتار', 'owner': 'مالك', 'manager': 'مدير', 'gis_analyst': 'محلل GIS', 'agronomist': 'مهندس زراعي',
+    'Hide fields panel': 'إخفاء لوحة الحقول', 'Show fields panel': 'إظهار لوحة الحقول', 'Add layer': 'إضافة طبقة', 'ha': 'هكتار', 'owner': 'مالك', 'manager': 'مدير', 'gis_analyst': 'محلل GIS', 'agronomist': 'مهندس زراعي',
     'field_supervisor': 'مشرف حقل', 'viewer': 'مشاهد',
   };
 

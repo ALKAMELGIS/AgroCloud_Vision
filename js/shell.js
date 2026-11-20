@@ -74,7 +74,7 @@
   const usr = JSON.parse(localStorage.getItem('user') || 'null');
   if (usr) document.getElementById('navUser').textContent = usr.email + (usr.role ? ' · ' + usr.role : '');
   document.querySelector('[data-action="logout"]').addEventListener('click', () => {
-    const keep = ['lang', 'navCollapsed', 'imgProvider'].map((k) => [k, localStorage.getItem(k)]);
+    const keep = ['lang', 'navCollapsed', 'panelCollapsed', 'imgProvider'].map((k) => [k, localStorage.getItem(k)]);
     localStorage.clear();
     keep.forEach(([k, v]) => { if (v != null) localStorage.setItem(k, v); });   // per-browser preferences survive sign-out
     window.location.href = 'main.html';
@@ -146,6 +146,7 @@
 
   function show(id) {
     if (id === 'activity-log') { if (window.openActivityLog) window.openActivityLog(); return; }
+    setSidePanel(true);
     shell.current = id;
     markNav(id);
     const fp = document.getElementById('fieldPanel');
@@ -186,9 +187,34 @@
   // Opening a field shows the Fields view underneath.
   const origOpen = window.openFieldPanel;
   window.openFieldPanel = function (id, tab) {
+    setSidePanel(true);
     if (shell.current !== 'fields') show('fields');
     return origOpen(id, tab);
   };
+
+  // ------------------------------------------------------------ fields panel: hide / show
+
+  // A slim tab on the panel's edge folds the panel away so the map takes the room. It
+  // stays on the map edge to bring it back; opening a view, a field or a new field reopens it.
+  const appRoot = document.getElementById('appRoot');
+  const panelTab = document.createElement('button');
+  panelTab.type = 'button';
+  panelTab.id = 'panelToggle';
+  panelTab.className = 'panel-tab';
+  panelTab.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg>';
+  document.getElementById('mapMain').appendChild(panelTab);
+  function setSidePanel(open) {
+    const was = !appRoot.classList.contains('side-collapsed');
+    appRoot.classList.toggle('side-collapsed', !open);
+    panelTab.setAttribute('aria-expanded', String(open));
+    panelTab.title = open ? 'Hide fields panel' : 'Show fields panel';
+    panelTab.setAttribute('aria-label', panelTab.title);
+    try { localStorage.setItem('panelCollapsed', open ? '0' : '1'); } catch { /* private mode */ }
+    if (was !== open) setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); if (window.Imagery && Imagery.invalidate) Imagery.invalidate(); }, 300);
+  }
+  window.setSidePanel = setSidePanel;
+  panelTab.addEventListener('click', () => setSidePanel(appRoot.classList.contains('side-collapsed')));
+  try { if (localStorage.getItem('panelCollapsed') === '1') setSidePanel(false); else setSidePanel(true); } catch { setSidePanel(true); }
   markNav('fields');
 
   // ------------------------------------------------------------ risk chips

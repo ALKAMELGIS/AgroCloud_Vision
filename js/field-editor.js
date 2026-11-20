@@ -165,6 +165,7 @@
   /** Called when a polygon or circle has been drawn. */
   function openDraft(layer, layerType) {
     discardDraft(true);
+    if (window.setSidePanel) setSidePanel(true);
     const geometry = layerToPolygonGeoJson(layer, layerType);
     const rings = geometry.coordinates.map((ring) => ring.slice(0, -1).map(([lng, lat]) => [lat, lng]));
     draft.layer = L.polygon(rings, { color: COLORS.draft, weight: 2, fillColor: COLORS.draft, fillOpacity: 0.12 }).addTo(mapInstance);

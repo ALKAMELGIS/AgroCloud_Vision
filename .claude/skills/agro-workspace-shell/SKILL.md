@@ -47,6 +47,14 @@ vanilla JS, so `js/shell.js` reproduces it. Keep these parts consistent with it:
   - lists fields, views, actions (draw, upload, split view, measure, create farm), other farms, and "Search places for …";
   - arrow keys, Enter and Esc work.
 
+## Fields panel fold
+
+- **The tab:** `#panelToggle` is a slim graphite tab, 18 px by 56 px with one chevron, on the map edge next to `#sidePanel`. Clicking it toggles `#appRoot.side-collapsed`.
+- **Folding:** the panel animates to width 0 while its children keep `min-width: 320px`, so nothing reflows. After the fold, both maps run `invalidateSize`.
+- **The chevron** points the way the panel will move and flips in Arabic.
+- **Reopening:** `window.setSidePanel(open)` reopens the panel whenever a view is chosen (`show`), a field is opened, or a new field is drawn.
+- **Remembered:** the state is kept in `localStorage.panelCollapsed`, which survives sign-out.
+
 ## Language and direction (`js/i18n.js`)
 
 - **Loading:** `js/i18n.js` loads first in `<head>` on `workspace.html` and `main.html`. It reads `localStorage.lang` and sets `<html lang dir>` before anything renders.
