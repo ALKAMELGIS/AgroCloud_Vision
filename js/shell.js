@@ -269,10 +269,19 @@
 
   document.getElementById('zoomInBtn').addEventListener('click', () => mapInstance && mapInstance.zoomIn());
   document.getElementById('zoomOutBtn').addEventListener('click', () => mapInstance && mapInstance.zoomOut());
-  document.getElementById('swipeBtn').addEventListener('click', () => {
-    if (!window.Imagery || !Imagery.current()) { showError('Pick a satellite date first'); return; }
-    Imagery.setSplit(!Imagery.state.split);
+  const compareMenu = document.getElementById('compareMenu');
+  const closeCompareMenu = () => { compareMenu.classList.add('hidden'); compareMenu.classList.remove('flex'); };
+  function compare(mode) {
+    closeCompareMenu();
+    if (mode !== 'off' && (!window.Imagery || !Imagery.current())) { showError('Pick a satellite date first'); return; }
+    Imagery.setCompare(mode);
+  }
+  window.startCompare = compare;
+  document.getElementById('swipeBtn').addEventListener('click', (e) => {
+    e.stopPropagation(); compareMenu.classList.toggle('hidden'); compareMenu.classList.toggle('flex');
   });
+  compareMenu.querySelectorAll('[data-compare]').forEach((b) => b.addEventListener('click', () => compare(b.dataset.compare)));
+  document.addEventListener('click', (e) => { if (!compareMenu.contains(e.target)) closeCompareMenu(); });
 
   const measureBtn = document.getElementById('measureBtn');
   const measureMenu = document.getElementById('measureMenu');
@@ -333,7 +342,8 @@
     const act = (label, ico, action) => add('Actions', label, ico, () => { const b = document.querySelector(`#addMenu [data-action="${action}"]`); if (b) b.click(); });
     act('Draw a polygon field', 'pentagon', 'draw-polygon'); act('Draw a pivot circle', 'circle', 'draw-circle');
     act('Upload field boundaries', 'upload', 'upload'); act('Add GIS data layer', 'layers', 'gis'); act('Select fields on the map', 'pointer', 'select');
-    add('Actions', 'Split view: compare two screens', 'split', () => document.getElementById('swipeBtn').click());
+    add('Actions', 'Swipe: compare two layers with a divider', 'swipe', () => compare('swipe'));
+    add('Actions', 'Side by side: compare two screens', 'split', () => compare('split'));
     add('Actions', 'Measure a distance', 'ruler', () => { const b = document.querySelector('[data-measure="line"]'); if (b) b.click(); });
     add('Actions', 'Create farm', 'plus', () => openGroupDialog());
     state.farms.filter((f) => f.id !== state.selectedFarmId).forEach((f) => add('Farms', 'Switch to ' + f.name, 'home', () => selectFarm(f.id)));

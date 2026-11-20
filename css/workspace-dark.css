@@ -133,12 +133,6 @@
 .tl-chip.is-cloudy { color: var(--t-3); }
 .tl-scroll { scrollbar-width: none; } .tl-scroll::-webkit-scrollbar { display: none; }
 
-/* swipe */
-.swipe-handle { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; z-index: 640; cursor: ew-resize; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
-.swipe-handle::after { content: ''; position: absolute; top: 50%; left: -15px; width: 32px; height: 32px; margin-top: -16px; border-radius: 50%;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18-6-6 6-6'/%3E%3Cpath d='m15 6 6 6-6 6'/%3E%3C/svg%3E") center/18px no-repeat;
-  box-shadow: 0 2px 8px rgba(0,0,0,.35); }
-
 /* small scrollbars in panels */
 .dark-ui .thin-scroll { scrollbar-width: thin; scrollbar-color: #343a42 transparent; }
 
@@ -236,3 +230,22 @@
 .geo-search.open .geo-input, .geo-search.open .geo-close { display: flex; }
 .geo-search.open .geo-toggle { width: 40px; }
 .geo-search .geo-input { padding: 0 4px; }
+
+/* swipe compare: screen B sits over screen A and shows right of the divider */
+#mapRow.swipe #mapPaneB { position: absolute; inset: 0; border: 0; pointer-events: none; }
+#mapRow.swipe #mapContainer2 { pointer-events: auto; clip-path: inset(0 0 0 var(--swipe-x)); background: #0b0e11; }
+/* clip-path makes screen B its own stacking layer; give screen A one too so B paints above it */
+#mapRow.swipe #mapContainer { position: relative; z-index: 0; }
+#mapRow.swipe #mapPaneA .leaflet-control-scale { visibility: hidden; }
+#mapRow.swipe #imageryDock { right: calc(100% - var(--swipe-x) + 8px); left: 12px; }
+#mapRow.swipe #imageryDock2 { left: calc(var(--swipe-x) + 8px); right: 12px; }
+.swipe-divider { position: absolute; top: 0; bottom: 0; left: var(--swipe-x); z-index: 556; width: 24px; margin-left: -12px;
+  cursor: ew-resize; touch-action: none; }
+.swipe-divider::before { content: ""; position: absolute; top: 0; bottom: 0; left: 11px; width: 2px; background: #f4f5f6;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.swipe-handle { position: absolute; top: calc(50% - 20px); left: -8px; display: grid; place-items: center; width: 40px; height: 40px;
+  border-radius: 999px; background: #f4f5f6; color: #111418; cursor: ew-resize; box-shadow: 0 2px 10px rgba(0,0,0,.45); transition: box-shadow .12s; }
+.swipe-handle:hover, .swipe-divider.dragging .swipe-handle { box-shadow: 0 0 0 4px rgba(244,245,246,.25), 0 2px 10px rgba(0,0,0,.45); }
+.swipe-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.swipe-divider.dragging { cursor: grabbing; }
+#compareMenu .menu-item[aria-current="true"] { background: var(--g-800); color: var(--t-1); }

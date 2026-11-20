@@ -476,7 +476,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
 
   const state_ = {
     scenes: [], farmKey: null, lookback: CONFIG.lookbackDays, showCloudy: false,
-    results: new Map(), risks: new Map(), split: false, token: 0,
+    results: new Map(), risks: new Map(), split: false, mode: 'off', token: 0,
   };
   const emit = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail }));
   const fmtChip = (d) => { const t = new Date(d + 'T00:00:00Z'); return `${t.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' })}'${String(t.getUTCFullYear()).slice(2)}`; };
@@ -727,7 +727,46 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       onEachFeature: (f, layer) => layer.on('click', () => openFieldPanel((f.properties || {}).id || f.id)),
     }).addTo(map2);
   }
-  async function setSplit(on) {
+  // ------------------------------------------------------------ swipe (one map, a draggable divider)
+
+  const row = document.getElementById('mapRow');
+  const divider = document.getElementById('swipeDivider');
+  const handle = document.getElementById('swipeHandle');
+  let swipeFrac = 0.5;
+  function setSwipe(frac) {
+    swipeFrac = Math.max(0.02, Math.min(0.98, frac));
+    row.style.setProperty('--swipe-x', (swipeFrac * 100).toFixed(2) + '%');
+    handle.setAttribute('aria-valuenow', String(Math.round(swipeFrac * 100)));
+  }
+  if (handle) {
+    let dragging = false;
+    const at = (e) => { const r = row.getBoundingClientRect(); setSwipe((e.clientX - r.left) / r.width); };
+    divider.addEventListener('pointerdown', (e) => { dragging = true; divider.setPointerCapture(e.pointerId); divider.classList.add('dragging'); hideHover(); at(e); e.preventDefault(); });
+    divider.addEventListener('pointermove', (e) => { if (dragging) at(e); });
+    const stop = (e) => { if (!dragging) return; dragging = false; divider.classList.remove('dragging'); try { divider.releasePointerCapture(e.pointerId); } catch { /* released */ } };
+    divider.addEventListener('pointerup', stop); divider.addEventListener('pointercancel', stop);
+    handle.addEventListener('keydown', (e) => {
+      const d = { ArrowLeft: -0.02, ArrowRight: 0.02, Home: -1, End: 1 }[e.key];
+      if (d !== undefined) { e.preventDefault(); setSwipe(Math.abs(d) === 1 ? (d < 0 ? 0 : 1) : swipeFrac + d); }
+    });
+  }
+
+  /** mode: 'off' | 'swipe' (one map, divider) | 'split' (side by side) */
+  async function setCompare(mode) {
+    if (!['off', 'swipe', 'split'].includes(mode)) mode = 'off';
+    state_.mode = mode;
+    row.classList.toggle('swipe', mode === 'swipe');
+    divider.classList.toggle('hidden', mode !== 'swipe');
+    if (mode === 'swipe') setSwipe(swipeFrac);
+    document.querySelectorAll('#compareMenu [data-compare]').forEach((b) => {
+      b.setAttribute('aria-current', String(b.dataset.compare === mode));
+      if (b.dataset.compare === 'off') b.classList.toggle('hidden', mode === 'off');
+    });
+    return setSplit(mode !== 'off', true);
+  }
+
+  async function setSplit(on, fromCompare) {
+    if (!fromCompare) return setCompare(on ? 'split' : 'off');
     state_.split = on;
     const btn = document.getElementById('swipeBtn'); if (btn) btn.setAttribute('aria-pressed', String(on));
     paneB.classList.toggle('hidden', !on);
@@ -779,9 +818,12 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     const f = fieldAt(latlng);
     if (!f || !window.proj4) { hideHover(); return; }
     const name = (state.fieldList || []).find((x) => x.id === f.id)?.name || f.name || 'Field';
+    const swipeSide = state_.mode === 'swipe' && mapInstance
+      ? (mapInstance.latLngToContainerPoint(latlng).x < swipeFrac * mapInstance.getSize().x ? 0 : 1) : -1;
     views.forEach((v, k) => {
       const el = hoverEls[v.key]; const map = v.getMap();
       if (!el || !map || (k === 1 && !state_.split)) return;
+      if (swipeSide >= 0 && swipeSide !== k) { el.classList.add('hidden'); return; }
       const r = v.results.get(f.id); const idx = INDICES[v.indexKey];
       let lines = `<div class="font-medium">${escapeHtml(name)}</div>`;
       if (r && !idx.rgb) {
@@ -826,7 +868,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     current: () => sceneById(views[0].sceneId),
     selectScene: (id) => selectScene(views[0], id),
     refresh: () => refresh(views[0]),
-    setSplit, loadFarm, invalidate, labelFor, setProvider, provider: () => provider,
+    setSplit, setCompare, setSwipe, swipe: () => swipeFrac, loadFarm, invalidate, labelFor, setProvider, provider: () => provider,
     resultFor: (fieldId) => views[0].results.get(fieldId), riskFor: (fieldId) => state_.risks.get(fieldId),
     rampAt, gradient, css, fmtDay, friendly,
     showDelta(res, delta) {

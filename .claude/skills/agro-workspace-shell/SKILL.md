@@ -47,14 +47,31 @@ vanilla JS, so `js/shell.js` reproduces it. Keep these parts consistent with it:
   - lists fields, views, actions (draw, upload, split view, measure, create farm), other farms, and "Search places for …";
   - arrow keys, Enter and Esc work.
 
-## Split view (each screen has its own layer)
+## Compare: swipe and side by side (each screen has its own layer)
 
-The split button (`#swipeBtn`, kept for test compatibility) calls `Imagery.setSplit(true)`:
+The compare button (`#swipeBtn`) opens `#compareMenu` with three choices: **Swipe**, **Side by side** and **Stop comparing**. Code calls `Imagery.setCompare('swipe' | 'split' | 'off')`; the palette and `window.startCompare(mode)` go through the same function. `setSplit(on)` is kept as a shortcut for side by side.
 
-- `#mapPaneB` opens a second Leaflet map. Pan and zoom stay in sync, with a guard flag against loops.
-- Each screen is an `Imagery.views[i]` with its own date, index, contrast, hide toggle, toolbar and timeline. Screen B's ids take a `2` suffix (`#imgIndex2`, `#tlChips2` …).
-- B opens on the previous clear date on the same tile.
-- Hovering a field shows the reading at the same point on both screens (`#hoverA`, `#hoverB`): field name, index value and a class label from `Imagery.labelFor`.
+Both modes use the same two views:
+- `Imagery.views[0]` is screen A; `views[1]` is screen B, whose ids take a `2` suffix (`#imgIndex2`, `#tlChips2` …).
+- Each screen has its own date, index, contrast and timeline.
+- Screen B opens on the previous clear date on the same tile.
+- Pan and zoom are synced, with a guard flag against loops.
+
+**Side by side:** `#mapPaneB` sits next to A in the flex row. Hovering a field shows the reading on both screens.
+
+**Swipe:**
+- `#mapRow.swipe` lays `#mapPaneB` over pane A.
+- Only `#mapContainer2` is clipped, with `clip-path: inset(0 0 0 var(--swipe-x))`, so screen B shows right of the divider. The clip also limits clicks, so the left side still drives map A.
+- `#mapContainer2` gets an opaque background, so map A never shows through screen B.
+- The clip makes `#mapContainer2` its own stacking layer. `#mapContainer` gets `position: relative; z-index: 0` in swipe so B still paints above A; without it, map A's Leaflet panes (z 400) cover screen B. The shell test samples a pixel right of the divider to catch this.
+- In swipe, screen B's scale bar shows and A's is hidden.
+- Each dock covers its own side of the divider.
+- `#swipeDivider` is a 2 px line with a 40 px round handle (`#swipeHandle`, `role="slider"`):
+  - drag it with the pointer (pointer capture);
+  - ←/→ move it by 2 %, Home/End jump to the edges;
+  - `Imagery.setSwipe(frac)` sets it from code and `Imagery.swipe()` reads it.
+- The hover readout shows only the screen under the cursor.
+- Don't animate the handle with `transform`, and keep exactly one `.swipe-handle` rule. An older duplicate rule drew a second circle.
 
 ## Theme (unslop rules)
 

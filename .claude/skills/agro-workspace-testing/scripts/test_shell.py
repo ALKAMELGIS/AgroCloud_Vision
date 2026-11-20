@@ -84,7 +84,7 @@ with sync_playwright() as p:
 
     # split view: two screens, each with its own date and layer
     pg.click('#navItems [data-view=fields]')
-    pg.click('#swipeBtn')
+    pg.click('#swipeBtn'); pg.click('#compareMenu [data-compare=split]')
     expect(pg.locator('#mapPaneB')).to_be_visible()
     expect(pg.locator('#tlChips2 [data-scene]')).to_have_count(4, timeout=30000)
     pg.wait_for_function("document.querySelectorAll('#mapPaneB .leaflet-pane .img-px').length === 3", timeout=30000)
@@ -101,8 +101,42 @@ with sync_playwright() as p:
     check('hover readout on both screens', 'NDVI' in ha_ and 'NDMI' in hb_, (ha_ + ' | ' + hb_).replace('\n', ' '))
     check('screens stay in sync', pg.evaluate("Imagery.views[1].getMap().getZoom()") == c1[1])
     pg.screenshot(path=SH + 's3_split.png')
-    pg.click('#swipeBtn')
+
+    # swipe: one map, screen B right of a draggable divider
+    pg.click('#swipeBtn'); pg.click('#compareMenu [data-compare=swipe]'); pg.wait_for_timeout(400)
+    expect(pg.locator('#swipeHandle')).to_be_visible()
+    ba, bb = pg.locator('#mapPaneA').bounding_box(), pg.locator('#mapPaneB').bounding_box()
+    check('swipe overlays the two screens on one map', abs(ba['x'] - bb['x']) < 1 and abs(ba['width'] - bb['width']) < 1, (ba['width'], bb['width']))
+    check('swipe keeps both layers', pg.locator('#imgIndex').input_value() == 'ndvi' and pg.locator('#imgIndex2').input_value() == 'ndmi')
+    hb = pg.locator('#swipeHandle').bounding_box(); hx, hy = hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2
+    check('divider starts in the middle', abs(hx - (ba['x'] + ba['width'] / 2)) < 3, (hx, ba['x'] + ba['width'] / 2))
+    pg.mouse.move(hx, hy); pg.mouse.down(); pg.mouse.move(hx - 150, hy, steps=8); pg.mouse.move(ba['x'] + ba['width'] * 0.3, hy, steps=8); pg.mouse.up()
+    frac = pg.evaluate("Imagery.swipe()")
+    check('dragging the handle moves the divider', abs(frac - 0.3) < 0.02, frac)
+    check('screen B is clipped at the divider', '30' in pg.evaluate("getComputedStyle(document.getElementById('mapContainer2')).clipPath"), pg.evaluate("getComputedStyle(document.getElementById('mapContainer2')).clipPath"))
+    pg.focus('#swipeHandle'); pg.keyboard.press('ArrowRight')
+    check('arrow keys nudge the divider', abs(pg.evaluate("Imagery.swipe()") - 0.32) < 0.005)
+    pg.evaluate("Imagery.setSwipe(0.5)"); pg.wait_for_timeout(200)
+    pg.evaluate("mapInstance.setView([34.12, -102.33], 15, {animate:false})"); pg.wait_for_timeout(400)
+    def side_hover(lng):
+        pt = pg.evaluate(f"() => {{ const p = mapInstance.latLngToContainerPoint([34.1185, {lng}]); const r = document.getElementById('mapContainer').getBoundingClientRect(); return [r.left + p.x, r.top + p.y]; }}")
+        pg.mouse.move(pt[0], pt[1]); pg.wait_for_timeout(250); pg.mouse.move(pt[0] + 1, pt[1] + 1); pg.wait_for_timeout(300)
+        return pg.locator('#hoverA').is_visible(), pg.locator('#hoverB').is_visible(), pt[0]
+    mid = ba['x'] + ba['width'] / 2
+    lngs = pg.evaluate("(() => { const b = mapInstance.getBounds(); return [b.getWest(), b.getEast()]; })()")
+    # pick field points either side of the divider
+    l = side_hover(-102.3285)
+    check('hover shows only the layer under the cursor', (l[0] and not l[1]) if l[2] < mid else (l[1] and not l[0]), l)
+    import io
+    from PIL import Image
+    shot = Image.open(io.BytesIO(pg.screenshot())).convert('RGB')
+    px = shot.getpixel((int(l[2]) + 12, int(pg.evaluate("(() => { const p = mapInstance.latLngToContainerPoint([34.1185, -102.3285]); return document.getElementById('mapContainer').getBoundingClientRect().top + p.y; })()")) + 30))
+    check('right of the divider paints screen B (NDMI teal, not NDVI green)', px[2] > 0.8 * px[1], px)
+    pg.mouse.move(mid + 300, ba['y'] + 40); pg.wait_for_timeout(200)
+    pg.screenshot(path=SH + 's3_swipe.png')
+    pg.click('#swipeBtn'); pg.click('#compareMenu [data-compare=off]')
     expect(pg.locator('#mapPaneB')).to_be_hidden()
+    check('stop comparing hides the divider', not pg.locator('#swipeHandle').is_visible())
 
     # leaderboard + notifications + reports
     pg.click('#navItems [data-view=leaderboard]')
