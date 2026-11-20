@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: shapefile-without-prj-lands-wrong
+expected_outcome: |
+  The response explains the zip lacks a .prj so the coordinate system is unknown, keeps the explicit error rather than guessing a projection (or only offers a choice the user confirms), and suggests re-exporting with the .prj or as GeoPackage. It does not silently assume a CRS in gis-import.js.

@@ -19,13 +19,13 @@
     <h1 class="mb-1 text-2xl font-bold text-brand-900">AgroCloud Vision</h1>
     <p id="subtitle" class="mb-6 text-sm text-gray-500">Sign in to your account</p>
 
-    <form id="authForm" class="space-y-4">
+    <form id="authForm" class="space-y-4" autocomplete="off">
       <div id="registerFields" class="space-y-4 hidden">
         <input id="organizationName" class="w-full rounded-lg border p-3" placeholder="Organization / Farm name">
         <input id="fullName" class="w-full rounded-lg border p-3" placeholder="Full name">
       </div>
-      <input id="email" type="email" required class="w-full rounded-lg border p-3" placeholder="Email address">
-      <input id="password" type="password" required minlength="8" class="w-full rounded-lg border p-3" placeholder="Password (min 8 characters)">
+      <input id="email" name="agro-email" type="email" required autocomplete="off" value="demo@agrocloud.test" class="w-full rounded-lg border p-3" placeholder="Email address">
+      <input id="password" name="agro-password" type="password" required minlength="8" autocomplete="new-password" value="Demo12345!" class="w-full rounded-lg border p-3" placeholder="Password (min 8 characters)">
 
       <p id="errorMsg" class="hidden text-sm text-red-600"></p>
 
@@ -59,6 +59,9 @@ toggleBtn.addEventListener('click', () => {
   mode = mode === 'login' ? 'register' : 'login';
   subtitle.textContent = mode === 'login' ? 'Sign in to your account' : 'Create a new organization';
   registerFields.classList.toggle('hidden', mode !== 'register');
+  // Owner account is prefilled for sign-in only; registering starts empty.
+  document.getElementById('email').value = mode === 'login' ? 'demo@agrocloud.test' : '';
+  document.getElementById('password').value = mode === 'login' ? 'Demo12345!' : '';
   submitBtn.textContent = mode === 'login' ? 'Sign In' : 'Create Account';
   toggleBtn.textContent = mode === 'login'
     ? "Don't have an account? Create an organization"
@@ -95,7 +98,9 @@ form.addEventListener('submit', async (e) => {
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(Array.isArray(data.message) ? data.message.join(', ') : (data.message || 'Authentication failed'));
+      const m = data.message;
+      const text = typeof m === 'string' ? m : Array.isArray(m) ? m.join(', ') : (m && (Array.isArray(m.message) ? m.message.join(', ') : m.message));
+      throw new Error(text || 'Authentication failed');
     }
 
     localStorage.setItem('accessToken', data.accessToken);

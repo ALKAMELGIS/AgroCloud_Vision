@@ -47,6 +47,10 @@ export class Field {
   @Column({ type: 'double precision', nullable: true })
   areaHectares: number;
 
+  /** نوع الري: pivot | drip | sprinkler | flood | rainfed (اختياري). */
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  irrigation: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
