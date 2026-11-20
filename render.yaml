@@ -58,3 +58,16 @@ services:
         sync: false
       - key: EOS_API_BASE_URL
         value: https://api-connect.eos.com
+
+  - type: web
+    name: agrocloud-frontend
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm run start -- -p $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://agrocloud-backend-e9ea.onrender.com/api/v1
