@@ -65,12 +65,21 @@
       ${g.heading ? `<span class="nav-heading">${g.heading}</span>` : ''}
       ${g.items.map((it) => itemHtml(it)).join('')}
     </div>`).join('');
+  const toArabic = !(window.I18n && I18n.lang === 'ar');
   document.getElementById('navBottom').innerHTML = `
+    <button type="button" class="nav-row lang-switch" data-action="lang" title="Language" translate="no" lang="${toArabic ? 'ar' : 'en'}">
+      <span class="nav-label">${icon('globe')}<span>${toArabic ? 'العربية' : 'English'}</span></span><span class="lang-code nav-meta">${toArabic ? 'AR' : 'EN'}</span></button>
     <button type="button" class="nav-row" data-action="logout" title="Log out"><span class="nav-label">${icon('logOut')}<span>Log out</span></span></button>
     <div class="ws-text truncate px-2.5 pt-1 text-[11px] text-gray-500" id="navUser"></div>`;
   const usr = JSON.parse(localStorage.getItem('user') || 'null');
   if (usr) document.getElementById('navUser').textContent = usr.email + (usr.role ? ' · ' + usr.role : '');
-  document.querySelector('[data-action="logout"]').addEventListener('click', () => { localStorage.clear(); window.location.href = 'main.html'; });
+  document.querySelector('[data-action="logout"]').addEventListener('click', () => {
+    const keep = ['lang', 'navCollapsed', 'imgProvider'].map((k) => [k, localStorage.getItem(k)]);
+    localStorage.clear();
+    keep.forEach(([k, v]) => { if (v != null) localStorage.setItem(k, v); });   // per-browser preferences survive sign-out
+    window.location.href = 'main.html';
+  });
+  document.querySelector('[data-action="lang"]').addEventListener('click', () => window.I18n && I18n.setLang(toArabic ? 'ar' : 'en'));
 
   navEl.querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
     const wrap = b.parentElement;

@@ -58,7 +58,7 @@
       <div class="mt-3 flex gap-1.5">
         <button type="button" id="fpZoom" class="fp-act">${icon('focus')}<span>Zoom</span></button>
         <button type="button" id="fpEdit" class="fp-act">${icon('pencil')}<span>Edit boundary</span></button>
-        <button type="button" id="fpDelete" class="fp-act ml-auto hover:!text-red-600">${icon('trash')}<span>Delete</span></button>
+        <button type="button" id="fpDelete" class="fp-act ms-auto hover:!text-red-600">${icon('trash')}<span>Delete</span></button>
       </div>
     </div>
     <div class="flex h-10 shrink-0 gap-4 border-b border-gray-100 px-4 text-[13px]" role="tablist">
@@ -305,7 +305,7 @@
           <div class="flex h-7 items-center justify-between">
             <span class="w-20 text-gray-500">${new Date(d.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' })}</span>
             <span class="text-gray-900">${Math.round(d.temperatureMaxC)}° / ${Math.round(d.temperatureMinC)}°</span>
-            <span class="w-14 text-right text-gray-500">${(+d.precipitationMm || 0).toFixed(1)} mm</span>
+            <span class="w-14 text-end text-gray-500">${(+d.precipitationMm || 0).toFixed(1)} mm</span>
           </div>`).join('')}
       </div>
       <p class="num mt-2 font-mono text-[11px] text-gray-400">Rain next 7 days ${rain.toFixed(1)} mm · Open-Meteo</p>`;
@@ -458,7 +458,7 @@
   $('#fpZoom').addEventListener('click', () => fp.fieldId && flyToField(fp.fieldId));
 
   const editBar = document.createElement('div');
-  editBar.className = 'hidden absolute bottom-[136px] left-1/2 z-[580] -translate-x-1/2 items-center gap-3 rounded-xl bg-white p-2 pl-4 shadow-lg ring-1 ring-black/5';
+  editBar.className = 'hidden absolute bottom-[136px] left-1/2 z-[580] -translate-x-1/2 items-center gap-3 rounded-xl bg-white p-2 ps-4 shadow-lg ring-1 ring-black/5';
   editBar.innerHTML = `
     <span class="text-[13px] text-gray-600">Drag the white points to reshape <span id="fpEditArea" class="num ml-1 font-mono text-gray-900"></span></span>
     <span id="fpEditStatus" class="max-w-[280px] text-[12px]"></span>

@@ -1,12 +1,12 @@
 ---
 name: agro-workspace-shell
-description: Layout and conventions of the AgroCloud Vision map workspace (workspace.html + js/shell.js + css/workspace-dark.css), modelled on the EOS Crop Monitoring screen — map with location search, left tools (split view, zoom, measure), bottom image timeline per screen; side panel with Fields cards and "Check fields with risks" chips; sidebar ported from the user's SidebarNav component (farm switcher, grouped nav with headings, animated children, badges, ⌘K command palette, collapse to icon rail). Use it when adding a module or nav item, moving a control, theming, or when the user asks to make the workspace look or behave like EOS / "like the reference screenshot".
+description: Layout and conventions of the AgroCloud Vision map workspace (workspace.html + js/shell.js + css/workspace-dark.css), modelled on the EOS Crop Monitoring screen — map with location search, left tools (split view, zoom, measure), bottom image timeline per screen; side panel with Fields cards and "Check fields with risks" chips; sidebar ported from the user's SidebarNav component (farm switcher, grouped nav with headings, animated children, badges, ⌘K command palette, collapse to icon rail), and English (left-to-right, sidebar left) / Arabic (right-to-left, mirrored) via js/i18n.js. Use it for layout, direction, translation or language-switch changes too. Use it when adding a module or nav item, moving a control, theming, or when the user asks to make the workspace look or behave like EOS / "like the reference screenshot".
 ---
 
 # Workspace shell
 
 ```
-┌──────────────────────── map (#mapMain) ───────────────────────┬─ #sidePanel 320 ─┬─ #navRail 248/60 ┐
+┌─ #navRail 248/60 ┬─ #sidePanel 320 ─┬──────────────────────── map (#mapMain) ───────────────────────┐   (English; Arabic mirrors)
 │ search (place or "lat, lng")                 scale · attribution│ Fields view       │ logo           │
 │ [swipe] [+][−] [ruler]                                          │  farm select, +   │ Season 2026    │
 │                                                                 │  search · sort    │ Monitoring ▾   │
@@ -46,6 +46,25 @@ vanilla JS, so `js/shell.js` reproduces it. Keep these parts consistent with it:
 - **Command palette** (⌘K / Ctrl+K or "Search"):
   - lists fields, views, actions (draw, upload, split view, measure, create farm), other farms, and "Search places for …";
   - arrow keys, Enter and Esc work.
+
+## Language and direction (`js/i18n.js`)
+
+- **Loading:** `js/i18n.js` loads first in `<head>` on `workspace.html` and `main.html`. It reads `localStorage.lang` and sets `<html lang dir>` before anything renders.
+  - **English** is `ltr`, with the sidebar on the left.
+  - **Arabic** is `rtl`, and the whole layout mirrors: sidebar on the right, map tools and search on the right, Add fields on the left.
+- **DOM order:** `#navRail`, `#sidePanel`, `#mapMain`. The flex row follows the direction, so never hard-code which side the sidebar sits on.
+- **Classes:** use logical classes and properties: `ms-` / `me-` / `ps-` / `text-start` / `text-end` / `border-inline-end` / `inset-inline-start`. Use `[dir="rtl"]` overrides only for absolutely placed map controls.
+- **The map stays `ltr`** (`#mapRow`, `.leaflet-container`). Leaflet, panes A|B and the swipe clip depend on it. The docks and hover readouts switch back to `rtl` for Arabic text.
+- **Translation** happens at runtime, so components keep writing English:
+  - A MutationObserver translates text, `placeholder`, `title`, `aria-label` and options through the `AR` dictionary.
+  - `RULES` cover strings built from numbers (counts, ha, cloud %, toasts), `MONTHS` covers dates, and strings joined with ` · ` / ` › ` / ` → ` are translated part by part.
+  - When you add UI text, add its Arabic to `AR`, or a rule if it contains numbers. Check with `test_i18n.py`, which prints any string still in English.
+- **What is never translated:**
+  - field and farm names (the `userNames()` check against `state.fieldList` / `state.farms`);
+  - anything marked `translate="no"`.
+- **Switching:** the language switch is in the sidebar footer, and `main.html` has a button too. `I18n.setLang()` stores the choice and reloads.
+  - Sign-out keeps `lang`, `navCollapsed` and `imgProvider`.
+  - The Arabic font is IBM Plex Sans Arabic from Google Fonts.
 
 ## Compare: swipe and side by side (each screen has its own layer)
 

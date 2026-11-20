@@ -134,10 +134,11 @@
   hydrateIcons(panel);
 
   function suggestName() {
+    const word = window.I18n && I18n.lang === 'ar' ? 'حقل' : 'Field';
     const used = new Set((state.fieldList || []).map((f) => f.name));
-    let n = (state.fieldList || []).reduce((m, f) => Math.max(m, /^Field (\d+)$/.test(f.name) ? +f.name.slice(6) : 0), 0) + 1;
-    while (used.has(`Field ${n}`)) n++;
-    return `Field ${n}`;
+    let n = (state.fieldList || []).reduce((m, f) => { const x = /^(?:Field|حقل) (\d+)$/.exec(f.name); return Math.max(m, x ? +x[1] : 0); }, 0) + 1;
+    while (used.has(`${word} ${n}`)) n++;
+    return `${word} ${n}`;
   }
 
   function draftGeometry() {

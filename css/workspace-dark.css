@@ -104,21 +104,21 @@
 
 /* nav rail */
 .nav-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 12px; border-radius: 8px;
-  font-size: 13px; color: var(--t-2); text-align: left; transition: background-color .12s, color .12s; }
+  font-size: 13px; color: var(--t-2); text-align: start; transition: background-color .12s, color .12s; }
 .nav-item:hover { background: var(--g-850); color: var(--t-1); }
 .nav-item[aria-current="true"] { background: var(--g-800); color: var(--t-1); }
 .nav-item[aria-current="true"] .ico { color: var(--accent-ink); }
 .nav-item .ico { color: var(--t-3); }
 .nav-sub { display: flex; align-items: center; width: 100%; height: 32px; padding: 0 12px 0 38px; border-radius: 8px; font-size: 13px;
-  color: var(--t-3); text-align: left; transition: background-color .12s, color .12s; }
+  color: var(--t-3); text-align: start; transition: background-color .12s, color .12s; }
 .nav-sub:hover { background: var(--g-850); color: var(--t-1); }
 .nav-sub[aria-current="true"] { color: var(--accent-ink); background: rgba(34,197,94,.08); }
-.nav-group > .nav-item .chev { margin-left: auto; transition: transform .15s; }
+.nav-group > .nav-item .chev { margin-inline-start: auto; transition: transform .15s; }
 .nav-group[data-open="false"] > .nav-item .chev { transform: rotate(-90deg); }
 .nav-group[data-open="false"] > .nav-subs { display: none; }
 
 /* field cards */
-.field-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 10px; text-align: left;
+.field-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 10px; text-align: start;
   transition: background-color .12s; }
 .field-card:hover { background: var(--g-850); }
 .field-card[aria-current="true"] { background: var(--g-800); box-shadow: inset 2px 0 0 var(--accent); }
@@ -147,7 +147,7 @@
 .nav-scroll { scrollbar-width: none; } .nav-scroll::-webkit-scrollbar { display: none; }
 .nav-heading { padding: 0 10px; margin-bottom: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #535a63; }
 .nav-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; height: 32px; padding: 0 10px; border-radius: 6px;
-  font-size: 13px; color: #8d949e; text-align: left; cursor: pointer; user-select: none; transition: background-color .15s, color .15s; }
+  font-size: 13px; color: #8d949e; text-align: start; cursor: pointer; user-select: none; transition: background-color .15s, color .15s; }
 .nav-row:hover { background: rgba(255,255,255,.05); color: #e3e6ea; }
 .nav-row[aria-current="true"] { background: rgba(255,255,255,.09); color: var(--t-1); font-weight: 500; }
 .nav-row .ico { width: 16px; height: 16px; color: #6f7782; transition: color .15s; }
@@ -167,8 +167,8 @@
 .nav-children { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .3s ease-in-out, opacity .3s ease-in-out; }
 .nav-item-wrap[data-open="true"] > .nav-children { grid-template-rows: 1fr; opacity: 1; }
 .nav-children > div { position: relative; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
-.nav-children > div::before { content: ''; position: absolute; top: 0; bottom: 0; left: 17.5px; border-left: 1px solid rgba(255,255,255,.06); }
-.nav-children .nav-row { padding-left: 32px; }
+.nav-children > div::before { content: ''; position: absolute; top: 0; bottom: 0; inset-inline-start: 17.5px; border-inline-start: 1px solid rgba(255,255,255,.06); }
+.nav-children .nav-row { padding-inline-start: 32px; }
 .nav-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; color: #6f7782; transition: background-color .15s, color .15s; flex: none; }
 .nav-icon-btn:hover { background: rgba(255,255,255,.06); color: var(--t-1); }
 .nav-icon-btn .ico { width: 18px; height: 18px; }
@@ -192,16 +192,16 @@
 .nav-rail.collapsed #farmSwitcher { flex: 0 0 auto; }
 .nav-rail.collapsed .nav-scroll { padding-left: 10px; padding-right: 10px; }
 .nav-rail.collapsed .nav-collapse-row { flex-direction: column; }
-.nav-dot { position: absolute; top: 5px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; display: none; }
+.nav-dot { position: absolute; top: 5px; inset-inline-end: 8px; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; display: none; }
 .nav-rail.collapsed .nav-dot.on { display: block; }
 
 /* command palette */
 .cmdk-box { background: var(--g-900); box-shadow: 0 24px 64px rgba(0,0,0,.55), inset 0 0 0 1px var(--line-strong); animation: rise .16s cubic-bezier(.2,.8,.2,1); }
 .cmdk-group { padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #535a63; }
-.cmdk-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 0 10px; border-radius: 8px; font-size: 13px; color: #c9ced4; text-align: left; }
+.cmdk-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 0 10px; border-radius: 8px; font-size: 13px; color: #c9ced4; text-align: start; }
 .cmdk-item .ico { color: #6f7782; }
 .cmdk-item[aria-selected="true"] { background: rgba(255,255,255,.07); color: var(--t-1); }
-.cmdk-item .cmdk-hint { margin-left: auto; font: 11px ui-monospace, Menlo, monospace; color: #6f7782; }
+.cmdk-item .cmdk-hint { margin-inline-start: auto; font: 11px ui-monospace, Menlo, monospace; color: #6f7782; }
 
 /* hover readout (both screens) */
 .hover-readout { position: absolute; z-index: 570; pointer-events: none; transform: translate(-50%, calc(-100% - 14px)); min-width: 132px; padding: 10px 14px;
@@ -262,11 +262,35 @@
 .fe-list .num { font-family: ui-monospace, Menlo, monospace; color: #fbbf24; }
 .fe-choice { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; font-size: 13px; color: var(--t-1);
   background: rgba(245, 158, 11, .08); box-shadow: inset 0 0 0 1px rgba(245, 158, 11, .3); }
-.fe-history { position: relative; display: flex; flex-direction: column; gap: 14px; padding-left: 16px; }
-.fe-history::before { content: ""; position: absolute; left: 3px; top: 6px; bottom: 6px; width: 1px; background: var(--line-strong); }
+.fe-history { position: relative; display: flex; flex-direction: column; gap: 14px; padding-inline-start: 16px; }
+.fe-history::before { content: ""; position: absolute; inset-inline-start: 3px; top: 6px; bottom: 6px; width: 1px; background: var(--line-strong); }
 .fe-history li { position: relative; }
-.fe-history li::before { content: ""; position: absolute; left: -16px; top: 6px; width: 7px; height: 7px; border-radius: 999px; background: var(--g-700, #3a4048); }
+.fe-history li::before { content: ""; position: absolute; inset-inline-start: -16px; top: 6px; width: 7px; height: 7px; border-radius: 999px; background: var(--g-700, #3a4048); }
 .fe-history li.has-shape::before { background: var(--accent); }
 #deletedSection summary::-webkit-details-marker { display: none; }
 #deletedSection summary { list-style: none; }
 .dark-ui #importProblems { background: rgba(245, 158, 11, .08); box-shadow: inset 0 0 0 1px rgba(245, 158, 11, .3); color: var(--t-1); }
+
+/* ------------------------------------------------------------ direction (js/i18n.js)
+   English: left-to-right, sidebar on the left. Arabic: right-to-left, sidebar on the right.
+   The sidebar and panel come first in the DOM, so the flex row follows the direction. */
+#navRail, #sidePanel { border-inline-end: 1px solid var(--line); }
+[lang="ar"] body { font-family: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif; }
+[lang="ar"] .nav-heading, [lang="ar"] .cmdk-group { letter-spacing: 0; text-transform: none; }
+/* the map stays left-to-right: Leaflet, the panes A|B and the swipe divider depend on it */
+#mapRow, .leaflet-container { direction: ltr; }
+[dir="rtl"] #imageryDock, [dir="rtl"] #imageryDock2, [dir="rtl"] .hover-readout { direction: rtl; }
+/* chevrons point the reading way */
+[dir="rtl"] .nav-chev, [dir="rtl"] .chev, [dir="rtl"] [data-icon="chevronRight"] svg, [dir="rtl"] [data-icon="chevronLeft"] svg,
+[dir="rtl"] #tlPrev svg, [dir="rtl"] #tlNext svg, [dir="rtl"] #tlPrev2 svg, [dir="rtl"] #tlNext2 svg, [dir="rtl"] #fpBack svg { transform: scaleX(-1); }
+[dir="rtl"] .nav-item-wrap[data-open="true"] > .nav-row .nav-chev { transform: rotate(90deg); }
+/* map controls mirror in Arabic: tools and search on the right, Add fields on the left */
+[dir="rtl"] #geoSearchWrap, [dir="rtl"] #mapTools { left: auto; right: 12px; }
+[dir="rtl"] #compareMenu, [dir="rtl"] #measureMenu { left: auto; right: 48px; }
+[dir="rtl"] #addMenu { right: auto; left: 12px; }
+[dir="rtl"] .map-credit { right: auto; left: 12px; flex-direction: row-reverse; }
+[dir="rtl"] .leaflet-top.leaflet-right { right: auto; left: 0; }
+[dir="rtl"] .dark-ui .leaflet-control-scale, [dir="rtl"] .leaflet-control-scale { margin-right: 0 !important; margin-left: 44px !important; float: left; }
+[dir="rtl"] .geo-search .geo-input { text-align: right; }
+.lang-switch { display: flex; align-items: center; justify-content: space-between; }
+.lang-switch .lang-code { font: 500 11px ui-monospace, Menlo, monospace; color: #6f7782; }
