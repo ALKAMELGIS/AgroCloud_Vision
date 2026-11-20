@@ -210,7 +210,25 @@
   const input = document.getElementById('geoSearch');
   const results = document.getElementById('geoResults');
   let searchMarker = null;
+  const wrap = document.getElementById('geoSearchWrap');
+  const toggle = document.getElementById('geoSearchToggle');
   function closeResults() { results.classList.add('hidden'); results.classList.remove('flex'); }
+  function openSearch() {
+    wrap.classList.add('open'); toggle.setAttribute('aria-expanded', 'true'); input.tabIndex = 0;
+    setTimeout(() => input.focus(), 60);
+  }
+  function closeSearch() {
+    wrap.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); input.tabIndex = -1;
+    closeResults(); input.blur();
+  }
+  window.openLocationSearch = openSearch;
+  toggle.addEventListener('click', () => {
+    if (!wrap.classList.contains('open')) openSearch();
+    else if (input.value.trim()) form.requestSubmit();
+    else closeSearch();
+  });
+  document.getElementById('geoSearchClose').addEventListener('click', () => { input.value = ''; closeSearch(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); input.value = ''; closeSearch(); } });
   function goTo(lat, lng, bbox, label) {
     if (!mapInstance) return;
     if (bbox) mapInstance.fitBounds([[bbox[0], bbox[2]], [bbox[1], bbox[3]]], { maxZoom: 15 });
@@ -241,7 +259,11 @@
       results.innerHTML = '<div class="px-3 py-2 text-[13px] text-red-600">Search is not available right now</div>';
     }
   });
-  document.addEventListener('click', (e) => { if (!form.parentElement.contains(e.target)) closeResults(); });
+  document.addEventListener('click', (e) => {
+    if (wrap.contains(e.target)) return;
+    closeResults();
+    if (!input.value.trim()) closeSearch();
+  });
 
   // ------------------------------------------------------------ zoom / swipe / measure
 
@@ -317,7 +339,7 @@
     state.farms.filter((f) => f.id !== state.selectedFarmId).forEach((f) => add('Farms', 'Switch to ' + f.name, 'home', () => selectFarm(f.id)));
     const ql = q.trim().toLowerCase();
     const hits = ql ? out.filter((i) => i.label.toLowerCase().includes(ql)) : out.filter((i) => i.group !== 'Fields' || out.indexOf(i) < 6);
-    if (ql) hits.push({ group: 'Places', label: `Search places for “${q.trim()}”`, ico: 'mapPin', run: () => { document.getElementById('geoSearch').value = q.trim(); document.getElementById('geoSearchForm').requestSubmit(); } });
+    if (ql) hits.push({ group: 'Places', label: `Search places for “${q.trim()}”`, ico: 'mapPin', run: () => { window.openLocationSearch(); document.getElementById('geoSearch').value = q.trim(); document.getElementById('geoSearchForm').requestSubmit(); } });
     return hits;
   }
   function drawPalette() {

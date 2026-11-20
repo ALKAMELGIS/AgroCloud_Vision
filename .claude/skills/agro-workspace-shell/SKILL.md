@@ -42,6 +42,7 @@ vanilla JS, so `js/shell.js` reproduces it. Keep these parts consistent with it:
   - each item has an icon, an optional `badge` (`Shell.setBadge(id, n, alert)`), an optional `shortcut` (keycap shown on hover), and optional `children`;
   - children expand with a `grid-template-rows` 0fr→1fr transition, a vertical guide line and a rotating chevron.
 - **Collapse** (`#navCollapse`): the rail narrows to 60 px with icons only, remembered in `localStorage.navCollapsed`. Badges become a red dot. Clicking a parent opens its first child.
+- **Location search** (`#geoSearchWrap`): a 44 px search button at the top left. Clicking it opens a 400 px box with the input focused. Esc, the × button, or a click outside with an empty box closes it again. `window.openLocationSearch()` opens it from code; the palette uses it.
 - **Command palette** (⌘K / Ctrl+K or "Search"):
   - lists fields, views, actions (draw, upload, split view, measure, create farm), other farms, and "Search places for …";
   - arrow keys, Enter and Esc work.

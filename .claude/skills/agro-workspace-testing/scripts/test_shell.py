@@ -37,8 +37,15 @@ with sync_playwright() as p:
     check('cards show NDVI', '0.75' in cards or '0.74' in cards, cards.replace('\n', ' | ')[:120])
 
     # search by coordinates
+    check('search starts as a small button', pg.locator('#geoSearchForm').bounding_box()['width'] <= 46 and not pg.locator('#geoSearch').is_visible())
+    pg.screenshot(path=SH + 'search_closed.png', clip={'x': 0, 'y': 0, 'width': 520, 'height': 120})
+    pg.click('#geoSearchToggle'); pg.wait_for_timeout(300)
+    check('click opens the search box', pg.locator('#geoSearchForm').bounding_box()['width'] > 300 and pg.evaluate("document.activeElement.id") == 'geoSearch')
+    pg.screenshot(path=SH + 'search_open.png', clip={'x': 0, 'y': 0, 'width': 520, 'height': 120})
     pg.fill('#geoSearch', '34.12, -102.33'); pg.press('#geoSearch', 'Enter'); pg.wait_for_timeout(400)
     check('coordinate search zooms', abs(pg.evaluate('mapInstance.getCenter().lat') - 34.12) < 0.01)
+    pg.press('#geoSearch', 'Escape'); pg.wait_for_timeout(300)
+    check('Esc closes the search back to a button', pg.locator('#geoSearchForm').bounding_box()['width'] <= 46)
 
     # index switch
     pg.select_option('#imgIndex', 'ndmi')

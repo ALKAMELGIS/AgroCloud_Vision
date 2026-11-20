@@ -64,11 +64,12 @@
       </div>
     </div>
 
-    <!-- location search -->
-    <div class="absolute left-3 top-3 z-[560] w-[min(400px,calc(100%-24px))]">
-      <form id="geoSearchForm" class="chip-bar flex h-12 items-center gap-2 rounded-xl px-4" autocomplete="off">
-        <input id="geoSearch" placeholder="Search location or lat, lng" class="bare !h-full min-w-0 flex-1 !border-0 !bg-transparent text-[14px] outline-none" />
-        <button type="submit" class="text-gray-400 transition-colors hover:text-gray-900" aria-label="Search"><span data-icon="search"></span></button>
+    <!-- location search: a small button that opens into a search box -->
+    <div id="geoSearchWrap" class="geo-search absolute left-3 top-3 z-[560]">
+      <form id="geoSearchForm" class="chip-bar flex h-11 items-center rounded-xl" autocomplete="off" role="search">
+        <button type="button" id="geoSearchToggle" class="geo-toggle" aria-label="Search location" aria-expanded="false" title="Search location"><span data-icon="search"></span></button>
+        <input id="geoSearch" placeholder="Search location or lat, lng" tabindex="-1" class="geo-input bare !h-full min-w-0 flex-1 !border-0 !bg-transparent text-[14px] outline-none" />
+        <button type="button" id="geoSearchClose" class="geo-close" aria-label="Close search" title="Close"><span data-icon="x"></span></button>
       </form>
       <div id="geoResults" class="chip-bar mt-1 hidden max-h-72 flex-col overflow-y-auto rounded-xl p-1"></div>
     </div>
