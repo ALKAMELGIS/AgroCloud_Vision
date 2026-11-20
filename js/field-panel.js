@@ -44,9 +44,10 @@
 
   const panel = document.createElement('aside');
   panel.id = 'fieldPanel';
-  panel.className = 'hidden absolute bottom-3 right-3 top-14 z-[560] w-[min(380px,calc(100%-24px))] flex-col overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5';
+  panel.className = 'hidden absolute inset-0 z-20 flex-col overflow-hidden bg-white';
   panel.innerHTML = `
     <div class="border-b border-gray-100 px-4 pb-3 pt-4">
+      <button type="button" id="fpBack" class="mb-2 flex items-center gap-1.5 text-[12px] text-gray-500 transition-colors hover:text-gray-900">${icon('arrowLeft')}<span>Fields</span></button>
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h2 id="fpName" class="truncate text-[16px] font-medium text-gray-900"></h2>
@@ -61,18 +62,18 @@
       </div>
     </div>
     <div class="flex h-10 shrink-0 gap-4 border-b border-gray-100 px-4 text-[13px]" role="tablist">
+      <button class="fp-tab" data-tab="monitoring" role="tab">Analytics</button>
       <button class="fp-tab" data-tab="overview" role="tab">Overview</button>
       <button class="fp-tab" data-tab="crops" role="tab">Crops</button>
       <button class="fp-tab" data-tab="activities" role="tab">Activities</button>
-      <button class="fp-tab" data-tab="monitoring" role="tab">Monitoring</button>
     </div>
-    <div class="min-h-0 flex-1 overflow-y-auto">
-      <section data-pane="overview" class="fp-pane space-y-6 p-4"></section>
+    <div class="thin-scroll min-h-0 flex-1 overflow-y-auto">
+      <section data-pane="overview" class="fp-pane hidden space-y-6 p-4"></section>
       <section data-pane="crops" class="fp-pane hidden space-y-4 p-4"></section>
       <section data-pane="activities" class="fp-pane hidden space-y-4 p-4"></section>
-      <section data-pane="monitoring" class="fp-pane hidden p-4"></section>
+      <section data-pane="monitoring" class="fp-pane p-4"></section>
     </div>`;
-  document.getElementById('mapMain').appendChild(panel);
+  document.getElementById('sidePanel').appendChild(panel);
 
   const style = document.createElement('style');
   style.textContent = `
@@ -102,7 +103,7 @@
 
   // ------------------------------------------------------------ state
 
-  const fp = { fieldId: null, field: null, crops: [], activities: [], tab: 'overview', editLayer: null, weatherKey: null };
+  const fp = { fieldId: null, field: null, crops: [], activities: [], tab: 'monitoring', editLayer: null, weatherKey: null };
   window.FieldPanel = fp;
 
   function currentField() {
@@ -120,6 +121,8 @@
   }
 
   // ------------------------------------------------------------ open / close
+
+  document.addEventListener('imagery:change', () => { if (fp.fieldId && fp.tab === 'monitoring') renderMonitoring(); });
 
   window.openFieldPanel = async function (fieldId, tab) {
     if (fp.editLayer) cancelEdit();
@@ -143,6 +146,7 @@
     document.dispatchEvent(new CustomEvent('fieldpanel:close'));
   }
   $('#fpClose').addEventListener('click', closePanel);
+  $('#fpBack').addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && fp.fieldId && !document.querySelector('dialog[open]')) closePanel();
   });
@@ -340,8 +344,8 @@
       if (!body.cropType) return;
       try {
         await apiPost('/crops', body);
-        showToast(`${body.cropType} added`);
         await refreshLists();
+        showToast(`${body.cropType} added`);
       } catch (err) { showError(err.message || 'Could not add the crop'); }
     });
     pane('crops').querySelectorAll('[data-stage]').forEach((sel) => sel.addEventListener('change', async () => {
@@ -419,8 +423,8 @@
       };
       try {
         await apiPost('/activities', body);
-        showToast(`${ACTIVITY[body.type].label} logged`);
         await refreshLists();
+        showToast(`${ACTIVITY[body.type].label} logged`);
         document.dispatchEvent(new CustomEvent('activities:changed'));
       } catch (err) { showError(err.message || 'Could not log the activity'); }
     });
@@ -439,8 +443,8 @@
 
   function renderMonitoring() {
     const el = pane('monitoring');
-    if (window.NdviMonitor && fp.field) window.NdviMonitor.render(el, fp.field, { crops: fp.crops });
-    else el.innerHTML = '<p class="text-[13px] text-gray-400">Satellite monitoring is loading</p>';
+    if (window.FieldAnalytics && fp.field) window.FieldAnalytics.render(el, fp.field, { crops: fp.crops });
+    else el.innerHTML = '<p class="text-[13px] text-gray-400">Satellite analytics is loading</p>';
   }
 
   // ------------------------------------------------------------ zoom / edit / delete
@@ -448,7 +452,7 @@
   $('#fpZoom').addEventListener('click', () => fp.fieldId && flyToField(fp.fieldId));
 
   const editBar = document.createElement('div');
-  editBar.className = 'hidden absolute bottom-6 left-1/2 z-[570] -translate-x-1/2 items-center gap-3 rounded-xl bg-white p-2 pl-4 shadow-lg ring-1 ring-black/5';
+  editBar.className = 'hidden absolute bottom-[136px] left-1/2 z-[580] -translate-x-1/2 items-center gap-3 rounded-xl bg-white p-2 pl-4 shadow-lg ring-1 ring-black/5';
   editBar.innerHTML = `
     <span class="text-[13px] text-gray-600">Drag the white points to reshape <span id="fpEditArea" class="num ml-1 font-mono text-gray-900"></span></span>
     <button type="button" id="fpEditCancel" class="h-8 rounded-lg px-3 text-[13px] text-gray-600 transition-colors hover:bg-gray-100">Cancel</button>

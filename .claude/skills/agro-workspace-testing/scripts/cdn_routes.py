@@ -1,7 +1,8 @@
 import os, re, json, mimetypes, urllib.request, urllib.error
-LIBS = 'libs/node_modules/'
-REPO = '/home/claude/agrocloud_vision/'
-TW = 'test/tailwind-shim.js'
+# Env: GIS_LIBS = node_modules with the CDN packages, REPO = repo root, TAILWIND_SHIM = optional js, S2MOCK = mock Sentinel-2 dir
+LIBS = os.environ.get('GIS_LIBS', os.path.abspath('node_modules')) + '/'
+REPO = os.environ.get('REPO', os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..'))) + '/'
+TW = os.environ.get('TAILWIND_SHIM', '')
 
 def local_for(url):
     m = re.match(r'https://cdn\.jsdelivr\.net/npm/((?:@[^/]+/)?[^@/]+)@[^/]+/(.*)', url) or \

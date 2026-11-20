@@ -1,11 +1,15 @@
 ---
 name: agro-satellite-ndvi
-description: How AgroCloud Vision computes per-field Sentinel-2 NDVI in the browser (js/ndvi.js) from Element84 Earth Search with geotiff.js range reads, SCL cloud masking, per-field cloud %, NDVI classes, true colour, season curve and two-date anomaly detection, and how to test it offline with mock scenes. Use it for anything about satellite imagery, vegetation indices (NDVI, NDMI, NDRE), cloud masking, monitoring, anomalies, zones/VRA built on NDVI, or when imagery fails to load, looks wrong, or a new index/source must be added.
+description: How AgroCloud Vision reads Sentinel-2 in the browser (js/imagery.js) — the map timeline, source/index toolbar, indices (NDVI, NDRE, MSAVI, NDMI, ReCI, VMI, natural colour), SCL cloud masking with per-field cloud %, swipe between dates, per-field risks (NDVI change vs previous clear date), and the field Analytics tab (js/analytics.js) with value classes, compare/anomalies and season curve — plus offline testing with mock scenes. Use it for anything about satellite imagery, vegetation indices (NDVI, NDMI, NDRE), cloud masking, monitoring, anomalies, zones/VRA built on NDVI, or when imagery fails to load, looks wrong, or a new index/source must be added.
 ---
 
-# Satellite monitoring (NDVI)
+# Satellite imagery (indices, timeline, swipe, risks)
 
-`js/ndvi.js` renders the **Monitoring** tab of the field panel. Everything
+`js/imagery.js` is the engine and the map UI (timeline at the bottom of the
+map, Sentinel-2 / index toolbar, legend, swipe). It paints every field of the
+farm for the selected date and index, then computes risks per field.
+`js/analytics.js` renders the field's **Analytics** tab, plus Leaderboard,
+Reports and Notifications from the same results. Everything
 runs in the browser; the backend is not involved. That matters because Render's
 free tier has 512 MB and sleeps when idle.
 
@@ -15,10 +19,29 @@ POST Earth Search /v1/search (intersects = field, last 150 days, tile cloud < 80
   → geotiff.js fromUrl(asset) → read only the field window (HTTP Range)
       red, nir @10 m  ·  scl @20 m  ·  visual @10 m (true colour)
   → reflectance = DN·scale + offset → NDVI per pixel inside the polygon, SCL-masked
-  → stats, classes, overlay (L.imageOverlay), compare, season curve
+  → stats, 10 value classes, overlay per field (pane imgB; swipe left side in pane imgA)
+  → risks: NDVI change vs the field's previous clear date on the same tile
+     (high ≤ −0.10, low ≤ −0.03, no data when > 30% cloud) → chips, cards, leaderboard, notifications
 ```
 
-All tunables are in `CONFIG` at the top of the file (`window.NdviConfig`).
+Index formulas (reflectance; 20 m bands sampled on the 10 m grid):
+
+| Index | Bands | Formula | Display range |
+|---|---|---|---|
+| NDVI | red, nir | (N−R)/(N+R) | 0 to 1 |
+| NDRE | rededge1 (B05), nir08 (B8A) | (B8A−B05)/(B8A+B05) | 0 to 0.7 |
+| MSAVI | red, nir | (2N+1−√((2N+1)²−8(N−R)))/2 | 0 to 1 |
+| NDMI | nir08, swir16 | (B8A−B11)/(B8A+B11) | −0.4 to 0.6, brown→teal |
+| ReCI | nir, rededge1 | N/RE − 1 | 0 to 8 |
+| VMI | the above | RGB = MSAVI, NDRE, NDVI | composite |
+
+EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
+
+Public API: `window.Imagery` — `analyse(field, scene, index)`, `compare(cur, prev)`,
+`current()`, `resultFor(fieldId)`, `riskFor(fieldId)`, `setSwipe(on)`, `showDelta`,
+events `imagery:change` and `imagery:risks`.
+
+All tunables are in `CONFIG` at the top of `js/imagery.js` (`Imagery.config`): collection, look-back, tile cloud threshold (50%, like EOS), risk thresholds, anomaly rule.
 
 ## Rules and why
 
@@ -36,9 +59,11 @@ All tunables are in `CONFIG` at the top of the file (`window.NdviConfig`).
 −102.33, 34.12, in UTM 13N on a real 10/20 m grid, with c1-l2a scale/offset
 metadata:
 
+All bands, including rededge1, nir08 and swir16 at 20 m, with a gentle NDVI gradient inside each pivot so zoning has continuous data.
+
 | Date | What it contains |
 |---|---|
-| 15 Nov | a 7.07 ha stress patch (NDVI 0.42) in Pivot 1 |
+| 15 Nov | a 7.07 ha stress patch (NDVI 0.42, NDMI 0.15) in Pivot 1 |
 | 5 Nov | healthy |
 | 26 Oct | cloud (SCL 9) over the west half of Pivot 1 |
 | 16 Oct | early season |
@@ -52,10 +77,10 @@ the files.
 node make-s2mock.mjs $WORK/s2mock && node to-cog.js $WORK/s2mock   # run where gdal3.js/geotiff/proj4 are installed
 ```
 
-Then run `test_panel.py` from the agro-workspace-testing skill with
-`S2MOCK=$WORK/s2mock`. Expected values: Pivot 1 mean on 15 Nov 0.749; cloud
-on 26 Oct about 51%; anomaly 15 Nov vs 5 Nov about 7.05 ha in one area; three
-dates on the season curve.
+Then run `test_shell.py` from the agro-workspace-testing skill with
+`S2MOCK=$WORK/s2mock`. Expected values: Pivot 1 NDVI on 15 Nov 0.75, NDMI 0.34,
+NDRE 0.52; anomaly 15 Nov vs 5 Nov about 7.05 ha in one area; four dates on the
+timeline; risk chips "No risks 3".
 
 ## Not verified yet (do this once on the live site)
 
@@ -69,6 +94,7 @@ Landsat on Earth Search is requester-pays, so use Planetary Computer for Landsat
 
 ## Adding an index
 
-Add a band read in `analyseScene`, compute the index next to `ndvi`, and add a
-toggle next to NDVI / True colour. NDMI uses `nir08` and `swir16`, which are
-20 m bands, so use the same window logic as SCL. NDRE uses `rededge1`.
+Add an entry to `INDICES` in `js/imagery.js` with its `bands` (asset names;
+add aliases to `ASSET_ALIASES` if needed), `f(reflectances)`, `range` and `ramp`.
+`readBand` handles any resolution; the index appears in the toolbar automatically.
+Add the band to `make-s2mock.mjs` with a known value and assert it in `test_shell.py`.

@@ -1,4 +1,4 @@
-import sys, os, json, urllib.request, time
+import sys, os, json, re, urllib.request, time
 sys.path.insert(0, os.path.dirname(__file__))
 from playwright.sync_api import sync_playwright, expect
 import cdn_routes
@@ -31,6 +31,7 @@ with sync_playwright() as p:
     pg.on('dialog', lambda d: d.accept())
     pg.goto(URL)
     expect(pg.locator('#fieldsList .field-item')).to_have_count(3)
+    expect(pg.locator('#tlChips [data-scene]')).to_have_count(4, timeout=30000)
 
     # open panel from the list
     pg.locator('#fieldsList .field-item', has_text='Pivot 1').click()
@@ -38,6 +39,7 @@ with sync_playwright() as p:
     check('panel header', 'Pivot 1' in pg.inner_text('#fpName'), pg.inner_text('#fpMeta'))
 
     # overview: rename + irrigation
+    pg.click('.fp-tab[data-tab=overview]')
     pg.fill('#fpNameInput', 'Pivot 1 North'); pg.select_option('#fpIrr', 'pivot'); pg.click('#fpSave')
     expect(pg.locator('#toast')).to_contain_text('Pivot 1 North saved')
     expect(pg.locator('#fpMeta')).to_contain_text('Center pivot')
@@ -63,55 +65,17 @@ with sync_playwright() as p:
     pg.click('.fp-tab[data-tab=overview]'); pg.wait_for_timeout(300)
     pg.screenshot(path=SH + 'p1_overview.png')
 
-    # monitoring
-    os.environ  # noqa
-    pg.click('.fp-tab[data-tab=monitoring]')
-    expect(pg.locator('#ndMain')).to_contain_text('Mean NDVI', timeout=30000)
-    dates = pg.locator('#ndDates [data-scene]')
-    check('4 scene dates', dates.count() == 4)
-    mean = float(pg.locator('#ndMain .font-mono.text-\\[32px\\]').inner_text())
-    check('mean NDVI 15 Nov ≈ 0.75', abs(mean - 0.749) < 0.02, mean)
-    check('0% cloud on 15 Nov', '0% cloud' in pg.inner_text('#ndMain'))
-    check('overlay on map', pg.evaluate("document.querySelectorAll('.ndvi-overlay').length") == 1)
-    pg.screenshot(path=SH + 'p2_ndvi.png')
-    dates.nth(2).click()
-    expect(pg.locator('#ndMain')).to_contain_text('26 Oct', timeout=30000)
-    txt = pg.inner_text('#ndMain'); import re
-    cloud = int(re.search(r'(\d+)% cloud', txt).group(1))
-    check('cloud masked ~50% on 26 Oct', 40 <= cloud <= 60, cloud)
-    dates.nth(0).click(); expect(pg.locator('#ndMain')).to_contain_text('15 Nov', timeout=30000)
-    pg.click('[data-layer=rgb]'); pg.wait_for_timeout(800)
-    check('true colour overlay', pg.evaluate("document.querySelectorAll('.ndvi-overlay').length") == 1)
-    pg.click('[data-layer=ndvi]')
-    opts = pg.locator('#ndCmp option').all_inner_texts()
-    pg.select_option('#ndCmp', index=1)
-    expect(pg.locator('#ndCmpOut')).to_contain_text('compared', timeout=30000)
-    out = pg.inner_text('#ndCmpOut')
-    ha = float(re.search(r'([\d.]+) ha dropped', out).group(1)) if 'dropped more' in out else 0
-    check('anomaly ≈ 7 ha found', 5.5 <= ha <= 7.5, out.split('\n')[0])
-    check('one anomaly area', pg.locator('#ndCmpOut [data-cl]').count() == 1)
-    pg.screenshot(path=SH + 'p3_compare.png')
-    pg.click('#ndScout'); expect(pg.locator('#toast')).to_contain_text('Scouting visit logged')
-    pg.select_option('#ndCmp', '')
-    pg.click('#ndSeries')
-    expect(pg.locator('#ndSeriesOut')).to_contain_text('clear dates', timeout=60000)
-    check('season chart: 3 clear dates (cloudy one left out)', '3 clear dates' in pg.inner_text('#ndSeriesOut'), pg.inner_text('#ndSeriesOut'))
-    pg.screenshot(path=SH + 'p4_series.png')
-    ranges = [n for n, size in cdn_routes.S2LOG if n != 'search']
-    full = [x for x in cdn_routes.S2LOG if x[0] != 'search' and x[1] > 2_000_000]
-    check('rasters read with range requests', len(ranges) > 0 and not full, f'{len(ranges)} range reads')
-
     # activity log
-    pg.click('#activityLogBtn')
+    pg.locator('.nav-item', has_text='Field activity log').click()
     expect(pg.locator('#activityLogDialog')).to_be_visible()
     expect(pg.locator('#alBody table')).to_be_visible()
     dots = pg.locator('#alBody tbody span.rounded-full').count()
-    check('calendar shows 3 activities (fertilizer, irrigation, scouting)', dots == 3, dots)
+    check('calendar shows 2 activities (fertilizer, irrigation)', dots == 2, dots)
     pg.screenshot(path=SH + 'p5_activity_log.png')
     with pg.expect_download() as dl:
         pg.click('#alCsv')
     csv = open(dl.value.path(), encoding='utf-8-sig').read()
-    check('CSV has rows', csv.count('\n') == 3 and 'Urea 46%' in csv, csv.splitlines()[1])
+    check('CSV has rows', csv.count('\n') == 2 and 'Urea 46%' in csv, csv.splitlines()[1])
     pg.select_option('#alType', 'irrigation'); check('filter by type', pg.locator('#alBody tbody span.rounded-full').count() == 1)
     pg.locator('#alBody [data-field]', has_text='Pivot 1 North').click()
     expect(pg.locator('#fieldPanel')).to_be_visible()

@@ -37,9 +37,20 @@ the same check.
 Both files use workspace globals (`state`, `apiGet/Post/Patch/Delete`, `icon`,
 `formatHa`, `showToast` …) and load after the main script.
 
+## Scout tasks (`js/scout.js`, `backend/src/scout`)
+
+`ScoutTask`: field, title, issue (pests, disease, weeds, water_stress,
+nutrient, other), priority (low/medium/high), status (open, in_progress, done;
+`closedAt` set on done), dueDate, lat/lng, assignee, notes. API: `POST /scout-tasks`, `GET
+/scout-tasks/by-farm/:farmId` (with field name; open first, by due date),
+`PATCH/DELETE /scout-tasks/:id`, all with the organization check. The UI shows
+pins coloured by priority, the nav badge counts overdue tasks, a new task is a
+click inside a field, and "Create scout task" in field Analytics pre-fills it
+from the largest NDVI drop. CSV export.
+
 ## Next steps from the research (in order)
 
 1. Rain and growing degree days counted from the planting date (Open-Meteo archive).
-2. Scouting tasks as their own table (point/area, issue, severity, photo, assignee, status), which also write an activity.
-3. Productivity zones from multi-season NDVI, then VRA export: shapefile with a 10-character rate field, ISO-XML DDI 6 in mg/m², so 1 kg/ha = 100.
-4. Soil sampling grids (1–2.5 ac offset grid or zone-based, GPX/KML/CSV export).
+2. Photos on scout tasks (needs file storage) and a scout report tab.
+3. Multi-season productivity (more than one year of imagery) for zones; see agro-vra-zones.
+4. Lab results import for soil samples, interpolated into P&K maps.

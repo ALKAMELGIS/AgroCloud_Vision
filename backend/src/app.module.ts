@@ -12,6 +12,7 @@ import { FarmsModule } from './farms/farms.module';
 import { FieldsModule } from './fields/fields.module';
 import { CropsModule } from './crops/crops.module';
 import { ActivitiesModule } from './activities/activities.module';
+import { ScoutModule } from './scout/scout.module';
 import { WeatherModule } from './weather/weather.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { WeatherModule } from './weather/weather.module';
     FieldsModule,
     CropsModule,
     ActivitiesModule,
+    ScoutModule,
     WeatherModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

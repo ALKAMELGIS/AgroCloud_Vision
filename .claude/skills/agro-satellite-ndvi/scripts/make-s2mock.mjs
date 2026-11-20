@@ -22,10 +22,21 @@ const geoMeta = {};
 for (const [day, v, stress, cloud] of DATES) {
   const red = new Uint16Array(W * H), nir = new Uint16Array(W * H), vis = new Uint8Array(W * H * 3);
   const Ws = W / 2, Hs = H / 2, scl = new Uint8Array(Ws * Hs).fill(5);
+  // 20 m bands: rededge1 (B05), nir08 (B8A), swir16 (B11)
+  const re = new Uint16Array(Ws * Hs), n8 = new Uint16Array(Ws * Hs), sw = new Uint16Array(Ws * Hs);
+  for (let r = 0; r < Hs; r++) for (let c = 0; c < Ws; c++) {
+    const x = ox + (c + 0.5) * 20, y = oy - (r + 0.5) * 20;
+    let veg = false; for (const [px, py, rad] of pivots) if ((x - px) ** 2 + (y - py) ** 2 <= rad * rad) veg = true;
+    let reV = 0.25, n8V = 0.30, swV = 0.35;             // soil: NDMI = -0.077
+    if (veg) { reV = 0.12; n8V = 0.38; swV = 0.18; }     // crop: NDMI = 0.357, NDRE = 0.520
+    if (veg && stress && (x - (pivot1[0] + 180)) ** 2 + (y - (pivot1[1] - 180)) ** 2 <= 150 ** 2) swV = 0.28;  // stressed: NDMI = 0.152
+    const i = r * Ws + c; re[i] = dn(reV); n8[i] = dn(n8V); sw[i] = dn(swV);
+  }
   for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
     const x = ox + (c + 0.5) * 10, y = oy - (r + 0.5) * 10;
     let ndvi = 0.12, n = 0.30, veg = false;
-    for (const [px, py, rad] of pivots) if ((x - px) ** 2 + (y - py) ** 2 <= rad * rad) { ndvi = v; n = 0.40; veg = true; }
+    // healthy crop with a gentle within-field gradient (mean about zero over a pivot)
+    for (const [px, py, rad] of pivots) if ((x - px) ** 2 + (y - py) ** 2 <= rad * rad) { ndvi = v + 0.06 * Math.sin((x - px) / 160) * Math.cos((y - py) / 190); n = 0.40; veg = true; }
     // stress patch: SE quadrant of pivot 1, 150 m radius disc centred 250 m SE
     if (stress && (x - (pivot1[0] + 180)) ** 2 + (y - (pivot1[1] - 180)) ** 2 <= 150 ** 2) ndvi = 0.42;
     const rr = (n * (1 - ndvi)) / (1 + ndvi);
@@ -50,12 +61,14 @@ for (const [day, v, stress, cloud] of DATES) {
   };
   write('red', red, 10, W, H, 1, 16, 1); write('nir', nir, 10, W, H, 1, 16, 1);
   write('scl', scl, 20, Ws, Hs, 1, 8, 1); write('visual', vis, 10, W, H, 3, 8, 1);
+  write('rededge1', re, 20, Ws, Hs, 1, 16); write('nir08', n8, 20, Ws, Hs, 1, 16); write('swir16', sw, 20, Ws, Hs, 1, 16);
   const base = `https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/13/S/GR/mock/${id}`;
   const band = { 'raster:bands': [{ scale, offset, nodata: 0, data_type: 'uint16' }] };
   items.push({ type: 'Feature', id, bbox: [-102.40, 34.05, -102.25, 34.18],
     geometry: { type: 'Polygon', coordinates: [[[-102.40, 34.05], [-102.25, 34.05], [-102.25, 34.18], [-102.40, 34.18], [-102.40, 34.05]]] },
     properties: { datetime: day + 'T17:35:00Z', 'eo:cloud_cover': cloud ? 42.5 : 3.1, 'proj:epsg': EPSG, 's2:mgrs_tile': '13SGR', 's2:processing_baseline': '05.11' },
     assets: { red: { href: `${base}_red.tif`, ...band }, nir: { href: `${base}_nir.tif`, ...band },
+      rededge1: { href: `${base}_rededge1.tif`, ...band }, nir08: { href: `${base}_nir08.tif`, ...band }, swir16: { href: `${base}_swir16.tif`, ...band },
       scl: { href: `${base}_scl.tif` }, visual: { href: `${base}_visual.tif` } } });
 }
 fs.writeFileSync(`${OUT}/georef.json`, JSON.stringify({ epsg: EPSG, files: geoMeta }));

@@ -54,7 +54,10 @@ Log in through the API, then put the token in `localStorage` with
 ## Test suites
 
 - `test_import_e2e.py`: the Add field menu, all import formats, select on map, draw, group.
-- `test_panel.py`: the field panel (rename, irrigation, crops, activities), NDVI on mock scenes (mean ≈ 0.749, 51% cloud, 7.05 ha anomaly, 3-date season chart), the activity log calendar and CSV, editing the boundary (area drops to a quarter), deleting a field. It prints `PASS`/`FAIL` per check and `ALL PASS`.
+- `test_panel.py`: the field panel (rename, irrigation, crops, activities), the activity log calendar and CSV, editing the boundary (area drops to a quarter), deleting a field.
+- `test_shell.py` (30 checks): timeline, painting, risk chips, cards, coordinate search, NDMI/NDRE/NDVI values, value classes, compare → anomaly → scout task, swipe clipping, leaderboard, reports, notifications, Vegetation VRA (zones, rates, average, Shapefile verified with GDAL, ISO-XML DDI values), Sowing, soil sampling and GPX, forecast.
+
+Each suite prints `PASS`/`FAIL` per check and `ALL PASS`.
 
 ```bash
 WORK=<dir with fixtures/ s2mock/ shots/> S2MOCK=$WORK/s2mock GIS_LIBS=$PWD/node_modules \
@@ -66,6 +69,8 @@ TAILWIND_SHIM=$PWD/tailwind-shim.js REPO=<repo> python3 scripts/test_panel.py
 - **Assert numbers you can derive.** Fixtures are generated with known areas and NDVI, so a test can say "≈ 0.749" and not "something rendered".
 - **Wait for the result, not for an element.** Loading states reuse the same tags (a spinner is also an `svg`).
 - **Mid-animation screenshots lie.** A dialog fading in looks translucent, and a map mid-`fitBounds` looks wrongly zoomed. Trace `fitBounds`/`setView` calls before calling something a bug.
+- **The bottom of the map is crowded.** The imagery dock covers anything placed at `bottom-6`; action bars belong at `bottom-[136px]` and above z 555.
+- **Update the list before showing the toast.** A toast before `refreshLists()` let a user start the next entry and have it wiped by the re-render.
 - **Restarting the API:** `pkill -f "node dist/main"` and start it again. Kill the old frontend's port before starting a new one.
 - **TypeORM foreign keys to uuid primary keys are `uuid` columns.** In raw SQL, compare with `::text` on both sides.
 - **`UPDATE … RETURNING` through `repo.query` returns `[rows, count]`.**
