@@ -8,8 +8,8 @@ import { getErrorMessage } from '@/lib/utils';
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('demo@agrocloud.test');
+  const [password, setPassword] = useState('Demo12345!');
   const [fullName, setFullName] = useState('');
   const [organizationName, setOrganizationName] = useState('');
   const [error, setError] = useState('');
@@ -41,7 +41,7 @@ export default function LoginPage() {
           {mode === 'login' ? 'Sign in to your account' : 'Create a new organization'}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
           {mode === 'register' && (
             <>
               <input
@@ -62,6 +62,8 @@ export default function LoginPage() {
           )}
           <input
             type="email"
+            autoComplete="off"
+            name="agro-email"
             className="w-full rounded-lg border p-3"
             placeholder="Email address"
             value={email}
@@ -70,6 +72,8 @@ export default function LoginPage() {
           />
           <input
             type="password"
+            autoComplete="new-password"
+            name="agro-password"
             className="w-full rounded-lg border p-3"
             placeholder="Password"
             value={password}
