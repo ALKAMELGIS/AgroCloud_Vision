@@ -23,7 +23,7 @@ export class ScoutService {
        FROM scout_tasks t
        JOIN fields f ON f.id::text = t."fieldId"::text
        JOIN farms fa ON fa.id::text = f."farmId"::text
-       WHERE fa.id::text = $1 AND fa."organizationId"::text = $2
+       WHERE fa.id::text = $1 AND fa."organizationId"::text = $2 AND f."archivedAt" IS NULL
        ORDER BY (t.status = 'done'), t."dueDate" NULLS LAST, t."createdAt" DESC`,
       [farmId, organizationId],
     );

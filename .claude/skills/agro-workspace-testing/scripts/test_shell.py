@@ -8,7 +8,7 @@ def call(method, path, body=None, tok=None):
     req = urllib.request.Request(API + path, data=json.dumps(body).encode() if body is not None else None, method=method,
         headers={'Content-Type': 'application/json', **({'Authorization': 'Bearer ' + tok} if tok else {})})
     return json.load(urllib.request.urlopen(req))
-login = call('POST', '/auth/login', {'email': 'demo@agrocloud.test', 'password': 'Demo12345!'}); tok = login['accessToken']
+login = cdn_routes.fresh_login(); tok = login['accessToken']
 farm = call('POST', '/farms', {'name': 'Texas pivots'}, tok)
 fc = json.load(open(S + 'fixtures/fields.geojson'))
 call('POST', '/fields/bulk', {'farmId': farm['id'], 'fields': [{'name': f['properties'].get('name') or 'Fodder strip', 'boundary': f['geometry']} for f in fc['features'] if f['geometry']['type'] == 'Polygon']}, tok)

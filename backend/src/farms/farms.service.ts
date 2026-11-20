@@ -4,6 +4,12 @@ import { Repository } from 'typeorm';
 import { Farm } from './farm.entity';
 import { CreateFarmDto } from './dto/create-farm.dto';
 
+/** Deleted (archived) fields stay in the database for restore, but are not part of the farm. */
+function liveFields(farm: Farm) {
+  if (farm.fields) farm.fields = farm.fields.filter((f) => !f.archivedAt);
+  return farm;
+}
+
 @Injectable()
 export class FarmsService {
   constructor(
@@ -16,12 +22,13 @@ export class FarmsService {
   }
 
   // عزل متعدد المستأجرين: لا تُعاد أبداً مزارع من مؤسسة أخرى
-  findAllForOrganization(organizationId: string) {
-    return this.farmsRepo.find({
+  async findAllForOrganization(organizationId: string) {
+    const farms = await this.farmsRepo.find({
       where: { organizationId },
       relations: ['fields'],
       order: { createdAt: 'DESC' },
     });
+    return farms.map(liveFields);
   }
 
   async findOneForOrganization(id: string, organizationId: string) {
@@ -30,6 +37,6 @@ export class FarmsService {
       relations: ['fields'],
     });
     if (!farm) throw new NotFoundException('المزرعة غير موجودة');
-    return farm;
+    return liveFields(farm);
   }
 }

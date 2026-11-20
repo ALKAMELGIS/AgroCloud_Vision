@@ -1,6 +1,6 @@
 ---
 name: agro-field-operations
-description: The AgroCloud Vision field record after a boundary exists — field edit/move/delete (PATCH/DELETE /fields/:id), crops and growth stages (/crops), the activity log with product/rate/unit (/activities, by field and by farm), the field panel UI (js/field-panel.js) and the farm Activity log calendar (js/activity-log.js), plus organization isolation. Use it for anything about crops, seasons, operations, fertilizer/spraying/irrigation records, scouting visits, reports/CSV of operations, roles on these endpoints, or a "field panel" change.
+description: The AgroCloud Vision field record after a boundary exists — field edit/move/delete (PATCH/DELETE /fields/:id), crops and growth stages (/crops), the activity log with product/rate/unit (/activities, by field and by farm), the field panel UI (js/field-panel.js) and the farm Activity log calendar (js/activity-log.js), plus organization isolation. For saving, validating, overlaps, history or deleting/restoring fields use agro-field-registration. Use it for anything about crops, seasons, operations, fertilizer/spraying/irrigation records, scouting visits, reports/CSV of operations, roles on these endpoints, or a "field panel" change.
 ---
 
 # Field operations
@@ -9,7 +9,7 @@ description: The AgroCloud Vision field record after a boundary exists — field
 
 | Endpoint | Roles | Notes |
 |---|---|---|
-| `PATCH /fields/:id` | owner, manager, gis_analyst | `name`, `irrigation` (`''` clears), `farmId` (move), `boundary` (area recalculated) |
+| `PATCH /fields/:id` | owner, manager, gis_analyst | `name`, `irrigation` (`''` clears), `farmId` (move), `boundary` (area recalculated, checked and logged; see agro-field-registration) |
 | `DELETE /fields/:id` | owner, manager | crops and activities cascade; weather snapshots deleted explicitly |
 | `POST /crops`, `PATCH /crops/:id`, `DELETE /crops/:id` | owner, manager, agronomist | growth stage: planted → … → harvested |
 | `PATCH /crops/:id/growth-stage` | + field_supervisor | |

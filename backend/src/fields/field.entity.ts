@@ -54,6 +54,11 @@ export class Field {
   @CreateDateColumn()
   createdAt: Date;
 
+  /** Set when the field is deleted from the farm; the row, its history, crops and activities stay so it can be restored. */
+  @Index()
+  @Column({ type: 'timestamptz', nullable: true })
+  archivedAt: Date | null;
+
   @OneToMany(() => Crop, (crop) => crop.field)
   crops: Crop[];
 

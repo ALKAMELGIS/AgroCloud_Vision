@@ -232,7 +232,13 @@
       <div>
         <div class="fp-h">Weather at this field</div>
         <div id="fpWeather" class="text-[12px] text-gray-400">Loading forecast</div>
+      </div>
+
+      <div>
+        <div class="fp-h">History</div>
+        <div id="fpHistory"></div>
       </div>`;
+    if (window.FieldEditor) FieldEditor.renderHistory($('#fpHistory'), f.id);
     hydrateIcons(pane('overview'));
     pane('overview').querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => selectTab(b.dataset.goto)));
     pane('overview').querySelectorAll('[data-del-activity]').forEach(bindActivityDelete);
@@ -455,6 +461,7 @@
   editBar.className = 'hidden absolute bottom-[136px] left-1/2 z-[580] -translate-x-1/2 items-center gap-3 rounded-xl bg-white p-2 pl-4 shadow-lg ring-1 ring-black/5';
   editBar.innerHTML = `
     <span class="text-[13px] text-gray-600">Drag the white points to reshape <span id="fpEditArea" class="num ml-1 font-mono text-gray-900"></span></span>
+    <span id="fpEditStatus" class="max-w-[280px] text-[12px]"></span>
     <button type="button" id="fpEditCancel" class="h-8 rounded-lg px-3 text-[13px] text-gray-600 transition-colors hover:bg-gray-100">Cancel</button>
     <button type="button" id="fpEditSave" class="h-8 rounded-lg bg-brand-600 px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-700">Save boundary</button>`;
   document.getElementById('mapMain').appendChild(editBar);
@@ -475,7 +482,18 @@
     fp.editLayer = layer;
     const baseLayer = state.fieldLayerById.get(f.id);
     if (baseLayer) baseLayer.setStyle({ opacity: 0, fillOpacity: 0 });
-    const updateArea = () => { document.getElementById('fpEditArea').textContent = formatHa(editableGeometryArea(layer)); };
+    const check = window.FieldEditor && FieldEditor.makeChecker((r) => {
+      const el = document.getElementById('fpEditStatus');
+      el.innerHTML = FieldEditor.statusHtml(r).replace(/<ul[\s\S]*<\/ul>/, '');
+      hydrateIcons(el);
+      if (!r.pending) FieldEditor.showMarks(r);
+      document.getElementById('fpEditSave').disabled = !r.pending && !r.offline && (!r.ok || r.duplicate);
+    });
+    const updateArea = () => {
+      document.getElementById('fpEditArea').textContent = formatHa(editableGeometryArea(layer));
+      const gj = layer.toGeoJSON().geometry;
+      if (check) check(gj.type === 'Polygon' ? gj : { type: 'Polygon', coordinates: gj.coordinates[0] }, f.id);
+    };
     layer.on('edit', updateArea); mapInstance.on('draw:editvertex', updateArea);
     updateArea();
     editBar.classList.remove('hidden'); editBar.classList.add('flex');
@@ -484,6 +502,8 @@
   function cancelEdit() {
     if (!fp.editLayer) return;
     mapInstance.off('draw:editvertex');
+    if (window.FieldEditor) FieldEditor.clearMarks();
+    document.getElementById('fpEditStatus').innerHTML = '';
     fp.editLayer.editing.disable();
     mapInstance.removeLayer(fp.editLayer);
     fp.editLayer = null;
@@ -491,28 +511,36 @@
     if (state.fieldsLayer) state.fieldsLayer.setStyle((f) => fieldStyle((f.properties || {}).id || f.id));
   }
   document.getElementById('fpEditCancel').addEventListener('click', cancelEdit);
-  document.getElementById('fpEditSave').addEventListener('click', async () => {
+  async function saveEdit(overlap) {
     const layer = fp.editLayer; const id = fp.fieldId;
     if (!layer) return;
     const geometry = layer.toGeoJSON().geometry;
     try {
-      const updated = await apiPatch(`/fields/${id}`, { boundary: geometry });
+      const updated = await apiPatch(`/fields/${id}`, { boundary: geometry, ...(overlap ? { overlap } : {}) });
       cancelEdit();
       await goToFarm(state.selectedFarmId);
-      showToast(`Boundary saved · ${formatHa(updated && updated.areaHectares)}`);
+      showToast(`Boundary saved · ${formatHa(updated && updated.areaHectares)}${window.FieldEditor ? FieldEditor.savedNote(updated) : ''}`);
       openFieldPanel(id);
-    } catch (err) { showError(err.message || 'Could not save the boundary'); }
-  });
+    } catch (err) {
+      if (err.status === 409 && err.data && err.data.code === 'FIELD_OVERLAP' && window.FieldEditor) {
+        const slot = document.getElementById('fpEditStatus');
+        const choice = await FieldEditor.askOverlap(slot, err);
+        slot.classList.remove('hidden');
+        if (choice) saveEdit(choice);
+        return;
+      }
+      showError(err.message || 'Could not save the boundary');
+    }
+  }
+  document.getElementById('fpEditSave').addEventListener('click', () => saveEdit(null));
 
   $('#fpDelete').addEventListener('click', async () => {
     const f = fp.field;
     if (!f) return;
-    if (!confirm(`Delete ${f.name}? Its crops and activity log are deleted too. This cannot be undone.`)) return;
+    // deleting is recoverable: Undo in the toast, or Restore under Recently deleted
     try {
-      await apiDelete(`/fields/${f.id}`);
       closePanel();
-      await goToFarm(state.selectedFarmId);
-      showToast(`${f.name} deleted`);
+      await FieldEditor.deleteField(f);
     } catch (err) { showError(err.message || 'Could not delete the field'); }
   });
 })();

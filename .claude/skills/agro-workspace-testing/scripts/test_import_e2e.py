@@ -8,7 +8,7 @@ API = 'http://localhost:4000/api/v1'
 def post(path, body, tok=None):
     req = urllib.request.Request(API + path, data=json.dumps(body).encode(), headers={'Content-Type': 'application/json', **({'Authorization': 'Bearer ' + tok} if tok else {})})
     return json.load(urllib.request.urlopen(req))
-login = post('/auth/login', {'email': 'demo@agrocloud.test', 'password': 'Demo12345!'})
+login = cdn_routes.fresh_login()
 tok = login['accessToken']
 farm = post('/farms', {'name': 'Texas pivots'}, tok)
 URL = f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}"
@@ -88,19 +88,23 @@ with sync_playwright() as p:
     print('selected import:', pg.inner_text('#importSummary'))
     pg.locator('#importRows .row-name').nth(0).fill('Sorghum strip')
     pg.click('#importSaveBtn')
-    expect(pg.locator('#toast')).to_contain_text('1 field imported', timeout=20000)
-    expect(pg.locator('#fieldsList .field-item')).to_have_count(5)
+    # this rectangle was already imported from fields.geojson: it must not be saved twice
+    expect(pg.locator('#importProblems')).to_contain_text('already saved', timeout=20000)
+    print('duplicate blocked:', pg.inner_text('#importProblems').split('\n')[0])
+    pg.keyboard.press('Escape')
+    expect(pg.locator('#fieldsList .field-item')).to_have_count(4)
 
     # 6. Draw circle (simulate Leaflet.draw finishing a circle)
     pg.evaluate("() => { const c = L.circle([34.13, -102.32], { radius: 400 }); mapInstance.fire(L.Draw.Event.CREATED, { layer: c, layerType: 'circle' }); }")
-    expect(pg.locator('#fieldDialog')).to_be_visible()
-    print('draw dialog note:', pg.inner_text('#fieldAreaNote'))
-    pg.fill('#fieldNameInput', 'Pivot 7')
-    pg.select_option('#fieldIrrigationSelect', 'pivot')
+    expect(pg.locator('#draftPanel')).to_be_visible()
+    print('draft area:', pg.inner_text('#dfArea'))
+    pg.fill('#dfName', 'Pivot 7')
+    pg.select_option('#dfIrr', 'pivot')
+    expect(pg.locator('#dfStatus')).to_contain_text('No overlap', timeout=10000)
     pg.screenshot(path=SH + '5_new_field.png')
-    pg.click('#saveFieldBtn')
+    pg.click('#dfSave')
     expect(pg.locator('#toast')).to_contain_text('Pivot 7 saved')
-    expect(pg.locator('#fieldsList .field-item')).to_have_count(6)
+    expect(pg.locator('#fieldsList .field-item')).to_have_count(5)
 
     # 7. Create group
     pg.click('#addFieldBtn'); pg.click('[data-action=group]')
@@ -109,7 +113,7 @@ with sync_playwright() as p:
     expect(pg.locator('#currentFarmName')).to_have_text('North pivots')
     print('farms:', pg.locator('#farmsList .farm-item').all_inner_texts())
     pg.goto(URL)
-    expect(pg.locator('#fieldsList .field-item')).to_have_count(6)
+    expect(pg.locator('#fieldsList .field-item')).to_have_count(5)
     pg.wait_for_timeout(500)
     pg.screenshot(path=SH + '6_final.png')
     print('JS errors:', errors)

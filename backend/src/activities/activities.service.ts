@@ -32,7 +32,7 @@ export class ActivitiesService {
        FROM activity_logs a
        JOIN fields f ON f.id::text = a."fieldId"::text
        JOIN farms fa ON fa.id::text = f."farmId"::text
-       WHERE fa.id::text = $1 AND fa."organizationId"::text = $2
+       WHERE fa.id::text = $1 AND fa."organizationId"::text = $2 AND f."archivedAt" IS NULL
          AND ($3::date IS NULL OR a.date >= $3::date)
          AND ($4::date IS NULL OR a.date <= $4::date)
        ORDER BY a.date DESC, a."createdAt" DESC`,

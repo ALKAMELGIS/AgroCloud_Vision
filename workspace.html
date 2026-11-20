@@ -145,7 +145,7 @@
 
     <!-- toasts -->
     <div id="errorBanner" class="hidden absolute left-1/2 top-[72px] z-[700] w-[min(480px,92%)] -translate-x-1/2 rounded-lg bg-red-50 px-4 py-2 text-center text-[13px] text-red-700 ring-1 ring-red-200"></div>
-    <div id="toast" class="hidden absolute left-1/2 top-[72px] z-[700] -translate-x-1/2 items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-[13px] text-white shadow-lg"><span data-icon="check"></span><span id="toastText"></span></div>
+    <div id="toast" class="hidden absolute left-1/2 top-[72px] z-[700] -translate-x-1/2 items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-[13px] text-white shadow-lg"><span data-icon="check"></span><span id="toastText"></span><button id="toastAction" type="button" class="hidden ml-2 rounded-md px-2 py-0.5 text-[13px] font-medium text-brand-300 ring-1 ring-white/20 hover:bg-white/10"></button></div>
   </main>
 
   <!-- ====== Side panel ====== -->
@@ -175,6 +175,11 @@
         </div>
       </div>
       <div id="fieldsList" class="thin-scroll min-h-0 flex-1 overflow-y-auto px-2 pb-2"></div>
+      <details id="deletedSection" class="hidden border-t border-gray-100 px-4 py-2">
+        <summary class="flex cursor-pointer items-center justify-between py-1 text-[12px] text-gray-500"><span>Recently deleted</span><span id="deletedCount" class="num font-mono"></span></summary>
+        <div id="deletedChoice" class="hidden py-2"></div>
+        <ul id="deletedList" class="thin-scroll max-h-48 overflow-y-auto"></ul>
+      </details>
       <div id="layersSection" class="hidden border-t border-gray-100 px-4 py-3">
         <div class="mb-2 text-[12px] font-medium text-gray-500">GIS layers</div>
         <div id="layersList" class="flex flex-col gap-0.5"></div>
@@ -224,32 +229,7 @@
 <input id="gisInput" type="file" multiple class="hidden" />
 
 <!-- ====== New field dialog (after drawing) ====== -->
-<dialog id="fieldDialog" class="sheet">
-  <form id="fieldForm" method="dialog" class="p-6">
-    <div class="mb-5 flex items-center justify-between">
-      <h2 class="text-[17px] font-medium">New field</h2>
-      <button type="button" data-close class="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700" aria-label="Close"><span data-icon="x"></span></button>
-    </div>
-    <label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="fieldNameInput">Field name</label>
-    <input id="fieldNameInput" required maxlength="200" placeholder="e.g. Pivot 7" class="mb-4 h-10 w-full rounded-lg border border-gray-200 px-3 text-[14px] outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20" />
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="fieldFarmSelect">Farm</label>
-        <select id="fieldFarmSelect" class="farm-select h-10 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-[14px] outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"></select>
-      </div>
-      <div>
-        <label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="fieldIrrigationSelect">Irrigation</label>
-        <select id="fieldIrrigationSelect" class="irrigation-select h-10 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-[14px] outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"></select>
-      </div>
-    </div>
-    <p id="fieldAreaNote" class="num mt-3 font-mono text-[12px] text-gray-400"></p>
-    <p id="fieldSaveError" class="hidden mt-3 text-[13px] text-red-600"></p>
-    <div class="mt-6 flex justify-end gap-2">
-      <button type="button" data-close class="h-10 rounded-lg px-4 text-[14px] font-medium text-gray-700 ring-1 ring-gray-200 transition-colors hover:bg-gray-50">Cancel</button>
-      <button id="saveFieldBtn" type="submit" class="h-10 rounded-lg bg-brand-600 px-4 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50">Save field</button>
-    </div>
-  </form>
-</dialog>
+<!-- New field: js/field-editor.js (card beside the map, the shape stays editable) -->
 
 <!-- ====== Import fields dialog ====== -->
 <dialog id="importDialog" class="sheet">
@@ -290,6 +270,7 @@
       </div>
     </div>
 
+    <div id="importProblems" class="hidden mx-6 mt-4 rounded-lg p-3 text-[13px]"></div>
     <div class="mt-6 flex items-center justify-end gap-2 border-t border-gray-100 px-6 py-4">
       <span id="importProgress" class="num mr-auto text-[12px] text-gray-500"></span>
       <button type="button" data-close class="h-10 rounded-lg px-4 text-[14px] font-medium text-gray-700 ring-1 ring-gray-200 transition-colors hover:bg-gray-50">Cancel</button>
@@ -349,6 +330,7 @@ const ICONS = {
   folderPlus: '<path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
   loader: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
   focus: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
@@ -418,7 +400,7 @@ async function apiSend(method, path, body) {
   if (!res.ok) {
     const m = data.message;
     const text = typeof m === 'string' ? m : Array.isArray(m) ? m.join(', ') : (m && m.message) || 'Request failed';
-    const err = new Error(text); err.status = res.status; throw err;
+    const err = new Error(text); err.status = res.status; err.data = data; throw err;
   }
   return data;
 }
@@ -436,7 +418,7 @@ async function apiPost(path, body) {
   if (!res.ok) {
     const m = data.message;
     const text = typeof m === 'string' ? m : Array.isArray(m) ? m.join(', ') : (m && (Array.isArray(m.message) ? m.message.join(', ') : m.message)) || 'Request failed';
-    const err = new Error(text); err.status = res.status; throw err;
+    const err = new Error(text); err.status = res.status; err.data = data; throw err;
   }
   return data;
 }
@@ -458,12 +440,20 @@ function showError(message) {
   clearTimeout(errorTimer);
   errorTimer = setTimeout(() => el.classList.add('hidden'), 6000);
 }
-function showToast(message) {
+/** action: optional { label, run } shown as a button in the toast (e.g. Undo). */
+function showToast(message, action) {
   const el = document.getElementById('toast');
   document.getElementById('toastText').textContent = message;
+  const btn = document.getElementById('toastAction');
+  btn.classList.toggle('hidden', !action);
+  btn.onclick = null;
+  if (action) {
+    btn.textContent = action.label;
+    btn.onclick = () => { el.classList.add('hidden'); el.classList.remove('flex'); clearTimeout(toastTimer); action.run(); };
+  }
   el.classList.remove('hidden'); el.classList.add('flex');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.classList.add('hidden'); el.classList.remove('flex'); }, 3500);
+  toastTimer = setTimeout(() => { el.classList.add('hidden'); el.classList.remove('flex'); }, action ? 8000 : 3500);
 }
 
 // ====== Geometry helpers ======
@@ -519,9 +509,7 @@ const state = {
 
 let mapInstance = null;
 let canvasRenderer = null;
-let drawnLayer = null;
 let activeDrawHandler = null;
-let pendingGeometry = null;
 
 function ensureMap(center) {
   if (mapInstance) return mapInstance;
@@ -541,14 +529,10 @@ function ensureMap(center) {
   }).addTo(map);
 
   if (window.L && L.Draw) {
+    // a drawn shape becomes an editable draft with the "New field" card (js/field-editor.js)
     map.on(L.Draw.Event.CREATED, (event) => {
-      const layer = event.layer;
-      pendingGeometry = layerToPolygonGeoJson(layer, event.layerType);
-      if (drawnLayer) map.removeLayer(drawnLayer);
-      layer.setStyle && layer.setStyle({ color: COLORS.draft, weight: 2, fillOpacity: 0.15, dashArray: '4 4' });
-      layer.addTo(map);
-      drawnLayer = layer;
-      openFieldDialog(pendingGeometry);
+      activeDrawHandler = null;
+      if (window.FieldEditor) FieldEditor.openDraft(event.layer, event.layerType);
     });
   }
 
@@ -625,55 +609,6 @@ document.querySelectorAll('dialog.sheet').forEach((dlg) => {
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close('cancel'); });
 });
 
-// ====== New field (drawn shape) ======
-const fieldDialog = document.getElementById('fieldDialog');
-
-function openFieldDialog(geometry) {
-  fillFarmSelects();
-  document.getElementById('fieldNameInput').value = '';
-  document.getElementById('fieldIrrigationSelect').value = '';
-  document.getElementById('fieldSaveError').classList.add('hidden');
-  const ha = window.GisImport ? GisImport.polygonAreaHa(geometry.coordinates) : null;
-  document.getElementById('fieldAreaNote').textContent = ha != null ? 'Area ' + formatHa(ha) : '';
-  fieldDialog.returnValue = '';
-  fieldDialog.showModal();
-  document.getElementById('fieldNameInput').focus();
-}
-
-fieldDialog.addEventListener('close', () => {
-  if (fieldDialog.returnValue === 'saved') return;
-  if (drawnLayer && mapInstance) mapInstance.removeLayer(drawnLayer);
-  drawnLayer = null;
-  pendingGeometry = null;
-});
-
-document.getElementById('fieldForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const name = document.getElementById('fieldNameInput').value.trim();
-  const farmId = document.getElementById('fieldFarmSelect').value;
-  const irrigation = document.getElementById('fieldIrrigationSelect').value || undefined;
-  const errorEl = document.getElementById('fieldSaveError');
-  errorEl.classList.add('hidden');
-  if (!name || !pendingGeometry || !farmId) return;
-
-  const saveBtn = document.getElementById('saveFieldBtn');
-  saveBtn.disabled = true;
-  try {
-    await apiPost('/fields', { name, farmId, boundary: pendingGeometry, ...(irrigation ? { irrigation } : {}) });
-    if (drawnLayer) mapInstance.removeLayer(drawnLayer);
-    drawnLayer = null;
-    pendingGeometry = null;
-    fieldDialog.close('saved');
-    await goToFarm(farmId);
-    showToast(`${name} saved`);
-  } catch (err) {
-    errorEl.textContent = err.message || 'Could not save this field. Try again';
-    errorEl.classList.remove('hidden');
-  } finally {
-    saveBtn.disabled = false;
-  }
-});
-
 // ====== Import fields (Upload file / Select on map) ======
 const importDialog = document.getElementById('importDialog');
 const importInput = document.getElementById('importInput');
@@ -696,6 +631,7 @@ function setImportPhase(phase, text) {
   body.classList.toggle('hidden', phase !== 'ready');
   body.classList.toggle('flex', phase === 'ready');
   if (phase === 'loading') document.getElementById('importStatusText').textContent = text || 'Reading file';
+  if (phase !== 'ready') document.getElementById('importProblems').classList.add('hidden');
   if (phase === 'error') errorEl.textContent = text;
   document.getElementById('importSaveBtn').disabled = phase !== 'ready';
 }
@@ -802,63 +738,68 @@ importDialog.addEventListener('close', () => {
   if (importDialog.returnValue !== 'saved') clearImportPreview();
 });
 
-async function saveFieldsBulk(farmId, irrigation, items, onProgress) {
-  const CHUNK = 400;
-  const saved = [];
-  let bulkAvailable = true;
-  for (let start = 0; start < items.length; start += CHUNK) {
-    const chunk = items.slice(start, start + CHUNK);
-    if (bulkAvailable) {
-      try {
-        const rows = await apiPost('/fields/bulk', { farmId, ...(irrigation ? { irrigation } : {}), fields: chunk });
-        saved.push(...rows);
-        onProgress(saved.length, items.length);
-        continue;
-      } catch (err) {
-        if (err.status !== 404) throw err;
-        bulkAvailable = false;   // older server without /fields/bulk
-      }
-    }
-    // Fallback: one request per field, a few at a time.
-    let next = 0;
-    const worker = async () => {
-      while (next < chunk.length) {
-        const item = chunk[next++];
-        saved.push(await apiPost('/fields', { farmId, name: item.name, boundary: item.boundary, ...(irrigation ? { irrigation } : {}) }));
-        onProgress(saved.length, items.length);
-      }
-    };
-    await Promise.all([worker(), worker(), worker(), worker()]);
-  }
-  return saved;
+/**
+ * Imports in one request so the server checks every field against saved fields and the
+ * other fields in the file. mode: reject (default) answers with the problems and saves
+ * nothing; skip / clip / allow are the choices offered after that.
+ */
+async function saveFieldsBulk(farmId, irrigation, items, mode) {
+  return apiPost('/fields/bulk', { farmId, ...(irrigation ? { irrigation } : {}), fields: items, ...(mode ? { overlap: mode } : {}) });
 }
 
-document.getElementById('importSaveBtn').addEventListener('click', async () => {
+function showImportProblems(err, retry) {
+  const box = document.getElementById('importProblems');
+  const problems = (err.data && err.data.problems) || [];
+  const overlaps = problems.filter((p) => p.code !== 'FIELD_GEOMETRY').length;
+  const dups = problems.filter((p) => p.code === 'FIELD_DUPLICATE').length;
+  box.innerHTML = `
+    <p class="font-medium">${escapeHtml(err.message)}</p>
+    <ul class="thin-scroll mt-2 max-h-36 space-y-1 overflow-y-auto">${problems.slice(0, 50).map((p) => `<li class="flex gap-2"><span class="shrink-0 font-medium">${escapeHtml(p.name)}</span><span class="text-gray-500">${escapeHtml(p.message)}</span></li>`).join('')}</ul>
+    ${problems.length >= state.importCandidates.filter((c) => c.checked).length && overlaps === dups ? '<p class="mt-3 text-[12px] text-gray-500">There is nothing new to import</p>' : `<div class="mt-3 flex flex-wrap gap-2">
+      <button type="button" data-mode="skip" class="h-8 rounded-lg bg-brand-600 px-3 text-[13px] font-medium text-white hover:bg-brand-700">Import the rest, skip these ${problems.length}</button>
+      ${overlaps > dups ? `<button type="button" data-mode="clip" class="h-8 rounded-lg px-3 text-[13px] ring-1 ring-gray-200 hover:bg-gray-50">Cut overlaps and import</button>
+      <button type="button" data-mode="allow" class="h-8 rounded-lg px-3 text-[13px] ring-1 ring-gray-200 hover:bg-gray-50">Import with overlaps</button>` : ''}
+    </div>`}
+    ${dups || problems.length - overlaps ? `<p class="mt-2 text-[12px] text-gray-500">Duplicates and fields with an invalid shape are always skipped</p>` : ''}`;
+  box.classList.remove('hidden');
+  box.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { box.classList.add('hidden'); retry(b.dataset.mode); }));
+}
+
+document.getElementById('importSaveBtn').addEventListener('click', () => runImport(null));
+async function runImport(mode) {
   const chosen = state.importCandidates.filter((c) => c.checked);
   const farmId = document.getElementById('importFarmSelect').value;
   const irrigation = document.getElementById('importIrrigationSelect').value || undefined;
   if (!chosen.length || !farmId) return;
-  const emptyName = chosen.find((c) => !c.name.trim());
-  if (emptyName) { showError('Every field needs a name'); return; }
 
   const btn = document.getElementById('importSaveBtn');
   const progress = document.getElementById('importProgress');
+  document.getElementById('importProblems').classList.add('hidden');
   btn.disabled = true;
+  progress.textContent = `Checking and saving ${chosen.length} ${chosen.length === 1 ? 'field' : 'fields'}`;
   try {
-    const items = chosen.map((c) => ({ name: c.name.trim(), boundary: c.geometry }));
-    await saveFieldsBulk(farmId, irrigation, items, (done, total) => { progress.textContent = `Saving ${done} of ${total}`; });
+    // an empty name is filled in by the server as "Field N"
+    const items = chosen.map((c) => ({ ...(c.name.trim() ? { name: c.name.trim() } : {}), boundary: c.geometry }));
+    const res = await saveFieldsBulk(farmId, irrigation, items, mode);
+    const saved = Array.isArray(res) ? res : (res && res.fields) || [];   // array: server not redeployed yet
+    const skipped = (res && res.skipped) || [];
     importDialog.close('saved');
     clearImportPreview();
     if (state.selectMode) exitSelectMode();
     await goToFarm(farmId, true);
-    showToast(chosen.length === 1 ? '1 field imported' : `${chosen.length} fields imported`);
+    const parts = [saved.length === 1 ? '1 field imported' : `${saved.length} fields imported`];
+    if (skipped.length) parts.push(`${skipped.length} skipped`);
+    if (res && res.clipped) parts.push(`${res.clipped} cut at overlaps`);
+    if (res && res.repaired) parts.push(`${res.repaired} outlines cleaned up`);
+    showToast(parts.join(' · '));
   } catch (err) {
     progress.textContent = '';
-    showError(err.message || 'Could not import these fields');
+    if (err.data && err.data.code === 'FIELD_IMPORT_PROBLEMS') showImportProblems(err, (m) => runImport(m));
+    else showError(err.message || 'Could not import these fields');
   } finally {
     btn.disabled = false;
   }
-});
+}
 
 // Drag & drop files onto the map
 (() => {
@@ -1345,6 +1286,7 @@ loadFarmsList().catch(() => {
 });
 </script>
 <script src="js/field-panel.js"></script>
+<script src="js/field-editor.js"></script>
 <script src="js/imagery.js"></script>
 <script src="js/shell.js"></script>
 <script src="js/vra.js"></script>

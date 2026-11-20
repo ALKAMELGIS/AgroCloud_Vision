@@ -100,3 +100,12 @@ def install(page, api='http://localhost:4000/api/v1'):
         print('BLOCKED', url)
         return route.abort()
     page.route('**/*', handler)
+
+def fresh_login(api='http://localhost:4000/api/v1'):
+    """Registers a new organization per test run: saved fields are checked for duplicates across the organization."""
+    import time
+    stamp = str(int(time.time() * 1000))
+    body = json.dumps({'organizationName': 'Test ' + stamp, 'fullName': 'Test Owner', 'email': f'owner{stamp}@agrocloud.test', 'password': 'Owner12345!'}).encode()
+    urllib.request.urlopen(urllib.request.Request(api + '/auth/register', data=body, headers={'Content-Type': 'application/json'}, method='POST'))
+    body = json.dumps({'email': f'owner{stamp}@agrocloud.test', 'password': 'Owner12345!'}).encode()
+    return json.load(urllib.request.urlopen(urllib.request.Request(api + '/auth/login', data=body, headers={'Content-Type': 'application/json'}, method='POST')))
