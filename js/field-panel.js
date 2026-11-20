@@ -126,7 +126,8 @@
 
   window.openFieldPanel = async function (fieldId, tab) {
     if (fp.editLayer) cancelEdit();
-    fp.fieldId = fieldId;
+    fp.fieldId = fieldId; window.__openFieldId = fieldId;
+    if (window.Imagery && Imagery.sharpen) setTimeout(() => Imagery.sharpen(), 600);
     const field = currentField();
     if (!field) return;
     fp.field = field;
@@ -141,7 +142,7 @@
   function closePanel() {
     if (fp.editLayer) cancelEdit();
     panel.classList.add('hidden'); panel.classList.remove('flex');
-    fp.fieldId = null;
+    fp.fieldId = null; window.__openFieldId = null;
     setSelectedField(null);
     document.dispatchEvent(new CustomEvent('fieldpanel:close'));
   }

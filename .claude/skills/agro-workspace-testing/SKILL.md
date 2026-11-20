@@ -55,6 +55,7 @@ Log in through the API, then put the token in `localStorage` with
 
 - `test_import_e2e.py`: the Add field menu, all import formats, select on map, draw, group.
 - `test_panel.py`: the field panel (rename, irrigation, crops, activities), the activity log calendar and CSV, editing the boundary (area drops to a quarter), deleting a field.
+- `test_superres.py`: sharpening 10 m → 5 m / 2.5 m (onnxruntime-web, models from the repo), NDVI mean kept, hover on the fine grid, natural colour, NDRE disables the control, choice remembered, model cached, Arabic. Needs `onnxruntime-web@1.22.0` in `GIS_LIBS` and `blue`/`green` assets in the mock.
 - `test_shell.py` (30 checks): timeline, painting, risk chips, cards, coordinate search, NDMI/NDRE/NDVI values, value classes, compare → anomaly → scout task, swipe clipping, leaderboard, reports, notifications, Vegetation VRA (zones, rates, average, Shapefile verified with GDAL, ISO-XML DDI values), Sowing, soil sampling and GPX, forecast.
 
 Each suite prints `PASS`/`FAIL` per check and `ALL PASS`.
@@ -65,6 +66,8 @@ TAILWIND_SHIM=$PWD/tailwind-shim.js REPO=<repo> python3 scripts/test_panel.py
 ```
 
 ## Lessons that cost time
+
+- **`npm install --no-save X` prunes everything not in package.json** in `GIS_LIBS`. Install test libs with `--save`, or fonts and Leaflet disappear and pages time out.
 
 - **Assert numbers you can derive.** Fixtures are generated with known areas and NDVI, so a test can say "≈ 0.749" and not "something rendered".
 - **Wait for the result, not for an element.** Loading states reuse the same tags (a spinner is also an `svg`).

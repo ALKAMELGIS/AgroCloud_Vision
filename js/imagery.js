@@ -274,7 +274,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (pb >= 4 && item.properties['earthsearch:boa_offset_applied'] !== true) return { scale: 1e-4, offset: -0.1 };
     return { scale: 1e-4, offset: 0 };
   }
-  const ASSET_ALIASES = { red: ['red', 'B04'], nir: ['nir', 'B08'], nir08: ['nir08', 'B8A'], rededge1: ['rededge1', 'B05'], swir16: ['swir16', 'B11'], scl: ['scl', 'SCL'], visual: ['visual', 'TCI'] };
+  const ASSET_ALIASES = { blue: ['blue', 'B02'], green: ['green', 'B03'], red: ['red', 'B04'], nir: ['nir', 'B08'], nir08: ['nir08', 'B8A'], rededge1: ['rededge1', 'B05'], swir16: ['swir16', 'B11'], scl: ['scl', 'SCL'], visual: ['visual', 'TCI'] };
   function assetOf(item, band) {
     for (const n of ASSET_ALIASES[band] || [band]) if (item.assets[n]) return item.assets[n];
     throw new Error('Scene is missing the ' + band + ' band');
@@ -502,15 +502,22 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
    */
   const views = [];
   function createView(key, getMap, dockEl, sfx) {
-    const v = { key, getMap, dockEl, sfx, sceneId: null, indexKey: 'ndvi', contrast: false, hidden: false, layers: [], results: new Map(), token: 0 };
+    let savedRes = '10'; try { savedRes = localStorage.getItem('imgRes') || '10'; } catch { /* private mode */ }
+    const v = { key, getMap, dockEl, sfx, sceneId: null, indexKey: 'ndvi', contrast: false, hidden: false, layers: [], layerFor: new Map(), results: new Map(), sr: new Map(), srTried: new Set(), srRunning: false, res: savedRes, token: 0 };
     const id = (n) => n + sfx;
     dockEl.innerHTML = `
-      <div id="${id('imgLegend')}" class="chip-bar pointer-events-auto hidden items-center gap-3 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <div id="${id('imgLegend')}" class="chip-bar pointer-events-auto hidden items-center gap-3 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
+        <div id="${id('imgSrNote')}" class="chip-bar sr-note pointer-events-auto hidden items-center gap-2 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
+      </div>
       <div class="chip-bar pointer-events-auto flex h-11 items-center gap-1 rounded-xl px-1.5">
         <select id="${id('imgSource')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Sentinel-2 source">${Object.entries(PROVIDERS).map(([k, l]) => `<option value="${k}"${k === provider ? ' selected' : ''}>Sentinel-2 · ${l}</option>`).join('')}</select>
         <span class="h-5 w-px bg-white/10"></span>
         <select id="${id('imgIndex')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] font-medium outline-none" title="Layer">
           ${Object.entries(INDICES).map(([k, x]) => `<option value="${k}">${x.label}</option>`).join('')}
+        </select>
+        <select id="${id('imgRes')}" class="num h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Pixel size. 5 m and 2.5 m are sharpened by a model from the 10 m bands">
+          <option value="10">10 m</option><option value="x2">5 m</option><option value="x4">2.5 m</option>
         </select>
         <span class="h-5 w-px bg-white/10"></span>
         <button type="button" id="${id('imgContrast')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Contrast: stretch colours within each field">${icon('contrast')}</button>
@@ -537,6 +544,8 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     $('tlRangeMenu').querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => { state_.lookback = +b.dataset.days; loadFarm(true); }));
     $('imgSource').addEventListener('change', (e) => setProvider(e.target.value));
     $('imgIndex').addEventListener('change', (e) => { v.indexKey = e.target.value; refresh(v); });
+    $('imgRes').value = v.res;
+    $('imgRes').addEventListener('change', (e) => { v.res = e.target.value; try { localStorage.setItem('imgRes', v.res); } catch { /* ignore */ } refresh(v); });
     $('imgContrast').addEventListener('click', () => { v.contrast = !v.contrast; $('imgContrast').setAttribute('aria-pressed', String(v.contrast)); refresh(v); });
     $('imgCloudy').addEventListener('click', () => {
       state_.showCloudy = !state_.showCloudy;
@@ -559,7 +568,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       document.head.appendChild(st);
     }
   }
-  function clearLayers(v) { const m = v.getMap(); v.layers.forEach((l) => m && m.removeLayer(l)); v.layers.length = 0; }
+  function clearLayers(v) { const m = v.getMap(); v.layers.forEach((l) => m && m.removeLayer(l)); v.layers.length = 0; v.layerFor.clear(); v.sr.clear(); v.srTried.clear(); }
 
   function renderTimeline(v, status) {
     const box = v.$('tlChips');
@@ -585,6 +594,10 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
   function renderLegend(v) {
     const el = v.$('imgLegend'); const idx = INDICES[v.indexKey];
     v.$('imgIndex').value = v.indexKey;
+    const canSharpen = !!window.SuperRes && window.SuperRes.SUPPORTED.has(v.indexKey);
+    const rs = v.$('imgRes'); rs.disabled = !canSharpen; rs.value = canSharpen ? v.res : '10';
+    rs.title = canSharpen ? 'Pixel size. 5 m and 2.5 m are sharpened by a model from the 10 m bands' : 'Only NDVI, MSAVI and natural colour can be sharpened';
+    if (!canSharpen || v.res === '10') srNote(v, '');
     if (idx.rgb) { el.classList.add('hidden'); el.classList.remove('flex'); return; }
     el.classList.remove('hidden'); el.classList.add('flex');
     const [lo, hi] = idx.range;
@@ -595,6 +608,45 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
          <span class="h-2 w-32 rounded-full" style="background:${gradient(idx.ramp)}"></span>
          <span class="num font-mono">${v.contrast ? 'P98' : hi}</span>
          <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm" style="background:rgb(120,126,135)"></span>cloud</span>`;
+  }
+
+  function srNote(v, html, busy) {
+    const el = v.$('imgSrNote'); if (!el) return;
+    el.classList.toggle('hidden', !html); el.classList.toggle('flex', !!html); el.classList.toggle('busy', !!busy);
+    el.innerHTML = html;
+  }
+  /** Replaces each field's 10 m layer with the sharpened one: the open field first, then fields in view. Re-run on pan. */
+  async function sharpen(v) {
+    const SR = window.SuperRes; const map = v.getMap(); const scene = sceneById(v.sceneId);
+    if (!SR || !map || !scene || v.res === '10' || !SR.SUPPORTED.has(v.indexKey) || v.srRunning) return;
+    const token = v.token, label = SR.MODELS[v.res].label;
+    v.srRunning = true;
+    let lastErr = null;
+    try {
+      for (;;) {
+        if (token !== v.token) return;
+        const view = map.getBounds(), open = window.__openFieldId;
+        const todo = currentFields().filter((f) => v.layerFor.has(f.id) && !v.srTried.has(f.id) && (f.id === open || view.intersects(L.geoJSON(f.geometry).getBounds())))
+          .sort((a, b) => (b.id === open) - (a.id === open));
+        if (!todo.length) break;
+        const f = todo[0]; v.srTried.add(f.id);
+        const left = todo.length;
+        const step = (p) => {
+          if (token !== v.token) return;
+          srNote(v, `<span class="sr-spin"></span><span class="num">${label}</span><span>${p.phase === 'model' ? `Loading model ${Math.round(p.f * 100)}%` : left > 1 ? `Sharpening, ${left} fields left` : 'Sharpening'}</span>`, true);
+        };
+        step({ phase: 'run' });
+        try {
+          const r = await SR.enhance(f, scene, v.indexKey, v.res, step);
+          if (token !== v.token) return;
+          const old = v.layerFor.get(f.id); if (old) { map.removeLayer(old); v.layers.splice(v.layers.indexOf(old), 1); }
+          const l = L.imageOverlay(paint(r, { contrast: v.contrast }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map);
+          v.layers.push(l); v.layerFor.set(f.id, l); v.sr.set(f.id, r);
+        } catch (err) { if (token !== v.token) return; lastErr = err; }
+      }
+      if (!v.sr.size) srNote(v, `<span class="num">${label}</span><span>${lastErr ? escapeHtml(lastErr.message || 'Sharpening failed') : 'Zoom to a field to sharpen it'}</span>`);
+      else srNote(v, `<span class="num">${label}</span><span>Sharpened by a model · stats stay at 10 m</span>`);
+    } finally { v.srRunning = false; if (token !== v.token) sharpen(v); }
   }
 
   async function selectScene(v, id) {
@@ -629,7 +681,8 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (token !== v.token) return;
     if (!done.length && lastErr) showError(friendly(lastErr));
     clearLayers(v);
-    done.forEach((r) => v.layers.push(L.imageOverlay(paint(r, { contrast: v.contrast }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map)));
+    done.forEach((r) => { const l = L.imageOverlay(paint(r, { contrast: v.contrast }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map); v.layers.push(l); v.layerFor.set(r.field.id, l); });
+    sharpen(v);
     if (v === views[0]) {
       state_.results = v.results;
       emit('imagery:change');
@@ -806,7 +859,8 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
   }
   function valueAt(r, latlng) {
     const [x, y] = proj4('EPSG:4326', utmDef(r.code)).forward([latlng.lng, latlng.lat]);
-    const c = Math.floor((x - r.gx0) / 10), row = Math.floor((r.gy0 - y) / 10);
+    const px = r.px || 10;
+    const c = Math.floor((x - r.gx0) / px), row = Math.floor((r.gy0 - y) / px);
     if (c < 0 || row < 0 || c >= r.w || row >= r.h) return undefined;
     const i = row * r.w + c;
     return r.inField[i] ? r.values[i] : undefined;
@@ -824,7 +878,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       const el = hoverEls[v.key]; const map = v.getMap();
       if (!el || !map || (k === 1 && !state_.split)) return;
       if (swipeSide >= 0 && swipeSide !== k) { el.classList.add('hidden'); return; }
-      const r = v.results.get(f.id); const idx = INDICES[v.indexKey];
+      const r = v.sr.get(f.id) || v.results.get(f.id); const idx = INDICES[v.indexKey];
       let lines = `<div class="font-medium">${escapeHtml(name)}</div>`;
       if (r && !idx.rgb) {
         const val = valueAt(r, latlng);
@@ -857,7 +911,10 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
   createView('A', () => mapInstance, document.getElementById('imageryDock'), '');
   let attached = false;
   document.addEventListener('workspace:fields', () => {
-    if (!attached && mapInstance) { attached = true; ensurePane(mapInstance); hoverBind(mapInstance); }
+    if (!attached && mapInstance) {
+      attached = true; ensurePane(mapInstance); hoverBind(mapInstance);
+      let t = 0; mapInstance.on('moveend', () => { clearTimeout(t); t = setTimeout(() => views.forEach((v) => sharpen(v)), 400); });
+    }
     drawOutline2();
     loadFarm(false);
   });
@@ -887,6 +944,8 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
         .bindTooltip(`Drop ${i + 1}: ${cl.ha.toFixed(2)} ha, ${cl.meanDrop.toFixed(2)}`, { direction: 'top' }).addTo(mapInstance)));
     },
     clearDelta,
+    sharpen: () => views.forEach((v) => sharpen(v)),
+    _sr: { libs, readBand, ringsOf, utmDef, epsgOf },
     _caches: { sceneCache, resultCache, bandCache, imgCache, shCache },
   };
   // compatibility: older callers read the main screen's settings from state

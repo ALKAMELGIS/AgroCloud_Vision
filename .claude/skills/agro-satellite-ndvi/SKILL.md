@@ -1,6 +1,6 @@
 ---
 name: agro-satellite-ndvi
-description: How AgroCloud Vision reads Sentinel-2 in the browser (js/imagery.js) — the map timeline, source/index toolbar, indices (NDVI, NDRE, MSAVI, NDMI, ReCI, VMI, natural colour), SCL cloud masking with per-field cloud %, swipe between dates, per-field risks (NDVI change vs previous clear date), and the field Analytics tab (js/analytics.js) with value classes, compare/anomalies and season curve — plus offline testing with mock scenes. Use it for anything about satellite imagery, vegetation indices (NDVI, NDMI, NDRE), cloud masking, monitoring, anomalies, zones/VRA built on NDVI, or when imagery fails to load, looks wrong, or a new index/source must be added.
+description: How AgroCloud Vision reads Sentinel-2 in the browser (js/imagery.js) — the map timeline, source/index toolbar, indices (NDVI, NDRE, MSAVI, NDMI, ReCI, VMI, natural colour), SCL cloud masking with per-field cloud %, swipe between dates, per-field risks (NDVI change vs previous clear date), and the field Analytics tab (js/analytics.js) with value classes, compare/anomalies and season curve, sharpening to 5 m / 2.5 m with super-resolution models (js/superres.js) — plus offline testing with mock scenes. Use it for anything about satellite imagery, vegetation indices (NDVI, NDMI, NDRE), cloud masking, monitoring, anomalies, zones/VRA built on NDVI, super-resolution, higher resolution or 1 m requests, or when imagery fails to load, looks wrong, or a new index/source must be added.
 ---
 
 # Satellite imagery (indices, timeline, swipe, risks)
@@ -60,6 +60,26 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
   - quick periods 3M / 6M / 1Y / 2Y; the period is at most 3 years;
   - CSV export: date, mean, P10, P90, cloud, temperature, rain, soil.
 - **Tests:** `test_timeseries.py` (agro-workspace-testing) mocks the weather history route.
+
+## Sharpening / super-resolution (`js/superres.js`)
+
+Dock control `#imgRes`: 10 m (original) / 5 m / 2.5 m. Choice kept in `localStorage.imgRes`.
+
+- Models in `models/sr/` (Apache 2.0, from openearthplatforminitiative/sentinel2-super-resolution):
+  `s2v2x2_spatrad.onnx` (x2, Sen2Venus, more faithful) and `wsx4_spatrad.onnx` (x4, WorldStrat, sharper, can invent detail).
+  Input B02 B03 B04 B08 at 10 m as reflectance x 10000, output the same 4 bands. Max is x4 = 2.5 m.
+  **There is no 1 m model in that repo** (`s2v2x4_spatrad.onnx` upstream is an empty file). Do not chain models or
+  upsample to claim 1 m: it adds no information. Say so if asked.
+- Runs in the browser with onnxruntime-web 1.22.0 from jsDelivr: WebGPU when `navigator.gpu`, else WASM.
+  Models (~18 MB each) download once and stay in Cache Storage `agro-sr-v1`.
+- Per field: read the 4 bands with a margin of ceil(margin/factor) input px (33), run 96 px core tiles,
+  crop margin*factor output px. Field mask rasterised on a canvas. Cloud mask still from 20 m SCL.
+- Only NDVI, MSAVI, natural colour (no red-edge/SWIR in the model). Other indices disable the control.
+- Order: the open field (`window.__openFieldId`) first, then fields in view; re-runs on map `moveend`.
+  The 10 m layer shows first, each field is swapped when its sharpened layer is ready.
+- Sharpened results live in `view.sr` (hover reads them). `view.results`, stats, zones, compare and time series stay 10 m
+  because the model output is an estimate, not a measurement.
+- Test: `agro-workspace-testing/scripts/test_superres.py` (mock scenes need `blue` and `green` assets).
 
 ## Sources
 

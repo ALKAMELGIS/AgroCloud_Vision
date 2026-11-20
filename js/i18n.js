@@ -119,6 +119,12 @@
     'Full name': 'الاسم الكامل', 'Organization or farm name': 'اسم المؤسسة أو المزرعة', 'Create an organization': 'أنشئ مؤسسة', 'No account yet?': 'لا تملك حساباً؟',
     'At least 8 characters': '8 أحرف على الأقل', 'e.g. Al Khatim Farms': 'مثال: مزارع الختم', 'Your farms and fields open on the map right after': 'تفتح مزارعك وحقولك على الخريطة مباشرة بعد ذلك',
     'e.g. North pivots': 'مثال: المحاور الشمالية',
+    'Sharpened by a model · stats stay at 10 m': 'تحسين بالنموذج · الإحصاءات تبقى على 10 م', 'Zoom to a field to sharpen it': 'قرّب الخريطة إلى حقل لتحسين دقته',
+    'Sharpening': 'جارٍ تحسين الدقة', 'Sharpening failed': 'تعذّر تحسين الدقة',
+    'Pixel size. 5 m and 2.5 m are sharpened by a model from the 10 m bands': 'حجم البكسل. 5 م و2.5 م ناتجة عن نموذج يحسّن نطاقات 10 م',
+    'Only NDVI, MSAVI and natural colour can be sharpened': 'تحسين الدقة متاح لـ NDVI وMSAVI واللون الطبيعي فقط',
+    'Sharpening works with NDVI, MSAVI and natural colour': 'تحسين الدقة متاح لـ NDVI وMSAVI واللون الطبيعي فقط',
+    'The field is too large to sharpen in the browser': 'الحقل أكبر من أن تُحسَّن دقته في المتصفح', 'No data for this field on this date': 'لا توجد بيانات لهذا الحقل في هذا التاريخ',
     'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
     'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
     'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',
@@ -135,6 +141,9 @@
   /** Patterns for strings built from numbers; each returns Arabic or undefined. */
   const RULES = [
     [/^(\d+) fields?$/, (m) => `${m[1]} ${+m[1] === 1 ? 'حقل' : 'حقول'}`],
+    [/^Loading model (\d+)%$/, (m) => `تحميل النموذج ${m[1]}%`],
+    [/^Sharpening, (\d+) fields left$/, (m) => `جارٍ تحسين الدقة، متبقٍ ${m[1]} حقول`],
+    [/^Could not download the sharpening model \((\d+)\)$/, (m) => `تعذّر تحميل نموذج تحسين الدقة (${m[1]})`],
     [/^(\d+) corners$/, (m) => `${m[1]} زوايا`],
     [/^(\d+) activities this month$/, (m) => `${m[1]} نشاط هذا الشهر`],
     [/^(\d+) clearest NDVI dates$/, (m) => `أوضح ${m[1]} تواريخ NDVI`],
