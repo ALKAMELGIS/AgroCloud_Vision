@@ -25,7 +25,12 @@
   const t0 = (d) => Date.parse(d + 'T00:00:00Z');
   const fmtShort = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const INDEX_KEYS = ['ndvi', 'ndre', 'msavi', 'ndmi', 'reci'];
-  const COLORS = { ndvi: '#7cc46a', ndre: '#e08a5b', msavi: '#d4b26a', ndmi: '#5ea7e0', reci: '#4fb8a5' };
+  // same hues in both themes; on light paper they are a step deeper so lines keep their contrast
+  const PALETTES = {
+    dark: { ndvi: '#7cc46a', ndre: '#e08a5b', msavi: '#d4b26a', ndmi: '#5ea7e0', reci: '#4fb8a5' },
+    light: { ndvi: '#4a9a3a', ndre: '#c2622f', msavi: '#a8822a', ndmi: '#3577b5', reci: '#25877a' },
+  };
+  const COLORS = { ...PALETTES[window.Theme && Theme.current === 'light' ? 'light' : 'dark'] };
   const WEATHER_INK = '#9aa3ad';
   const WEATHER = {
     none: null,
@@ -630,6 +635,7 @@
   window.addEventListener('resize', schedule);
   document.addEventListener('workspace:fields', () => { if (ts.open) { const before = ts.fieldId; fillFields(); if (ts.fieldId !== before) load(); } });
   document.addEventListener('imagery:change', schedule);
+  document.addEventListener('theme:change', (e) => { Object.assign(COLORS, PALETTES[e.detail] || PALETTES.dark); fillIndices(); setTimeout(schedule, 30); });
   // opening a field in the panel shows that field here too
   const prevOpen = window.openFieldPanel;
   window.openFieldPanel = function (id, tab) {

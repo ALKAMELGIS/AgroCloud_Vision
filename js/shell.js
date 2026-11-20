@@ -69,16 +69,23 @@
   document.getElementById('navBottom').innerHTML = `
     <button type="button" class="nav-row lang-switch" data-action="lang" title="Language" translate="no" lang="${toArabic ? 'ar' : 'en'}">
       <span class="nav-label">${icon('globe')}<span>${toArabic ? 'العربية' : 'English'}</span></span><span class="lang-code nav-meta">${toArabic ? 'AR' : 'EN'}</span></button>
+    <button type="button" class="nav-row theme-switch" data-action="theme" title="Theme" aria-label="Theme">
+      <span class="nav-label">${icon('sun')}<span>Appearance</span></span>
+      <span class="nav-meta"><span class="theme-pill" aria-hidden="true">${icon('moon', 'is-dark')}${icon('sun', 'is-light')}</span></span></button>
     <button type="button" class="nav-row" data-action="logout" title="Log out"><span class="nav-label">${icon('logOut')}<span>Log out</span></span></button>
     <div class="ws-text truncate px-2.5 pt-1 text-[11px] text-gray-500" id="navUser"></div>`;
   const usr = JSON.parse(localStorage.getItem('user') || 'null');
   if (usr) document.getElementById('navUser').textContent = usr.email + (usr.role ? ' · ' + usr.role : '');
   document.querySelector('[data-action="logout"]').addEventListener('click', () => {
-    const keep = ['lang', 'navCollapsed', 'panelCollapsed', 'imgProvider', 'imgContrast', 'imgRes', 'tsIndices', 'tsChart'].map((k) => [k, localStorage.getItem(k)]);
+    const keep = ['lang', 'navCollapsed', 'panelCollapsed', 'imgProvider', 'imgContrast', 'imgRes', 'tsIndices', 'tsChart', 'tsMode', 'theme'].map((k) => [k, localStorage.getItem(k)]);
     localStorage.clear();
     keep.forEach(([k, v]) => { if (v != null) localStorage.setItem(k, v); });   // per-browser preferences survive sign-out
     window.location.href = 'main.html';
   });
+  const themeBtn = document.querySelector('[data-action="theme"]');
+  const syncTheme = () => { const light = window.Theme && Theme.current === 'light'; themeBtn.setAttribute('aria-pressed', String(light)); themeBtn.title = light ? 'Light' : 'Dark'; themeBtn.querySelector('.nav-label .ico').outerHTML = icon(light ? 'sun' : 'moon'); };
+  themeBtn.addEventListener('click', () => { if (window.Theme) Theme.toggle(); });
+  document.addEventListener('theme:change', syncTheme); syncTheme();
   document.querySelector('[data-action="lang"]').addEventListener('click', () => window.I18n && I18n.setLang(toArabic ? 'ar' : 'en'));
 
   navEl.querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {

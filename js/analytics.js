@@ -36,13 +36,13 @@
     const Y = (v) => P.t + (1 - (v - y0) / (y1 - y0)) * (H - P.t - P.b);
     const ticks = [0, 0.5, 1].map((t) => y0 + (y1 - y0) * t);
     return `<svg viewBox="0 0 ${W} ${H}" class="w-full" role="img">
-      ${ticks.map((v) => `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,.07)"/><text x="${P.l - 4}" y="${Y(v) + 3}" text-anchor="end" font-size="9" fill="#6f7782" font-family="ui-monospace,monospace">${opts.fmt ? opts.fmt(v) : v.toFixed(1)}</text>`).join('')}
+      ${ticks.map((v) => `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)"/><text x="${P.l - 4}" y="${Y(v) + 3}" text-anchor="end" font-size="9" style="fill:var(--t-3)" font-family="ui-monospace,monospace">${opts.fmt ? opts.fmt(v) : v.toFixed(1)}</text>`).join('')}
       ${series.map((s) => s.bars
         ? s.points.map((p) => `<rect x="${X(p.x) - 1.5}" y="${Y(Math.max(p.y, 0))}" width="3" height="${Math.max(0, Y(0) - Y(Math.max(p.y, 0)))}" fill="${s.color}" opacity=".7"/>`).join('')
         : `<path d="${s.points.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)} ${Y(p.y).toFixed(1)}`).join(' ')}" fill="none" stroke="${s.color}" stroke-width="${s.width || 1.75}" ${s.dash ? 'stroke-dasharray="4 3"' : ''} stroke-linejoin="round"/>
-           ${s.dots ? s.points.map((p) => `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="2.5" fill="#181b20" stroke="${s.color}" stroke-width="1.5"><title>${p.label || ''}</title></circle>`).join('') : ''}`).join('')}
-      <text x="${P.l}" y="${H - 4}" font-size="9" fill="#6f7782">${opts.xLabel0 || ''}</text>
-      <text x="${W - P.r}" y="${H - 4}" font-size="9" fill="#6f7782" text-anchor="end">${opts.xLabel1 || ''}</text>
+           ${s.dots ? s.points.map((p) => `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="2.5" style="fill:var(--g-900)" stroke="${s.color}" stroke-width="1.5"><title>${p.label || ''}</title></circle>`).join('') : ''}`).join('')}
+      <text x="${P.l}" y="${H - 4}" font-size="9" style="fill:var(--t-3)">${opts.xLabel0 || ''}</text>
+      <text x="${W - P.r}" y="${H - 4}" font-size="9" style="fill:var(--t-3)" text-anchor="end">${opts.xLabel1 || ''}</text>
     </svg>`;
   }
   const legend = (items) => `<div class="mt-1 flex flex-wrap gap-3 text-[11px] text-gray-500">${items.map(([c, l]) => `<span class="flex items-center gap-1.5"><span class="h-0.5 w-3 rounded" style="background:${c}"></span>${l}</span>`).join('')}</div>`;

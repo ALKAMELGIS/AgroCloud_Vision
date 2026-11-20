@@ -105,6 +105,15 @@ Both modes use the same two views:
 - The hover readout shows only the screen under the cursor.
 - Don't animate the handle with `transform`, and keep exactly one `.swipe-handle` rule. An older duplicate rule drew a second circle.
 
+## Light and dark (`data-theme` on `<html>`)
+
+- `js/i18n.js` sets `document.documentElement.dataset.theme` from `localStorage.theme` (default dark) before first paint, and exposes `window.Theme` (`current`, `set`, `toggle`, `css(varName)`). It fires `theme:change`; switching adds `.theme-fade` for 0.3 s (skipped with reduced motion). The nav rail has an "Appearance" row with a sliding moon/sun pill. `theme` survives logout.
+- Every colour in `css/workspace-dark.css` is a variable. `:root` = dark graphite; `:root[data-theme="light"]` = warm limestone and paper (`--g-*` surfaces, `--t-1…--t-4` ink text, deep field green accent `#15803d`). Triples for alpha: `rgb(var(--ink) / .08)` lines and washes, `rgb(var(--glass) / .92)` map controls, `rgb(0 0 0 / calc(.35 * var(--sh)))` shadows (`--sh` 1 dark, .32 light).
+- **Never write a literal colour** in CSS or JS for chrome. Canvas and inline SVG read the theme (`Theme.css('--t-3')`, `style="fill:var(--g-900)"`; SVG presentation attributes do not take `var()`). Data colours stay literal: NDVI ramps, index hues (time series has a deeper light palette), risk dots.
+- No blue-violet, no neon, no gradients on chrome, in either theme. Light is not pure white: panel `#f8f7f3`, rail `#efede8`, raised `#ffffff`.
+- Markup that is white-on-dark by class (`text-white/70` in the hover readout, `bg-brand-900 text-white` selected farm) has light overrides at the end of the CSS.
+- Test: `agro-workspace-testing/scripts/test_theme.py` with `THEME=light` and `THEME=dark` (applied before paint, WCAG 4.5 contrast on key text, switch, kept after reload).
+
 ## Theme (unslop rules)
 
 - `css/workspace-dark.css` remaps Tailwind's neutral utilities inside `.dark-ui` to one graphite ramp:

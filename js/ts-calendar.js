@@ -18,8 +18,13 @@
 (function () {
   'use strict';
 
-  const BASE = [30, 36, 43];           // empty day
-  const SURFACE = [17, 20, 24];
+  // empty day and chart ground come from the theme (dark graphite or light limestone)
+  let BASE = [30, 36, 43], INK = '255 255 255', MUTED = '#6f7782';
+  const themeColors = () => {
+    const css = (n) => (window.Theme ? Theme.css(n) : '');
+    const h = css('--cell-empty'); if (/^#[0-9a-f]{6}$/i.test(h)) BASE = hex(h);
+    INK = css('--ink') || INK; MUTED = css('--t-3') || MUTED;
+  };
   const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const mix = (a, b, f) => a.map((v, i) => Math.round(v + (b[i] - v) * f));
@@ -35,6 +40,7 @@
 
   /** Day cells for one layer, with interpolation between clear dates and summary stats. */
   function build(ctx) {
+    themeColors();
     const { ts, keys, colors, t0, DAY } = ctx;
     if (!keys.includes(heatKey)) heatKey = keys[0];
     const k = heatKey;
@@ -57,7 +63,9 @@
     const lo = vals.length ? Math.min(...vals) : 0, hi = vals.length ? Math.max(...vals) : 1;
     const c0 = hex(colors[k]);
     // dark surface → the layer's colour → a lighter tint of it for the top level
-    const palette = [mix(BASE, c0, 0.34), mix(BASE, c0, 0.56), mix(BASE, c0, 0.78), c0, mix(c0, [255, 255, 255], 0.32)];
+    // the top level moves away from the ground: lighter on dark, deeper on light
+    const light = window.Theme && Theme.current === 'light';
+    const palette = [mix(BASE, c0, 0.3), mix(BASE, c0, 0.52), mix(BASE, c0, 0.76), c0, light ? mix(c0, [24, 28, 22], 0.3) : mix(c0, [255, 255, 255], 0.32)];
     cells.forEach((c) => {
       if (c.v == null) { c.lvl = -1; c.rgb = BASE; c.n = 0; return; }
       c.n = hi > lo ? (c.v - lo) / (hi - lo) : 0.5;
@@ -224,7 +232,7 @@
         const corner = (dx, dy, zz) => S(x + dx * a, y + dy * a, zz);
         const top = [corner(-1, -1, z), corner(1, -1, z), corner(1, 1, z), corner(-1, 1, z)];
         const hot = this.hover === c;
-        const col = hot ? c.rgb.map((v) => Math.min(255, v + 34)) : c.rgb;
+        const col = hot ? (window.Theme && Theme.current === 'light' ? shade(c.rgb, 0.82) : c.rgb.map((v) => Math.min(255, v + 34))) : c.rgb;
         const shapes = [];
         if (z > 0.01) {
           sides.forEach((f) => {
@@ -235,14 +243,14 @@
             shapes.push(poly);
           });
         }
-        g.fillStyle = rgb(c.v == null ? mix(BASE, SURFACE, 0.2) : col);
+        g.fillStyle = rgb(c.v == null ? BASE : col);
         g.beginPath(); top.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); g.fill();
-        if (z > 0.01) { g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 0.6; g.stroke(); }
+        if (z > 0.01) { g.strokeStyle = `rgb(${INK} / .08)`; g.lineWidth = 0.6; g.stroke(); }
         shapes.push(top);
         this.polys.push({ c, shapes });
       }
       // month labels along the near edge
-      g.font = '10px "IBM Plex Sans", system-ui, sans-serif'; g.fillStyle = '#6f7782'; g.textAlign = 'center';
+      g.font = '10px "IBM Plex Sans", system-ui, sans-serif'; g.fillStyle = MUTED; g.textAlign = 'center';
       let lastM = -1, lastX = -1e9;
       d.cells.forEach((c) => {
         if (c.row !== 0) return; const m = new Date(c.t).getUTCMonth(); if (m === lastM) return; lastM = m;

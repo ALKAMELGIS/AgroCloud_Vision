@@ -19,6 +19,27 @@
   root.lang = lang;
   root.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
+  // Theme (dark / light) is set here too, before first paint, so there is no flash.
+  let theme = 'dark';
+  try { theme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark'; } catch { /* storage off */ }
+  root.dataset.theme = theme;
+  window.Theme = {
+    get current() { return root.dataset.theme; },
+    set(t) {
+      t = t === 'light' ? 'light' : 'dark';
+      if (t === root.dataset.theme) return;
+      const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!still) root.classList.add('theme-fade');
+      root.dataset.theme = t;
+      try { localStorage.setItem('theme', t); } catch { /* ignore */ }
+      document.dispatchEvent(new CustomEvent('theme:change', { detail: t }));
+      setTimeout(() => root.classList.remove('theme-fade'), 320);
+    },
+    toggle() { this.set(root.dataset.theme === 'light' ? 'dark' : 'light'); },
+    /** Reads a CSS variable of the current theme (for canvas and inline SVG). */
+    css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); },
+  };
+
   // ------------------------------------------------------------ dictionary (English → Arabic)
 
   const AR = {
@@ -130,6 +151,7 @@
     'Line': 'خط',
     'Heatmap': 'خريطة حرارية', '3D skyline': 'مجسّم ثلاثي الأبعاد', 'View': 'العرض', 'Average': 'المتوسط', 'Peak': 'الذروة', 'Lowest': 'الأدنى', 'Latest': 'الأحدث',
     'Estimated': 'تقديري', 'Drag to turn · double-click to reset': 'اسحب للتدوير · نقر مزدوج للإرجاع', 'No clear image around this day': 'لا توجد صورة صافية حول هذا اليوم',
+    'Theme': 'المظهر', 'Light': 'فاتح', 'Dark': 'داكن', 'Appearance': 'المظهر',
     'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
     'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
     'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',
