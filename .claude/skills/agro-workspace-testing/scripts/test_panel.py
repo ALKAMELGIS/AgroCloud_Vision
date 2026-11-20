@@ -66,7 +66,7 @@ with sync_playwright() as p:
     pg.screenshot(path=SH + 'p1_overview.png')
 
     # activity log
-    pg.locator('.nav-item', has_text='Field activity log').click()
+    pg.click('#navItems [data-view=activity-log]')
     expect(pg.locator('#activityLogDialog')).to_be_visible()
     expect(pg.locator('#alBody table')).to_be_visible()
     dots = pg.locator('#alBody tbody span.rounded-full').count()

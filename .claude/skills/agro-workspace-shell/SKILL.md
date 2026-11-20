@@ -1,12 +1,12 @@
 ---
 name: agro-workspace-shell
-description: Layout and conventions of the AgroCloud Vision map workspace (workspace.html + js/shell.js + css/workspace-dark.css), modelled on the EOS Crop Monitoring screen — map with location search, left tools (swipe, zoom, measure), bottom image timeline; side panel with Fields cards, farm selector, "Check fields with risks" chips; right navigation rail (Monitoring, Weather, Field activity log, VRA maps, Scout tasks, Notifications). Use it when adding a module or nav item, moving a control, theming, or when the user asks to make the workspace look or behave like EOS / "like the reference screenshot".
+description: Layout and conventions of the AgroCloud Vision map workspace (workspace.html + js/shell.js + css/workspace-dark.css), modelled on the EOS Crop Monitoring screen — map with location search, left tools (split view, zoom, measure), bottom image timeline per screen; side panel with Fields cards and "Check fields with risks" chips; sidebar ported from the user's SidebarNav component (farm switcher, grouped nav with headings, animated children, badges, ⌘K command palette, collapse to icon rail). Use it when adding a module or nav item, moving a control, theming, or when the user asks to make the workspace look or behave like EOS / "like the reference screenshot".
 ---
 
 # Workspace shell
 
 ```
-┌──────────────────────── map (#mapMain) ───────────────────────┬─ #sidePanel 320 ─┬─ #navRail 212 ─┐
+┌──────────────────────── map (#mapMain) ───────────────────────┬─ #sidePanel 320 ─┬─ #navRail 248/60 ┐
 │ search (place or "lat, lng")                 scale · attribution│ Fields view       │ logo           │
 │ [swipe] [+][−] [ruler]                                          │  farm select, +   │ Season 2026    │
 │                                                                 │  search · sort    │ Monitoring ▾   │
@@ -31,6 +31,30 @@ description: Layout and conventions of the AgroCloud Vision map workspace (works
   - `fieldpanel:close`, `activities:changed`.
 - **Globals the modules rely on:** `state`, `mapInstance`, `apiGet/Post/Patch/Delete`, `icon`, `escapeHtml`, `formatHa`, `showToast`, `showError`, `openFieldPanel`, `renderFieldsList`, `currentCropOf`, `downloadCsv`.
 
+## Sidebar (ported from the user's React `SidebarNav`)
+
+The user supplied a React component as the design reference; the site is
+vanilla JS, so `js/shell.js` reproduces it. Keep these parts consistent with it:
+
+- **Farm switcher** in place of the workspace switcher: avatar letter, name, `N fields · X ha`, menu with farms and "Create farm" (opens `groupDialog`).
+- **`GROUPS`** of items:
+  - optional uppercase heading per group;
+  - each item has an icon, an optional `badge` (`Shell.setBadge(id, n, alert)`), an optional `shortcut` (keycap shown on hover), and optional `children`;
+  - children expand with a `grid-template-rows` 0fr→1fr transition, a vertical guide line and a rotating chevron.
+- **Collapse** (`#navCollapse`): the rail narrows to 60 px with icons only, remembered in `localStorage.navCollapsed`. Badges become a red dot. Clicking a parent opens its first child.
+- **Command palette** (⌘K / Ctrl+K or "Search"):
+  - lists fields, views, actions (draw, upload, split view, measure, create farm), other farms, and "Search places for …";
+  - arrow keys, Enter and Esc work.
+
+## Split view (each screen has its own layer)
+
+The split button (`#swipeBtn`, kept for test compatibility) calls `Imagery.setSplit(true)`:
+
+- `#mapPaneB` opens a second Leaflet map. Pan and zoom stay in sync, with a guard flag against loops.
+- Each screen is an `Imagery.views[i]` with its own date, index, contrast, hide toggle, toolbar and timeline. Screen B's ids take a `2` suffix (`#imgIndex2`, `#tlChips2` …).
+- B opens on the previous clear date on the same tile.
+- Hovering a field shows the reading at the same point on both screens (`#hoverA`, `#hoverB`): field name, index value and a class label from `Imagery.labelFor`.
+
 ## Theme (unslop rules)
 
 - `css/workspace-dark.css` remaps Tailwind's neutral utilities inside `.dark-ui` to one graphite ramp:
@@ -50,14 +74,17 @@ description: Layout and conventions of the AgroCloud Vision map workspace (works
 
 | z-index | Element |
 |---|---|
-| 405 / 406 | imagery panes `imgA` / `imgB` |
+| 395 | imagery pane `img` on each map, below the field outlines (overlayPane 400) |
 | 408 | VRA zones and sample points (pane `vra`) |
 | 555 | imagery dock |
 | 560 | search and tools |
-| 565 | swipe bar |
+| 570 | hover readout |
 | 580 | action bars (select-on-map, edit boundary) at `bottom-[136px]`, above the timeline |
 | 600 | Add menu |
 | 700 | toasts at `top-[72px]` |
+| 900+ | command palette, farm switcher menu |
+
+Map credits sit behind an ⓘ button (`.map-credit`). Esri's imagery terms require a visible credit, so don't remove the button.
 
 Anything clickable near the bottom must sit above the dock. The tests caught two bars hidden under it.
 

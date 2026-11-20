@@ -5,8 +5,9 @@ description: How AgroCloud Vision reads Sentinel-2 in the browser (js/imagery.js
 
 # Satellite imagery (indices, timeline, swipe, risks)
 
-`js/imagery.js` is the engine and the map UI (timeline at the bottom of the
-map, Sentinel-2 / index toolbar, legend, swipe). It paints every field of the
+`js/imagery.js` is the engine and the map UI. Each screen (`views[0]`, plus
+`views[1]` in split view) has its own timeline, Sentinel-2 / index toolbar,
+legend, contrast and layers. It paints every field of the
 farm for the selected date and index, then computes risks per field.
 `js/analytics.js` renders the field's **Analytics** tab, plus Leaderboard,
 Reports and Notifications from the same results. Everything
@@ -19,7 +20,8 @@ POST Earth Search /v1/search (intersects = field, last 150 days, tile cloud < 80
   → geotiff.js fromUrl(asset) → read only the field window (HTTP Range)
       red, nir @10 m  ·  scl @20 m  ·  visual @10 m (true colour)
   → reflectance = DN·scale + offset → NDVI per pixel inside the polygon, SCL-masked
-  → stats, 10 value classes, overlay per field (pane imgB; swipe left side in pane imgA)
+  → stats, 10 value classes, overlay per field in each view's `img` pane (z 395, under the outlines)
+  → hover: UTM pixel lookup in each view's results → "Field · NDVI 0.85 · Dense vegetation" on both screens
   → risks: NDVI change vs the field's previous clear date on the same tile
      (high ≤ −0.10, low ≤ −0.03, no data when > 30% cloud) → chips, cards, leaderboard, notifications
 ```
@@ -37,9 +39,11 @@ Index formulas (reflectance; 20 m bands sampled on the 10 m grid):
 
 EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 
-Public API: `window.Imagery` — `analyse(field, scene, index)`, `compare(cur, prev)`,
-`current()`, `resultFor(fieldId)`, `riskFor(fieldId)`, `setSwipe(on)`, `showDelta`,
-events `imagery:change` and `imagery:risks`.
+Public API: `window.Imagery`:
+- `analyse(field, scene, index)`, `compare(cur, prev)`;
+- `current()` (main screen), `resultFor(fieldId)`, `riskFor(fieldId)`;
+- `setSplit(on)`, `views`, `labelFor(index, v)`, `showDelta`, `invalidate()`;
+- events `imagery:change` (main), `imagery:change-b` (second screen) and `imagery:risks`.
 
 All tunables are in `CONFIG` at the top of `js/imagery.js` (`Imagery.config`): collection, look-back, tile cloud threshold (50%, like EOS), risk thresholds, anomaly rule.
 

@@ -25,7 +25,7 @@
      its container. */
   #appRoot { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
   #mapMain { position: relative; flex: 1 1 auto; height: 100%; }
-  #mapContainer { height: 100%; width: 100%; }
+  #mapContainer, #mapContainer2 { height: 100%; width: 100%; }
 
   .ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   .num { font-variant-numeric: tabular-nums; }
@@ -51,7 +51,18 @@
 
   <!-- ====== Map ====== -->
   <main id="mapMain" class="relative flex-1">
-    <div id="mapContainer"></div>
+    <div id="mapRow" class="flex h-full w-full">
+      <div id="mapPaneA" class="map-pane relative h-full min-w-0 flex-1">
+        <div id="mapContainer"></div>
+        <div id="imageryDock" class="pointer-events-none absolute bottom-3 left-3 right-3 z-[555] flex flex-col items-end gap-2"></div>
+        <div id="hoverA" class="hover-readout hidden"></div>
+      </div>
+      <div id="mapPaneB" class="map-pane relative hidden h-full min-w-0 flex-1 border-l border-black">
+        <div id="mapContainer2" class="h-full w-full"></div>
+        <div id="imageryDock2" class="pointer-events-none absolute bottom-3 left-3 right-3 z-[555] flex flex-col items-end gap-2"></div>
+        <div id="hoverB" class="hover-readout hidden"></div>
+      </div>
+    </div>
 
     <!-- location search -->
     <div class="absolute left-3 top-3 z-[560] w-[min(400px,calc(100%-24px))]">
@@ -64,7 +75,7 @@
 
     <!-- map tools -->
     <div class="absolute left-3 top-1/2 z-[560] flex -translate-y-1/2 flex-col gap-2">
-      <button id="swipeBtn" type="button" class="map-btn" aria-pressed="false" title="Compare two dates (swipe)"><span data-icon="split"></span></button>
+      <button id="swipeBtn" type="button" class="map-btn" aria-pressed="false" title="Split view: two screens, each with its own date and layer"><span data-icon="split"></span></button>
       <div class="map-group">
         <button id="zoomInBtn" type="button" class="map-btn" title="Zoom in"><span data-icon="plus"></span></button>
         <button id="zoomOutBtn" type="button" class="map-btn" title="Zoom out"><span data-icon="minus"></span></button>
@@ -77,8 +88,6 @@
       </div>
     </div>
 
-    <!-- imagery: timeline + toolbar (js/imagery.js) -->
-    <div id="imageryDock" class="pointer-events-none absolute bottom-3 left-3 right-3 z-[555] flex flex-col items-end gap-2"></div>
 
     <!-- Add field menu, opened from the panel -->
     <div id="addMenu" role="menu" class="menu-pop chip-bar hidden absolute bottom-3 right-3 z-[600] w-64 flex-col rounded-xl p-1.5">
@@ -138,10 +147,6 @@
           <button id="activityLogBtn" type="button" title="Activity log" class="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"><span data-icon="calendar"></span></button>
         </div>
         <div id="fieldsTotal" class="num font-mono text-[12px] text-gray-500"></div>
-        <div class="mt-3 flex gap-2">
-          <select id="farmSelect" class="h-9 min-w-0 flex-1 rounded-lg border px-2.5 text-[13px] outline-none" aria-label="Farm"></select>
-          <button id="newFarmToggle" type="button" title="New farm or group" class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition-colors hover:bg-gray-100 hover:text-gray-900"><span data-icon="folderPlus"></span></button>
-        </div>
         <form id="addFarmForm" class="mt-2 hidden gap-2">
           <input id="newFarmName" placeholder="New farm name" class="h-9 min-w-0 flex-1 rounded-lg border px-3 text-[13px] outline-none" />
           <button type="submit" class="h-9 shrink-0 rounded-lg bg-brand-600 px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-700">Add</button>
@@ -178,18 +183,30 @@
     <div id="weatherSection" class="hidden"><div id="weatherList"></div></div>
   </section>
 
-  <!-- ====== Navigation rail ====== -->
-  <nav id="navRail" class="flex h-full w-[212px] shrink-0 flex-col border-l border-gray-100 bg-[#121519]" aria-label="Workspace">
-    <a href="index.html" class="flex h-14 items-center gap-2 px-4">
-      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-[13px] font-semibold text-white">A</div>
-      <span class="text-[14px] font-medium text-gray-900">AgroCloud Vision</span>
-    </a>
-    <div id="navItems" class="thin-scroll flex-1 overflow-y-auto px-2 pb-3"></div>
-    <div class="border-t border-gray-100 px-4 py-3">
-      <div id="userFooter" class="truncate text-[12px] text-gray-500"></div>
-      <button id="logoutBtn" class="mt-1 text-[12px] text-gray-400 transition-colors hover:text-gray-900">Log out</button>
+  <!-- ====== Navigation sidebar (js/shell.js) ====== -->
+  <nav id="navRail" class="nav-rail flex h-full shrink-0 flex-col border-l border-gray-100" aria-label="Workspace">
+    <div class="flex items-center gap-1 p-3 pb-2">
+      <div id="farmSwitcher" class="relative min-w-0 flex-1"></div>
+      <button id="navCollapse" type="button" class="nav-icon-btn" title="Collapse sidebar"><span data-icon="panelClose"></span></button>
     </div>
+    <div id="navItems" class="nav-scroll flex flex-1 flex-col gap-4 overflow-y-auto px-3 pb-3 pt-1"></div>
+    <div id="navBottom" class="flex flex-col gap-0.5 border-t border-gray-100 p-3"></div>
+    <span id="userFooter" class="hidden"></span><button id="logoutBtn" class="hidden"></button>
   </nav>
+</div>
+
+<!-- Command palette -->
+<div id="cmdk" class="fixed inset-0 z-[900] hidden items-start justify-center px-4 pt-[14vh]">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-cmdk-close></div>
+  <div class="cmdk-box relative w-full max-w-xl overflow-hidden rounded-xl">
+    <div class="flex items-center gap-3 border-b border-gray-100 px-4">
+      <span data-icon="search" class="text-gray-400"></span>
+      <input id="cmdkInput" class="bare flex-1 py-4 text-[14px] outline-none" placeholder="Search fields, farms, places or actions" autocomplete="off" />
+      <kbd class="kbd" data-cmdk-close>ESC</kbd>
+    </div>
+    <div id="cmdkList" class="thin-scroll max-h-[50vh] overflow-y-auto p-2"></div>
+  </div>
+
 </div>
 
 <!-- Hidden file pickers -->
@@ -275,16 +292,16 @@
 <dialog id="groupDialog" class="sheet narrow">
   <form id="groupForm" method="dialog" class="p-6">
     <div class="mb-1 flex items-center justify-between">
-      <h2 class="text-[17px] font-medium">New group</h2>
+      <h2 class="text-[17px] font-medium">New farm</h2>
       <button type="button" data-close class="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700" aria-label="Close"><span data-icon="x"></span></button>
     </div>
-    <p class="mb-5 text-[13px] text-gray-500">A group keeps fields together. It is listed under Farms, and new fields can be drawn or imported into it</p>
-    <label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="groupNameInput">Group name</label>
+    <p class="mb-5 text-[13px] text-gray-500">A farm groups fields together. Switch between farms from the top of the sidebar</p>
+    <label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="groupNameInput">Farm name</label>
     <input id="groupNameInput" required maxlength="120" placeholder="e.g. North pivots" class="h-10 w-full rounded-lg border border-gray-200 px-3 text-[14px] outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20" />
     <p id="groupError" class="hidden mt-3 text-[13px] text-red-600"></p>
     <div class="mt-6 flex justify-end gap-2">
       <button type="button" data-close class="h-10 rounded-lg px-4 text-[14px] font-medium text-gray-700 ring-1 ring-gray-200 transition-colors hover:bg-gray-50">Cancel</button>
-      <button id="groupSaveBtn" type="submit" class="h-10 rounded-lg bg-brand-600 px-4 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50">Create group</button>
+      <button id="groupSaveBtn" type="submit" class="h-10 rounded-lg bg-brand-600 px-4 text-[14px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50">Create farm</button>
     </div>
   </form>
 </dialog>
@@ -340,6 +357,12 @@ const ICONS = {
   mapPin: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
   bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  panelClose: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m8 9 3 3-3 3"/>',
+  panelOpen: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/>',
+  command: '<path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/>',
+  logOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  home: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  chevronDown: '<path d="m6 9 6 6 6-6"/>',
   arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
   pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>',
@@ -492,7 +515,11 @@ let pendingGeometry = null;
 function ensureMap(center) {
   if (mapInstance) return mapInstance;
   const map = L.map(document.getElementById('mapContainer'), { zoomControl: false, attributionControl: false }).setView(center, 15);
-  L.control.attribution({ position: 'topright' }).addTo(map);
+  const credit = document.createElement('div');
+  credit.className = 'map-credit';
+  credit.innerHTML = '<span class="credit-text">Imagery © Esri, Maxar, Earthstar Geographics · Leaflet</span><button type="button" title="Map credits" aria-label="Map credits">i</button>';
+  credit.querySelector('button').addEventListener('click', () => credit.classList.toggle('open'));
+  document.getElementById('mapPaneA').appendChild(credit);
   L.control.scale({ position: 'topright', imperial: false, maxWidth: 120 }).addTo(map);
   mapInstance = map;
   canvasRenderer = L.canvas({ padding: 0.5, tolerance: 4 });
@@ -1019,7 +1046,6 @@ function redrawBoundaries(fc) {
       const id = p.id || f.id;
       state.fieldLayerById.set(id, layer);
       state.fieldsById.set(id, { ...p, id, geometry: f.geometry });
-      layer.bindTooltip(`${escapeHtml(p.name)} · ${formatHa(p.areaHectares)}`, { sticky: true, direction: 'top', opacity: 0.95 });
       layer.on('click', (e) => {
         if (state.selectMode || activeDrawHandler || mapInstance.getContainer().style.cursor === 'crosshair') return;
         L.DomEvent.stop(e);
@@ -1033,7 +1059,8 @@ function redrawBoundaries(fc) {
 
 function fieldStyle(id) {
   const on = id === state.selectedFieldId;
-  return { color: on ? '#ffffff' : COLORS.field, weight: on ? 3 : 2, fillColor: COLORS.field, fillOpacity: on ? 0.22 : 0.12 };
+  // outline only: the satellite layer underneath carries the colour
+  return { color: on ? '#ffffff' : COLORS.field, weight: on ? 3 : 2, fillColor: COLORS.field, fillOpacity: 0.04 };
 }
 function setSelectedField(id) {
   state.selectedFieldId = id;
@@ -1076,12 +1103,6 @@ function renderFarmSelect() {
     ? state.farms.map((f) => `<option value="${f.id}" ${f.id === state.selectedFarmId ? 'selected' : ''}>${escapeHtml(f.name)} · ${f.fields?.length || 0}</option>`).join('')
     : '<option value="">No farms yet</option>';
 }
-document.getElementById('farmSelect').addEventListener('change', (e) => { if (e.target.value) selectFarm(e.target.value); });
-document.getElementById('newFarmToggle').addEventListener('click', () => {
-  const f = document.getElementById('addFarmForm');
-  f.classList.toggle('hidden'); f.classList.toggle('flex');
-  if (!f.classList.contains('hidden')) document.getElementById('newFarmName').focus();
-});
 
 function renderFarmsList() {
   renderFarmSelect();

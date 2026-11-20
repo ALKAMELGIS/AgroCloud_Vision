@@ -12,40 +12,127 @@
 (function () {
   'use strict';
 
-  const NAV = [
-    { group: 'monitoring', label: 'Monitoring', icon: 'layers', items: [['fields', 'Fields'], ['leaderboard', 'Leaderboard'], ['reports', 'Reports']] },
-    { group: 'weather', label: 'Weather', icon: 'cloud', items: [['weather-analytics', 'Analytics'], ['weather-forecast', 'Forecast']] },
-    { id: 'activity-log', label: 'Field activity log', icon: 'calendar' },
-    { group: 'vra', label: 'VRA maps', icon: 'grid', items: [['vra-sowing', 'Sowing'], ['vra-vegetation', 'Vegetation'], ['vra-pk', 'P&K'], ['vra-builder', 'Map builder'], ['soil-sampling', 'Soil sampling']] },
-    { id: 'scout', label: 'Scout tasks', icon: 'mapPin' },
-    { id: 'notifications', label: 'Notifications', icon: 'bell' },
+  // Structure follows the shared SidebarNav component: optional heading per group,
+  // items with icon, badge, shortcut and animated children.
+  const GROUPS = [
+    { items: [
+      { id: 'search', title: 'Search', icon: 'search', shortcut: '⌘K' },
+      { id: 'fields', title: 'Fields', icon: 'layers' },
+      { id: 'notifications', title: 'Notifications', icon: 'bell', badge: true },
+    ] },
+    { heading: 'Monitoring', items: [
+      { id: 'leaderboard', title: 'Leaderboard', icon: 'trophy' },
+      { id: 'reports', title: 'Reports', icon: 'fileText' },
+      { id: 'weather', title: 'Weather', icon: 'cloud', children: [
+        { id: 'weather-analytics', title: 'Analytics' }, { id: 'weather-forecast', title: 'Forecast' } ] },
+    ] },
+    { heading: 'Operations', items: [
+      { id: 'activity-log', title: 'Field activity log', icon: 'calendar' },
+      { id: 'scout', title: 'Scout tasks', icon: 'mapPin', badge: true },
+    ] },
+    { heading: 'Precision ag', items: [
+      { id: 'vra', title: 'VRA maps', icon: 'grid', children: [
+        { id: 'vra-sowing', title: 'Sowing' }, { id: 'vra-vegetation', title: 'Vegetation' },
+        { id: 'vra-pk', title: 'P&K' }, { id: 'vra-builder', title: 'Map builder' } ] },
+      { id: 'soil-sampling', title: 'Soil sampling', icon: 'flask' },
+    ] },
   ];
 
   const views = new Map();
   const shell = { current: 'fields' };
   window.Shell = shell;
-
+  const rail = document.getElementById('navRail');
   const navEl = document.getElementById('navItems');
-  const year = new Date().getFullYear();
-  navEl.innerHTML = `
-    <div class="mb-2 flex h-9 items-center gap-2.5 rounded-lg px-3 text-[13px] text-gray-500">${icon('sprout')}<span>Season ${year}</span></div>
-    ${NAV.map((n) => n.group ? `
-      <div class="nav-group" data-open="true">
-        <button type="button" class="nav-item" data-group="${n.group}">${icon(n.icon)}<span>${n.label}</span>${icon('chevron', 'chev')}</button>
-        <div class="nav-subs mt-0.5 flex flex-col gap-0.5">${n.items.map(([id, l]) => `<button type="button" class="nav-sub" data-view="${id}">${l}</button>`).join('')}</div>
-      </div>` : `
-      <button type="button" class="nav-item mt-0.5" data-view="${n.id}">${icon(n.icon)}<span>${n.label}</span><span class="nav-badge ml-auto hidden rounded-full bg-red-600 px-1.5 text-[10px] font-medium text-white"></span></button>`).join('')}`;
 
-  navEl.querySelectorAll('[data-group]').forEach((b) => b.addEventListener('click', () => {
-    const g = b.parentElement; g.dataset.open = g.dataset.open === 'false' ? 'true' : 'false';
+  function itemHtml(it, child) {
+    if (it.children) return `
+      <div class="nav-item-wrap" data-parent="${it.id}" data-open="false">
+        <button type="button" class="nav-row" data-toggle="${it.id}" title="${it.title}">
+          <span class="nav-label">${icon(it.icon)}<span>${it.title}</span></span>
+          <span class="nav-meta">${icon('chevronRight', 'nav-chev')}</span>
+        </button>
+        <div class="nav-children"><div>${it.children.map((c) => itemHtml(c, true)).join('')}</div></div>
+      </div>`;
+    return `
+      <button type="button" class="nav-row" data-view="${it.id}" title="${it.title}" aria-current="false">
+        <span class="nav-label">${child ? '' : icon(it.icon)}<span>${it.title}</span></span>
+        <span class="nav-meta">${it.shortcut ? `<kbd class="kbd">${it.shortcut}</kbd>` : ''}${it.badge ? `<span class="nav-badge hidden" data-badge="${it.id}"></span>` : ''}</span>
+        ${it.badge ? `<span class="nav-dot" data-dot="${it.id}"></span>` : ''}
+      </button>`;
+  }
+  navEl.innerHTML = GROUPS.map((g) => `
+    <div class="flex flex-col gap-0.5">
+      ${g.heading ? `<span class="nav-heading">${g.heading}</span>` : ''}
+      ${g.items.map((it) => itemHtml(it)).join('')}
+    </div>`).join('');
+  document.getElementById('navBottom').innerHTML = `
+    <button type="button" class="nav-row" data-action="logout" title="Log out"><span class="nav-label">${icon('logOut')}<span>Log out</span></span></button>
+    <div class="ws-text truncate px-2.5 pt-1 text-[11px] text-gray-500" id="navUser"></div>`;
+  const usr = JSON.parse(localStorage.getItem('user') || 'null');
+  if (usr) document.getElementById('navUser').textContent = usr.email + (usr.role ? ' · ' + usr.role : '');
+  document.querySelector('[data-action="logout"]').addEventListener('click', () => { localStorage.clear(); window.location.href = 'main.html'; });
+
+  navEl.querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
+    const wrap = b.parentElement;
+    if (rail.classList.contains('collapsed')) { const first = wrap.querySelector('[data-view]'); if (first) show(first.dataset.view); return; }
+    wrap.dataset.open = wrap.dataset.open === 'true' ? 'false' : 'true';
   }));
-  navEl.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => show(b.dataset.view)));
+  navEl.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.view === 'search') { openPalette(); return; }
+    show(b.dataset.view);
+  }));
+
+  // collapse to an icon rail (remembered per browser)
+  const collapseBtn = document.getElementById('navCollapse');
+  function setCollapsed(on) {
+    rail.classList.toggle('collapsed', on);
+    collapseBtn.innerHTML = icon(on ? 'panelOpen' : 'panelClose');
+    collapseBtn.title = on ? 'Expand sidebar' : 'Collapse sidebar';
+    try { localStorage.setItem('navCollapsed', on ? '1' : '0'); } catch { /* private mode */ }
+    setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); if (window.Imagery && Imagery.invalidate) Imagery.invalidate(); }, 280);
+  }
+  collapseBtn.addEventListener('click', () => setCollapsed(!rail.classList.contains('collapsed')));
+  try { if (localStorage.getItem('navCollapsed') === '1') setCollapsed(true); } catch { /* ignore */ }
+
+  // farm switcher (the component's "workspace switcher")
+  const sw = document.getElementById('farmSwitcher');
+  function renderSwitcher(open) {
+    const farm = state.farms.find((f) => f.id === state.selectedFarmId);
+    const list = state.fieldList || [];
+    const ha = list.reduce((a, f) => a + (f.areaHectares || 0), 0);
+    sw.innerHTML = `
+      <button type="button" class="ws-btn" id="wsBtn" title="${farm ? escapeHtml(farm.name) : 'Farms'}">
+        <span class="flex min-w-0 items-center gap-3">
+          <span class="ws-avatar">${escapeHtml((farm ? farm.name : 'A').charAt(0).toUpperCase())}</span>
+          <span class="ws-text flex min-w-0 flex-col">
+            <span class="truncate text-[13px] font-medium leading-tight text-gray-900">${farm ? escapeHtml(farm.name) : 'No farm yet'}</span>
+            <span class="num truncate text-[11px] leading-tight text-gray-500">${list.length} field${list.length === 1 ? '' : 's'} · ${formatHa(ha)}</span>
+          </span>
+        </span>
+        <span class="ws-chev text-gray-500">${icon('chevronDown')}</span>
+      </button>
+      ${open ? `<div class="ws-menu">
+        ${state.farms.map((f) => `<button type="button" class="ws-opt" data-farm="${f.id}" aria-current="${f.id === state.selectedFarmId}"><span class="truncate">${escapeHtml(f.name)}</span><span class="num font-mono text-[11px] text-gray-500">${f.fields?.length || 0}</span></button>`).join('')}
+        <div class="mx-2 my-1 h-px bg-white/10"></div>
+        <button type="button" class="ws-opt" data-new-farm><span class="flex items-center gap-2 text-gray-500">${icon('plus')}Create farm</span></button>
+      </div>` : ''}`;
+    sw.querySelector('#wsBtn').addEventListener('click', (e) => { e.stopPropagation(); renderSwitcher(!open); });
+    sw.querySelectorAll('[data-farm]').forEach((b) => b.addEventListener('click', () => { renderSwitcher(false); if (b.dataset.farm !== state.selectedFarmId) selectFarm(b.dataset.farm); }));
+    const nf = sw.querySelector('[data-new-farm]');
+    if (nf) nf.addEventListener('click', () => { renderSwitcher(false); openGroupDialog(); });
+  }
+  document.addEventListener('click', (e) => { if (!sw.contains(e.target) && sw.querySelector('.ws-menu')) renderSwitcher(false); });
+  const origFarms = window.renderFarmsList;
+  window.renderFarmsList = function () { const r = origFarms.apply(this, arguments); renderSwitcher(false); return r; };
+  document.addEventListener('workspace:fields', () => renderSwitcher(false));
+  shell.renderSwitcher = renderSwitcher;
 
   const moduleEl = document.getElementById('viewModule');
   const fieldsEl = document.getElementById('viewFields');
 
   function markNav(id) {
     navEl.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-current', String(b.dataset.view === id)));
+    navEl.querySelectorAll('.nav-item-wrap').forEach((w) => { if (w.querySelector(`[data-view="${id}"]`)) w.dataset.open = 'true'; });
   }
 
   function show(id) {
@@ -80,11 +167,12 @@
   shell.register = (id, def) => { views.set(id, def); if (shell.current === id) show(id); };
   shell.show = show;
   shell.rerender = (id) => { if (shell.current === id) show(id); };
-  shell.setBadge = (id, n) => {
-    const b = navEl.querySelector(`[data-view="${id}"] .nav-badge`);
+  shell.setBadge = (id, n, alert) => {
+    const b = navEl.querySelector(`[data-badge="${id}"]`), d = navEl.querySelector(`[data-dot="${id}"]`);
     if (!b) return;
     b.textContent = n > 99 ? '99+' : String(n);
-    b.classList.toggle('hidden', !n);
+    b.classList.toggle('hidden', !n); b.classList.toggle('alert', !!alert);
+    if (d) d.classList.toggle('on', !!n);
   };
   // Opening a field shows the Fields view underneath.
   const origOpen = window.openFieldPanel;
@@ -112,7 +200,7 @@
       fieldListState.risk = b.dataset.risk; renderRiskChips(); renderFieldsList();
     }));
     const alerts = fields.filter((f) => { const r = img && img.riskFor(f.id); return r && (r.kind === 'high' || r.kind === 'low'); }).length;
-    shell.setBadge('notifications', alerts);
+    shell.setBadge('notifications', alerts, true);
   }
   ['imagery:risks', 'imagery:change', 'workspace:fields'].forEach((e) => document.addEventListener(e, renderRiskChips));
 
@@ -161,7 +249,7 @@
   document.getElementById('zoomOutBtn').addEventListener('click', () => mapInstance && mapInstance.zoomOut());
   document.getElementById('swipeBtn').addEventListener('click', () => {
     if (!window.Imagery || !Imagery.current()) { showError('Pick a satellite date first'); return; }
-    Imagery.setSwipe(!Imagery.state.swipe);
+    Imagery.setSplit(!Imagery.state.split);
   });
 
   const measureBtn = document.getElementById('measureBtn');
@@ -206,4 +294,59 @@
     }
     return origFire.call(this, type, data, propagate);
   };
+
+  // ------------------------------------------------------------ command palette (⌘K)
+
+  const cmdk = document.getElementById('cmdk');
+  const cInput = document.getElementById('cmdkInput');
+  const cList = document.getElementById('cmdkList');
+  let cItems = [], cSel = 0;
+  function paletteItems(q) {
+    const out = [];
+    const add = (group, label, ico, run, hint) => out.push({ group, label, ico, run, hint });
+    (state.fieldList || []).forEach((f) => add('Fields', f.name, 'layers', () => openFieldPanel(f.id), formatHa(f.areaHectares)));
+    GROUPS.flatMap((g) => g.items.flatMap((it) => (it.children ? it.children.map((c) => ({ ...c, parent: it.title })) : [it])))
+      .filter((it) => it.id !== 'search')
+      .forEach((it) => add('Go to', it.parent ? `${it.parent} › ${it.title}` : it.title, it.icon || 'chevronRight', () => show(it.id)));
+    const act = (label, ico, action) => add('Actions', label, ico, () => { const b = document.querySelector(`#addMenu [data-action="${action}"]`); if (b) b.click(); });
+    act('Draw a polygon field', 'pentagon', 'draw-polygon'); act('Draw a pivot circle', 'circle', 'draw-circle');
+    act('Upload field boundaries', 'upload', 'upload'); act('Add GIS data layer', 'layers', 'gis'); act('Select fields on the map', 'pointer', 'select');
+    add('Actions', 'Split view: compare two screens', 'split', () => document.getElementById('swipeBtn').click());
+    add('Actions', 'Measure a distance', 'ruler', () => { const b = document.querySelector('[data-measure="line"]'); if (b) b.click(); });
+    add('Actions', 'Create farm', 'plus', () => openGroupDialog());
+    state.farms.filter((f) => f.id !== state.selectedFarmId).forEach((f) => add('Farms', 'Switch to ' + f.name, 'home', () => selectFarm(f.id)));
+    const ql = q.trim().toLowerCase();
+    const hits = ql ? out.filter((i) => i.label.toLowerCase().includes(ql)) : out.filter((i) => i.group !== 'Fields' || out.indexOf(i) < 6);
+    if (ql) hits.push({ group: 'Places', label: `Search places for “${q.trim()}”`, ico: 'mapPin', run: () => { document.getElementById('geoSearch').value = q.trim(); document.getElementById('geoSearchForm').requestSubmit(); } });
+    return hits;
+  }
+  function drawPalette() {
+    cItems = paletteItems(cInput.value);
+    cSel = Math.min(cSel, Math.max(0, cItems.length - 1));
+    let last = '';
+    cList.innerHTML = cItems.length ? cItems.map((it, i) => {
+      const head = it.group !== last ? `<div class="cmdk-group">${it.group}</div>` : ''; last = it.group;
+      return `${head}<button type="button" class="cmdk-item" data-i="${i}" aria-selected="${i === cSel}">${icon(it.ico)}<span class="truncate">${escapeHtml(it.label)}</span>${it.hint ? `<span class="cmdk-hint">${escapeHtml(it.hint)}</span>` : ''}</button>`;
+    }).join('') : `<div class="flex flex-col items-center py-8 text-[13px] text-gray-500">${icon('command', 'mb-2 opacity-40')}No results</div>`;
+    cList.querySelectorAll('[data-i]').forEach((b) => {
+      b.addEventListener('mousemove', () => { if (cSel !== +b.dataset.i) { cSel = +b.dataset.i; mark(); } });
+      b.addEventListener('click', () => runItem(+b.dataset.i));
+    });
+  }
+  function mark() { cList.querySelectorAll('[data-i]').forEach((b) => b.setAttribute('aria-selected', String(+b.dataset.i === cSel))); const el = cList.querySelector(`[data-i="${cSel}"]`); if (el) el.scrollIntoView({ block: 'nearest' }); }
+  function runItem(i) { const it = cItems[i]; closePalette(); if (it) it.run(); }
+  function openPalette() { cmdk.classList.remove('hidden'); cmdk.classList.add('flex'); cInput.value = ''; cSel = 0; drawPalette(); setTimeout(() => cInput.focus(), 0); }
+  function closePalette() { cmdk.classList.add('hidden'); cmdk.classList.remove('flex'); }
+  shell.openPalette = openPalette;
+  cInput.addEventListener('input', () => { cSel = 0; drawPalette(); });
+  cInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); cSel = Math.min(cItems.length - 1, cSel + 1); mark(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); cSel = Math.max(0, cSel - 1); mark(); }
+    else if (e.key === 'Enter') { e.preventDefault(); runItem(cSel); }
+    else if (e.key === 'Escape') { e.preventDefault(); closePalette(); }
+  });
+  cmdk.querySelectorAll('[data-cmdk-close]').forEach((el) => el.addEventListener('click', closePalette));
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); cmdk.classList.contains('hidden') ? openPalette() : closePalette(); }
+  });
 })();

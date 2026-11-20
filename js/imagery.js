@@ -375,201 +375,175 @@
     return c.toDataURL();
   }
 
-  // ------------------------------------------------------------ state + map layers
+  // ------------------------------------------------------------ shared state
 
   const state_ = {
-    scenes: [], sceneId: null, leftSceneId: null, indexKey: 'ndvi', contrast: false, showCloudy: false,
-    lookback: CONFIG.lookbackDays, farmKey: null, results: new Map(), risks: new Map(), busy: false, swipe: false,
+    scenes: [], farmKey: null, lookback: CONFIG.lookbackDays, showCloudy: false,
+    results: new Map(), risks: new Map(), split: false, token: 0,
   };
   const emit = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail }));
-
-  let panesReady = false, layersA = [], layersB = [], deltaLayer = null, deltaMarkers = [];
-  function ensurePanes() {
-    if (panesReady || !mapInstance) return;
-    mapInstance.createPane('imgA').style.zIndex = 405;
-    mapInstance.createPane('imgB').style.zIndex = 406;
-    const s = document.createElement('style');
-    s.textContent = '.leaflet-pane .img-px { image-rendering: pixelated; image-rendering: crisp-edges; }';
-    document.head.appendChild(s);
-    panesReady = true;
-  }
-  function clearLayers(list) { list.forEach((l) => mapInstance.removeLayer(l)); list.length = 0; }
-  function addOverlay(list, pane, url, bounds) {
-    list.push(L.imageOverlay(url, bounds, { pane, className: 'img-px', interactive: false }).addTo(mapInstance));
-  }
-  function clearDelta() {
-    if (deltaLayer) { mapInstance.removeLayer(deltaLayer); deltaLayer = null; }
-    deltaMarkers.forEach((m) => mapInstance.removeLayer(m)); deltaMarkers = [];
-  }
-
-  // ------------------------------------------------------------ dock UI (toolbar + timeline)
-
-  const dock = document.getElementById('imageryDock');
-  dock.innerHTML = `
-    <div id="imgLegend" class="chip-bar pointer-events-auto hidden items-center gap-3 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
-    <div class="chip-bar pointer-events-auto flex h-11 items-center gap-1 rounded-xl px-1.5">
-      <select id="imgSource" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Satellite"><option>Sentinel-2</option></select>
-      <span class="h-5 w-px bg-white/10"></span>
-      <select id="imgIndex" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Index">
-        ${Object.entries(INDICES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('')}
-      </select>
-      <span class="h-5 w-px bg-white/10"></span>
-      <button type="button" id="imgContrast" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Contrast: stretch colours within each field">${icon('contrast')}</button>
-      <button type="button" id="imgCloudy" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Show cloudy dates">${icon('cloud')}</button>
-      <button type="button" id="imgHide" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Hide imagery">${icon('eye')}</button>
-    </div>
-    <div class="chip-bar pointer-events-auto flex h-14 w-full items-center gap-1 rounded-xl px-1.5">
-      <div class="relative">
-        <button type="button" id="tlRangeBtn" class="map-btn !h-11 !w-11 !rounded-lg !shadow-none !bg-transparent" title="Period">${icon('calendar')}</button>
-        <div id="tlRangeMenu" class="chip-bar absolute bottom-12 left-0 hidden w-44 flex-col rounded-xl p-1">
-          ${[[30, 'Last 30 days'], [90, 'Last 3 months'], [150, 'Last 5 months'], [365, 'Last 12 months']].map(([d, l]) => `<button type="button" data-days="${d}" class="menu-item">${l}</button>`).join('')}
-        </div>
-      </div>
-      <button type="button" id="tlPrev" class="map-btn !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Earlier">${icon('chevronLeft')}</button>
-      <div id="tlChips" class="tl-scroll flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-smooth"></div>
-      <button type="button" id="tlNext" class="map-btn !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Later">${icon('chevronRight')}</button>
-    </div>`;
-  const $ = (id) => document.getElementById(id);
   const fmtChip = (d) => { const t = new Date(d + 'T00:00:00Z'); return `${t.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' })}'${String(t.getUTCFullYear()).slice(2)}`; };
   const fmtDay = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-
-  function visibleScenes() {
-    return state_.scenes.filter((s) => state_.showCloudy || s.tileCloud < CONFIG.cloudThreshold || s.id === state_.sceneId);
-  }
-
-  function renderTimeline(status) {
-    const box = $('tlChips');
-    if (status) { box.innerHTML = `<div class="flex h-11 items-center gap-2 px-3 text-[13px] text-gray-500">${status}</div>`; return; }
-    const list = visibleScenes().slice().reverse(); // oldest → newest, like a timeline
-    if (!list.length) { box.innerHTML = `<div class="flex h-11 items-center px-3 text-[13px] text-gray-500">No Sentinel-2 dates under ${CONFIG.cloudThreshold}% cloud in this period</div>`; return; }
-    box.innerHTML = list.map((s) => `
-      <button type="button" class="tl-chip ${s.tileCloud >= CONFIG.cloudThreshold ? 'is-cloudy' : ''}" data-scene="${s.id}" aria-current="${s.id === state_.sceneId}"
-        title="${fmtDay(s.day)} · ${Math.round(s.tileCloud)}% cloud over the tile">
-        <span>${fmtChip(s.day)}</span>
-        <span class="flex items-center gap-1"><span class="badge-s2">S2</span><span class="num font-mono text-[10px] text-gray-400">${Math.round(s.tileCloud)}%</span></span>
-      </button>`).join('');
-    box.querySelectorAll('[data-scene]').forEach((b) => b.addEventListener('click', () => selectScene(b.dataset.scene)));
-    const cur = box.querySelector('[aria-current="true"]');
-    if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }
-  $('tlPrev').addEventListener('click', () => step(-1));
-  $('tlNext').addEventListener('click', () => step(1));
-  function step(dir) {
-    const list = visibleScenes().slice().reverse();
-    const i = list.findIndex((s) => s.id === state_.sceneId);
-    const j = Math.max(0, Math.min(list.length - 1, (i < 0 ? list.length - 1 : i) + dir));
-    if (list[j]) selectScene(list[j].id);
-  }
-  $('tlRangeBtn').addEventListener('click', (e) => { e.stopPropagation(); $('tlRangeMenu').classList.toggle('hidden'); $('tlRangeMenu').classList.toggle('flex'); });
-  document.addEventListener('click', () => { $('tlRangeMenu').classList.add('hidden'); $('tlRangeMenu').classList.remove('flex'); });
-  $('tlRangeMenu').querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => { state_.lookback = +b.dataset.days; loadFarm(true); }));
-  $('imgIndex').addEventListener('change', (e) => { state_.indexKey = e.target.value; refresh(); });
-  $('imgContrast').addEventListener('click', () => { state_.contrast = !state_.contrast; $('imgContrast').setAttribute('aria-pressed', String(state_.contrast)); refresh(); });
-  $('imgCloudy').addEventListener('click', () => { state_.showCloudy = !state_.showCloudy; $('imgCloudy').setAttribute('aria-pressed', String(state_.showCloudy)); renderTimeline(); });
-  let hidden = false;
-  $('imgHide').addEventListener('click', () => {
-    hidden = !hidden; $('imgHide').setAttribute('aria-pressed', String(hidden)); $('imgHide').innerHTML = icon(hidden ? 'eyeOff' : 'eye');
-    ['imgA', 'imgB'].forEach((p) => { const el = mapInstance && mapInstance.getPane(p); if (el) el.style.display = hidden ? 'none' : ''; });
-  });
-
-  function renderLegend() {
-    const el = $('imgLegend'); const idx = INDICES[state_.indexKey];
-    if (idx.rgb) { el.classList.add('hidden'); el.classList.remove('flex'); return; }
-    el.classList.remove('hidden'); el.classList.add('flex');
-    const [lo, hi] = idx.range;
-    el.innerHTML = idx.composite
-      ? `<span class="text-gray-400">${idx.label}</span><span>R = MSAVI · G = NDRE · B = NDVI</span>`
-      : `<span class="text-gray-400">${idx.label}${state_.contrast ? ' · contrast' : ''}</span>
-         <span class="num font-mono">${state_.contrast ? 'P2' : lo}</span>
-         <span class="h-2 w-32 rounded-full" style="background:${gradient(idx.ramp)}"></span>
-         <span class="num font-mono">${state_.contrast ? 'P98' : hi}</span>
-         <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm" style="background:rgb(120,126,135)"></span>cloud</span>`;
-  }
-
-  // ------------------------------------------------------------ farm flow
-
-  function currentFields() {
-    return state.fieldsById ? [...state.fieldsById.values()].filter((f) => f.geometry && /Polygon/.test(f.geometry.type)) : [];
-  }
-
-  async function loadFarm(force) {
-    const fields = currentFields();
-    const farmKey = state.selectedFarmId + ':' + fields.map((f) => f.id).sort().join(',');
-    if (!force && farmKey === state_.farmKey) return;
-    state_.farmKey = farmKey; state_.results.clear(); state_.risks.clear();
-    clearLayers(layersA); clearLayers(layersB); clearDelta();
-    renderLegend();
-    if (!fields.length) { state_.scenes = []; state_.sceneId = null; renderTimeline('Add fields to see satellite images'); emit('imagery:change'); return; }
-    renderTimeline(`${icon('loader', 'spin')}<span>Searching Sentinel-2 dates</span>`);
-    try {
-      await libs();
-      const scenes = await searchScenes(fields.map((f) => f.geometry), farmKey, state_.lookback);
-      if (farmKey !== state_.farmKey) return;
-      state_.scenes = scenes;
-      const first = scenes.find((s) => s.tileCloud < 20 && s.covers) || scenes.find((s) => s.tileCloud < CONFIG.cloudThreshold) || scenes[0];
-      state_.sceneId = first ? first.id : null;
-      renderTimeline();
-      if (first) await selectScene(first.id);
-      else emit('imagery:change');
-    } catch (err) {
-      if (farmKey !== state_.farmKey) return;
-      renderTimeline(escapeHtml(friendly(err)));
-    }
-  }
-
+  const sceneById = (id) => state_.scenes.find((s) => s.id === id);
   function friendly(err) {
     const m = (err && err.message) || '';
     if (/fetch|network|cors|load failed/i.test(m)) return 'Could not reach the Sentinel-2 archive from this browser. Check the connection, or the image host may be blocking cross-site requests';
     return m || 'Satellite data is not available right now';
   }
-
-  const sceneById = (id) => state_.scenes.find((s) => s.id === id);
-
-  async function selectScene(id) {
-    state_.sceneId = id;
-    renderTimeline();
-    await refresh();
+  function currentFields() {
+    return state.fieldsById ? [...state.fieldsById.values()].filter((f) => f.geometry && /Polygon/.test(f.geometry.type)) : [];
+  }
+  function visibleScenes(v) {
+    return state_.scenes.filter((s) => state_.showCloudy || s.tileCloud < CONFIG.cloudThreshold || s.id === v.sceneId);
   }
 
-  /** Repaint all fields for the current date, index and contrast; then compute risks. */
-  async function refresh() {
-    renderLegend();
-    const scene = sceneById(state_.sceneId);
-    if (!scene || !mapInstance) return;
-    ensurePanes(); clearDelta();
+  // ------------------------------------------------------------ views (one per screen)
+
+  /**
+   * A view is one screen: its own map, date, index, contrast and layers, with its
+   * own toolbar and timeline. View A is the main map; view B exists in split view.
+   */
+  const views = [];
+  function createView(key, getMap, dockEl, sfx) {
+    const v = { key, getMap, dockEl, sfx, sceneId: null, indexKey: 'ndvi', contrast: false, hidden: false, layers: [], results: new Map(), token: 0 };
+    const id = (n) => n + sfx;
+    dockEl.innerHTML = `
+      <div id="${id('imgLegend')}" class="chip-bar pointer-events-auto hidden items-center gap-3 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
+      <div class="chip-bar pointer-events-auto flex h-11 items-center gap-1 rounded-xl px-1.5">
+        <select id="${id('imgSource')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Satellite"><option>Sentinel-2</option></select>
+        <span class="h-5 w-px bg-white/10"></span>
+        <select id="${id('imgIndex')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] font-medium outline-none" title="Layer">
+          ${Object.entries(INDICES).map(([k, x]) => `<option value="${k}">${x.label}</option>`).join('')}
+        </select>
+        <span class="h-5 w-px bg-white/10"></span>
+        <button type="button" id="${id('imgContrast')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Contrast: stretch colours within each field">${icon('contrast')}</button>
+        <button type="button" id="${id('imgCloudy')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Show cloudy dates">${icon('cloud')}</button>
+        <button type="button" id="${id('imgHide')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Hide imagery">${icon('eye')}</button>
+      </div>
+      <div class="chip-bar pointer-events-auto flex h-14 w-full items-center gap-1 rounded-xl px-1.5">
+        <div class="relative">
+          <button type="button" id="${id('tlRangeBtn')}" class="map-btn !h-11 !w-11 !rounded-lg !shadow-none !bg-transparent" title="Period">${icon('calendar')}</button>
+          <div id="${id('tlRangeMenu')}" class="chip-bar absolute bottom-12 left-0 hidden w-44 flex-col rounded-xl p-1">
+            ${[[30, 'Last 30 days'], [90, 'Last 3 months'], [150, 'Last 5 months'], [365, 'Last 12 months']].map(([d, l]) => `<button type="button" data-days="${d}" class="menu-item">${l}</button>`).join('')}
+          </div>
+        </div>
+        <button type="button" id="${id('tlPrev')}" class="map-btn !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Earlier">${icon('chevronLeft')}</button>
+        <div id="${id('tlChips')}" class="tl-scroll flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-smooth"></div>
+        <button type="button" id="${id('tlNext')}" class="map-btn !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Later">${icon('chevronRight')}</button>
+      </div>`;
+    const $ = (n) => document.getElementById(id(n));
+    v.$ = $;
+    $('tlPrev').addEventListener('click', () => step(v, -1));
+    $('tlNext').addEventListener('click', () => step(v, 1));
+    $('tlRangeBtn').addEventListener('click', (e) => { e.stopPropagation(); $('tlRangeMenu').classList.toggle('hidden'); $('tlRangeMenu').classList.toggle('flex'); });
+    document.addEventListener('click', () => { $('tlRangeMenu').classList.add('hidden'); $('tlRangeMenu').classList.remove('flex'); });
+    $('tlRangeMenu').querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => { state_.lookback = +b.dataset.days; loadFarm(true); }));
+    $('imgIndex').addEventListener('change', (e) => { v.indexKey = e.target.value; refresh(v); });
+    $('imgContrast').addEventListener('click', () => { v.contrast = !v.contrast; $('imgContrast').setAttribute('aria-pressed', String(v.contrast)); refresh(v); });
+    $('imgCloudy').addEventListener('click', () => {
+      state_.showCloudy = !state_.showCloudy;
+      views.forEach((w) => { w.$('imgCloudy').setAttribute('aria-pressed', String(state_.showCloudy)); renderTimeline(w); });
+    });
+    $('imgHide').addEventListener('click', () => {
+      v.hidden = !v.hidden; $('imgHide').setAttribute('aria-pressed', String(v.hidden)); $('imgHide').innerHTML = icon(v.hidden ? 'eyeOff' : 'eye');
+      const pane = v.getMap() && v.getMap().getPane('img'); if (pane) pane.style.display = v.hidden ? 'none' : '';
+    });
+    views.push(v);
+    return v;
+  }
+
+  function ensurePane(map) {
+    if (!map || map.getPane('img')) return;
+    map.createPane('img').style.zIndex = 395;   // below the field outlines (overlayPane 400)
+    if (!document.getElementById('imgPxStyle')) {
+      const st = document.createElement('style'); st.id = 'imgPxStyle';
+      st.textContent = '.leaflet-pane .img-px { image-rendering: pixelated; image-rendering: crisp-edges; }';
+      document.head.appendChild(st);
+    }
+  }
+  function clearLayers(v) { const m = v.getMap(); v.layers.forEach((l) => m && m.removeLayer(l)); v.layers.length = 0; }
+
+  function renderTimeline(v, status) {
+    const box = v.$('tlChips');
+    if (status) { box.innerHTML = `<div class="flex h-11 items-center gap-2 px-3 text-[13px] text-gray-500">${status}</div>`; return; }
+    const list = visibleScenes(v).slice().reverse();
+    if (!list.length) { box.innerHTML = `<div class="flex h-11 items-center px-3 text-[13px] text-gray-500">No Sentinel-2 dates under ${CONFIG.cloudThreshold}% cloud in this period</div>`; return; }
+    box.innerHTML = list.map((s) => `
+      <button type="button" class="tl-chip ${s.tileCloud >= CONFIG.cloudThreshold ? 'is-cloudy' : ''}" data-scene="${s.id}" aria-current="${s.id === v.sceneId}"
+        title="${fmtDay(s.day)} · ${Math.round(s.tileCloud)}% cloud over the tile">
+        <span>${fmtChip(s.day)}</span>
+        <span class="flex items-center gap-1"><span class="badge-s2">S2</span><span class="num font-mono text-[10px] text-gray-400">${Math.round(s.tileCloud)}%</span></span>
+      </button>`).join('');
+    box.querySelectorAll('[data-scene]').forEach((b) => b.addEventListener('click', () => selectScene(v, b.dataset.scene)));
+    const cur = box.querySelector('[aria-current="true"]');
+    if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  function step(v, dir) {
+    const list = visibleScenes(v).slice().reverse();
+    const i = list.findIndex((s) => s.id === v.sceneId);
+    const j = Math.max(0, Math.min(list.length - 1, (i < 0 ? list.length - 1 : i) + dir));
+    if (list[j]) selectScene(v, list[j].id);
+  }
+  function renderLegend(v) {
+    const el = v.$('imgLegend'); const idx = INDICES[v.indexKey];
+    v.$('imgIndex').value = v.indexKey;
+    if (idx.rgb) { el.classList.add('hidden'); el.classList.remove('flex'); return; }
+    el.classList.remove('hidden'); el.classList.add('flex');
+    const [lo, hi] = idx.range;
+    el.innerHTML = idx.composite
+      ? `<span class="text-gray-400">${idx.label}</span><span>R = MSAVI · G = NDRE · B = NDVI</span>`
+      : `<span class="text-gray-400">${idx.label}${v.contrast ? ' · contrast' : ''}</span>
+         <span class="num font-mono">${v.contrast ? 'P2' : lo}</span>
+         <span class="h-2 w-32 rounded-full" style="background:${gradient(idx.ramp)}"></span>
+         <span class="num font-mono">${v.contrast ? 'P98' : hi}</span>
+         <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm" style="background:rgb(120,126,135)"></span>cloud</span>`;
+  }
+
+  async function selectScene(v, id) {
+    v.sceneId = id;
+    renderTimeline(v);
+    await refresh(v);
+  }
+
+  /** Repaint every field of the farm for this view's date, index and contrast. */
+  async function refresh(v) {
+    if (!v) v = views[0];
+    renderLegend(v);
+    const scene = sceneById(v.sceneId), map = v.getMap();
+    if (!scene || !map) return;
+    ensurePane(map);
+    if (v === views[0]) clearDelta();
     const fields = currentFields();
-    const token = (state_.token = (state_.token || 0) + 1);
+    const token = ++v.token;
     const done = [];
-    let i = 0;
+    let i = 0, lastErr = null;
     const work = async () => {
       while (i < fields.length) {
         const f = fields[i++];
         try {
-          const r = await analyse(f, scene, state_.indexKey);
-          if (token !== state_.token) return;
-          done.push(r);
-          state_.results.set(f.id, r);
-        } catch (err) {
-          if (token !== state_.token) return;
-          state_.results.delete(f.id);
-          if (!done.length && i >= fields.length) showError(friendly(err));
-        }
+          const r = await analyse(f, scene, v.indexKey);
+          if (token !== v.token) return;
+          done.push(r); v.results.set(f.id, r);
+        } catch (err) { if (token !== v.token) return; v.results.delete(f.id); lastErr = err; }
       }
     };
     await Promise.all([work(), work(), work()]);
-    if (token !== state_.token) return;
-    clearLayers(layersB);
-    done.forEach((r) => addOverlay(layersB, 'imgB', paint(r, { contrast: state_.contrast }), r.bounds));
-    if (state_.swipe) await paintSwipeLeft();
-    emit('imagery:change');
-    computeRisks(token);
+    if (token !== v.token) return;
+    if (!done.length && lastErr) showError(friendly(lastErr));
+    clearLayers(v);
+    done.forEach((r) => v.layers.push(L.imageOverlay(paint(r, { contrast: v.contrast }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map)));
+    if (v === views[0]) {
+      state_.results = v.results;
+      emit('imagery:change');
+      computeRisks(token);
+    } else emit('imagery:change-b');
   }
 
   async function computeRisks(token) {
-    const scene = sceneById(state_.sceneId);
+    const A = views[0]; const scene = sceneById(A.sceneId);
     if (!scene) return;
     for (const f of currentFields()) {
-      if (token !== state_.token) return;
+      if (token !== A.token) return;
       try {
         const cur = await analyse(f, scene, 'ndvi');
         if (cur.cloudPct > CONFIG.clearFieldPct) { state_.risks.set(f.id, { kind: 'nodata', cur }); continue; }
@@ -579,96 +553,177 @@
         state_.risks.set(f.id, { kind: change <= CONFIG.highDrop ? 'high' : change <= CONFIG.lowDrop ? 'low' : 'none', change, cur, prev });
       } catch { state_.risks.set(f.id, { kind: 'nodata' }); }
     }
-    if (token === state_.token) emit('imagery:risks');
+    if (token === A.token) emit('imagery:risks');
   }
 
-  // ------------------------------------------------------------ swipe (split view)
+  // ------------------------------------------------------------ farm flow
 
-  const swipeBar = document.createElement('div');
-  swipeBar.className = 'chip-bar pointer-events-auto absolute left-3 top-[68px] z-[565] hidden items-center gap-2 rounded-xl px-2 py-1.5 text-[12px]';
-  swipeBar.innerHTML = `<span class="px-1 text-gray-400">Left</span><select id="swipeLeft" class="h-8 rounded-lg px-2 text-[12px] outline-none"></select>
-    <span class="text-gray-500">${icon('split')}</span><span class="px-1 text-gray-400">Right</span><span id="swipeRightLabel" class="num px-1 font-mono text-gray-900"></span>`;
-  document.getElementById('mapMain').appendChild(swipeBar);
-  const handle = document.createElement('div');
-  handle.className = 'swipe-handle hidden';
-  document.getElementById('mapMain').appendChild(handle);
-  let swipeX = 0.5;
-
-  function clipPanes() {
-    if (!mapInstance) return;
-    const A = mapInstance.getPane('imgA'), B = mapInstance.getPane('imgB');
-    if (!state_.swipe) { if (A) A.style.clip = ''; if (B) B.style.clip = ''; return; }
-    const size = mapInstance.getSize();
-    const nw = mapInstance.containerPointToLayerPoint([0, 0]);
-    const se = mapInstance.containerPointToLayerPoint(size);
-    const x = mapInstance.containerPointToLayerPoint([size.x * swipeX, 0]).x;
-    A.style.clip = `rect(${nw.y}px, ${x}px, ${se.y}px, ${nw.x}px)`;
-    B.style.clip = `rect(${nw.y}px, ${se.x}px, ${se.y}px, ${x}px)`;
-    handle.style.left = (swipeX * 100) + '%';
-  }
-
-  async function paintSwipeLeft() {
-    clearLayers(layersA);
-    const left = sceneById(state_.leftSceneId);
-    if (!left) return;
-    for (const f of currentFields()) {
-      try { const r = await analyse(f, left, state_.indexKey); if (state_.swipe) addOverlay(layersA, 'imgA', paint(r, { contrast: state_.contrast }), r.bounds); }
-      catch { /* skip field */ }
-    }
-    clipPanes();
-  }
-
-  function setSwipe(on) {
-    state_.swipe = on;
+  async function loadFarm(force) {
+    const fields = currentFields();
+    const farmKey = state.selectedFarmId + ':' + fields.map((f) => f.id).sort().join(',');
+    if (!force && farmKey === state_.farmKey) return;
+    state_.farmKey = farmKey; state_.risks.clear();
+    views.forEach((v) => { v.results.clear(); clearLayers(v); renderLegend(v); });
     clearDelta();
-    const btn = document.getElementById('swipeBtn'); if (btn) btn.setAttribute('aria-pressed', String(on));
-    swipeBar.classList.toggle('hidden', !on); swipeBar.classList.toggle('flex', on);
-    handle.classList.toggle('hidden', !on);
-    if (!on) { clearLayers(layersA); clipPanes(); return; }
-    const cur = sceneById(state_.sceneId);
-    const options = state_.scenes.filter((s) => s.id !== state_.sceneId && (!cur || s.tile === cur.tile) && s.tileCloud < 80);
-    if (!state_.leftSceneId || !options.some((s) => s.id === state_.leftSceneId)) {
-      const older = options.find((s) => cur && s.day < cur.day && s.tileCloud < CONFIG.cloudThreshold) || options[0];
-      state_.leftSceneId = older ? older.id : null;
+    if (!fields.length) { state_.scenes = []; views.forEach((v) => { v.sceneId = null; renderTimeline(v, 'Add fields to see satellite images'); }); emit('imagery:change'); return; }
+    views.forEach((v) => renderTimeline(v, `${icon('loader', 'spin')}<span>Searching Sentinel-2 dates</span>`));
+    try {
+      await libs();
+      const scenes = await searchScenes(fields.map((f) => f.geometry), farmKey, state_.lookback);
+      if (farmKey !== state_.farmKey) return;
+      state_.scenes = scenes;
+      const first = scenes.find((s) => s.tileCloud < 20 && s.covers) || scenes.find((s) => s.tileCloud < CONFIG.cloudThreshold) || scenes[0];
+      views[0].sceneId = first ? first.id : null;
+      if (views[1]) views[1].sceneId = defaultCompareScene();
+      views.forEach((v) => renderTimeline(v));
+      await Promise.all(views.filter((v) => v.sceneId && (v === views[0] || state_.split)).map((v) => refresh(v)));
+      if (!first) emit('imagery:change');
+    } catch (err) {
+      if (farmKey !== state_.farmKey) return;
+      views.forEach((v) => renderTimeline(v, escapeHtml(friendly(err))));
     }
-    $('swipeLeft').innerHTML = options.map((s) => `<option value="${s.id}" ${s.id === state_.leftSceneId ? 'selected' : ''}>${fmtDay(s.day)} · ${Math.round(s.tileCloud)}%</option>`).join('');
-    $('swipeRightLabel').textContent = cur ? fmtDay(cur.day) : '';
-    paintSwipeLeft();
   }
-  $('swipeLeft').addEventListener('change', (e) => { state_.leftSceneId = e.target.value; paintSwipeLeft(); });
-  document.addEventListener('imagery:change', () => { if (state_.swipe) { const cur = sceneById(state_.sceneId); $('swipeRightLabel').textContent = cur ? fmtDay(cur.day) : ''; } });
-  handle.addEventListener('pointerdown', (e) => {
-    e.preventDefault(); handle.setPointerCapture(e.pointerId);
-    mapInstance.dragging.disable();
-    const rect = document.getElementById('mapContainer').getBoundingClientRect();
-    const move = (ev) => { swipeX = Math.max(0.02, Math.min(0.98, (ev.clientX - rect.left) / rect.width)); clipPanes(); };
-    const up = () => { handle.removeEventListener('pointermove', move); mapInstance.dragging.enable(); };
-    handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up, { once: true });
-  });
+  function defaultCompareScene() {
+    const cur = sceneById(views[0].sceneId);
+    const older = state_.scenes.find((s) => cur && s.day < cur.day && s.tile === cur.tile && s.tileCloud < CONFIG.cloudThreshold);
+    return (older || cur || {}).id || null;
+  }
+
+  // ------------------------------------------------------------ split view (two screens)
+
+  let map2 = null, outline2 = null, syncing = false;
+  const paneB = document.getElementById('mapPaneB');
+  function buildMap2() {
+    map2 = L.map(document.getElementById('mapContainer2'), { zoomControl: false, attributionControl: false });
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map2);
+    L.control.scale({ position: 'topright', imperial: false, maxWidth: 120 }).addTo(map2);
+    ensurePane(map2);
+    const sync = (from, to) => from.on('move', () => { if (syncing) return; syncing = true; to.setView(from.getCenter(), from.getZoom(), { animate: false }); syncing = false; });
+    sync(mapInstance, map2); sync(map2, mapInstance);
+    hoverBind(map2);
+  }
+  function drawOutline2() {
+    if (!map2) return;
+    if (outline2) map2.removeLayer(outline2);
+    if (!state.fieldsLayer) return;
+    outline2 = L.geoJSON(state.fieldsLayer.toGeoJSON(), {
+      style: (f) => fieldStyle((f.properties || {}).id || f.id),
+      onEachFeature: (f, layer) => layer.on('click', () => openFieldPanel((f.properties || {}).id || f.id)),
+    }).addTo(map2);
+  }
+  async function setSplit(on) {
+    state_.split = on;
+    const btn = document.getElementById('swipeBtn'); if (btn) btn.setAttribute('aria-pressed', String(on));
+    paneB.classList.toggle('hidden', !on);
+    if (on) {
+      if (!map2) buildMap2();
+      if (!views[1]) createView('B', () => map2, document.getElementById('imageryDock2'), '2');
+      const B = views[1];
+      if (!B.sceneId || !sceneById(B.sceneId)) B.sceneId = defaultCompareScene();
+      if (!B.indexKey) B.indexKey = views[0].indexKey;
+      drawOutline2();
+      setTimeout(() => { mapInstance.invalidateSize(); map2.invalidateSize(); map2.setView(mapInstance.getCenter(), mapInstance.getZoom(), { animate: false }); }, 30);
+      renderTimeline(B);
+      await refresh(B);
+    } else {
+      hideHover();
+      setTimeout(() => mapInstance.invalidateSize(), 30);
+    }
+  }
+  function invalidate() { if (mapInstance) mapInstance.invalidateSize(); if (map2 && state_.split) map2.invalidateSize(); }
+
+  // ------------------------------------------------------------ hover readout on both screens
+
+  function labelFor(indexKey, v) {
+    if (Number.isNaN(v)) return 'Cloud or shadow';
+    if (indexKey === 'ndvi' || indexKey === 'msavi' || indexKey === 'vmi') return v < 0.2 ? 'Bare soil or stress' : v < 0.4 ? 'Sparse vegetation' : v < 0.6 ? 'Moderate vegetation' : v < 0.8 ? 'Healthy vegetation' : 'Dense vegetation';
+    if (indexKey === 'ndre') return v < 0.2 ? 'Low chlorophyll' : v < 0.4 ? 'Moderate chlorophyll' : 'High chlorophyll';
+    if (indexKey === 'ndmi') return v < -0.2 ? 'Water stress' : v < 0 ? 'Low water content' : v < 0.2 ? 'Moderate water content' : v < 0.4 ? 'High water content' : 'Very high water content';
+    if (indexKey === 'reci') return v < 2 ? 'Low chlorophyll' : v < 4 ? 'Moderate chlorophyll' : 'High chlorophyll';
+    return '';
+  }
+  function fieldAt(latlng) {
+    for (const f of currentFields()) {
+      const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+      if (polys.some((p) => pointInRings(latlng.lng, latlng.lat, p))) return f;
+    }
+    return null;
+  }
+  function valueAt(r, latlng) {
+    const [x, y] = proj4('EPSG:4326', utmDef(r.code)).forward([latlng.lng, latlng.lat]);
+    const c = Math.floor((x - r.gx0) / 10), row = Math.floor((r.gy0 - y) / 10);
+    if (c < 0 || row < 0 || c >= r.w || row >= r.h) return undefined;
+    const i = row * r.w + c;
+    return r.inField[i] ? r.values[i] : undefined;
+  }
+  const hoverEls = { A: document.getElementById('hoverA'), B: document.getElementById('hoverB') };
+  function hideHover() { Object.values(hoverEls).forEach((el) => el && el.classList.add('hidden')); }
+  let raf = 0;
+  function showHover(latlng) {
+    const f = fieldAt(latlng);
+    if (!f || !window.proj4) { hideHover(); return; }
+    const name = (state.fieldList || []).find((x) => x.id === f.id)?.name || f.name || 'Field';
+    views.forEach((v, k) => {
+      const el = hoverEls[v.key]; const map = v.getMap();
+      if (!el || !map || (k === 1 && !state_.split)) return;
+      const r = v.results.get(f.id); const idx = INDICES[v.indexKey];
+      let lines = `<div class="font-medium">${escapeHtml(name)}</div>`;
+      if (r && !idx.rgb) {
+        const val = valueAt(r, latlng);
+        if (val !== undefined) lines += Number.isNaN(val)
+          ? `<div>${idx.label}: —</div><div class="text-white/70">Cloud or shadow</div>`
+          : `<div class="num">${idx.label}: ${val.toFixed(2)}</div><div class="text-white/70">${labelFor(v.indexKey, val)}</div>`;
+      } else if (r) lines += `<div class="text-white/70">${idx.label} · ${fmtDay(r.scene.day)}</div>`;
+      const pt = map.latLngToContainerPoint(latlng);
+      el.innerHTML = lines + '<span class="hr-dot"></span>';
+      el.style.left = pt.x + 'px'; el.style.top = pt.y + 'px';
+      el.classList.remove('hidden');
+    });
+  }
+  function hoverBind(map) {
+    map.on('mousemove', (e) => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => showHover(e.latlng)); });
+    map.on('mouseout movestart zoomstart', hideHover);
+  }
+
+  // ------------------------------------------------------------ delta overlay (field compare, main screen)
+
+  let deltaLayer = null, deltaMarkers = [];
+  function clearDelta() {
+    if (!mapInstance) return;
+    if (deltaLayer) { mapInstance.removeLayer(deltaLayer); deltaLayer = null; }
+    deltaMarkers.forEach((m) => mapInstance.removeLayer(m)); deltaMarkers = [];
+  }
 
   // ------------------------------------------------------------ wiring
 
-  function attachMap() {
-    if (!mapInstance || attachMap.done) return;
-    attachMap.done = true;
-    ensurePanes();
-    mapInstance.on('move zoom viewreset zoomend moveend', clipPanes);
-  }
-  document.addEventListener('workspace:fields', () => { attachMap(); loadFarm(false); });
+  createView('A', () => mapInstance, document.getElementById('imageryDock'), '');
+  let attached = false;
+  document.addEventListener('workspace:fields', () => {
+    if (!attached && mapInstance) { attached = true; ensurePane(mapInstance); hoverBind(mapInstance); }
+    drawOutline2();
+    loadFarm(false);
+  });
   document.addEventListener('fieldpanel:close', () => clearDelta());
 
   window.Imagery = {
-    config: CONFIG, indices: INDICES, state: state_, analyse, compare, paint, previousClear, searchScenes,
-    sceneById, current: () => sceneById(state_.sceneId), selectScene, refresh, setSwipe, loadFarm,
-    resultFor: (fieldId) => state_.results.get(fieldId), riskFor: (fieldId) => state_.risks.get(fieldId),
+    config: CONFIG, indices: INDICES, state: state_, views, analyse, compare, paint, previousClear, searchScenes, sceneById,
+    current: () => sceneById(views[0].sceneId),
+    selectScene: (id) => selectScene(views[0], id),
+    refresh: () => refresh(views[0]),
+    setSplit, loadFarm, invalidate, labelFor,
+    resultFor: (fieldId) => views[0].results.get(fieldId), riskFor: (fieldId) => state_.risks.get(fieldId),
     rampAt, gradient, css, fmtDay, friendly,
     showDelta(res, delta) {
       clearDelta();
-      deltaLayer = L.imageOverlay(paint(res, { delta }), res.bounds, { pane: 'imgB', className: 'img-px', interactive: false }).addTo(mapInstance);
+      deltaLayer = L.imageOverlay(paint(res, { delta }), res.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(mapInstance);
       delta.clusters.slice(0, 5).forEach((cl, i) => deltaMarkers.push(L.circleMarker([cl.lat, cl.lng], { radius: 7, color: '#fff', weight: 2, fillColor: '#111827', fillOpacity: 0.9 })
         .bindTooltip(`Drop ${i + 1}: ${cl.ha.toFixed(2)} ha, ${cl.meanDrop.toFixed(2)}`, { direction: 'top' }).addTo(mapInstance)));
     },
     clearDelta,
     _caches: { sceneCache, resultCache, bandCache, imgCache },
   };
+  // compatibility: older callers read the main screen's settings from state
+  Object.defineProperty(state_, 'sceneId', { get: () => views[0].sceneId });
+  Object.defineProperty(state_, 'indexKey', { get: () => views[0].indexKey });
+  Object.defineProperty(state_, 'contrast', { get: () => views[0].contrast });
 })();
