@@ -368,7 +368,7 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
 .ts-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; min-width: 0; flex: 1; }
 .ts-key { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--t-1); }
 .ts-key i { width: 14px; height: 2px; border-radius: 2px; }
-.ts-key i.is-band { height: 8px; background: rgba(74,222,128,.18); }
+.ts-key i.is-band { height: 8px; }
 .ts-key-sub { color: #7c838d; font-variant-numeric: tabular-nums; }
 .ts-status { font-size: 12px; color: #7c838d; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ts-status.is-error { color: #f87171; }
@@ -382,9 +382,13 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
 .ts-vgrid { stroke-dasharray: 2 4; }
 .ts-axis { font-size: 10px; fill: #6f7782; font-variant-numeric: tabular-nums; }
 .ts-cross { stroke: rgba(255,255,255,.35); stroke-dasharray: 3 3; }
-.ts-dot { fill: #0f1215; stroke: #4ade80; stroke-width: 1.5; cursor: pointer; transition: r .12s; }
-.ts-dot.is-hover { fill: #4ade80; stroke: #0f1215; stroke-width: 2; }
-.ts-dot.is-current { fill: #4ade80; }
+.ts-dot { --c: #7cc46a; fill: #0f1215; stroke: var(--c); stroke-width: 1.5; cursor: pointer; transition: r .12s; }
+.ts-dot.is-solid { fill: var(--c); stroke: #0f1215; stroke-width: 1; }
+.ts-dot.is-hover { fill: var(--c); stroke: #0f1215; stroke-width: 2; }
+.ts-dot.is-current { fill: var(--c); }
+.ts-bar { cursor: pointer; transition: opacity .12s; }
+.ts-bar.is-current { stroke: #e5e7eb; stroke-width: 1; }
+.ts-zero { stroke: rgba(255,255,255,.22); }
 .ts-crop rect { fill: rgba(255,255,255,.05); stroke: var(--line-strong); }
 .ts-crop text { font-size: 10px; fill: #a9b0b9; }
 .ts-empty { font-size: 12px; fill: #6f7782; }
@@ -392,7 +396,9 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
   background: rgba(10,12,14,.96); box-shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 0 0 1px var(--line-strong); font-size: 12px; color: var(--t-2); }
 .ts-tip-date { margin-bottom: 6px; font-weight: 500; color: var(--t-1); }
 .ts-tip-row { display: flex; justify-content: space-between; gap: 16px; line-height: 20px; font-variant-numeric: tabular-nums; }
-.ts-tip-row b { font-weight: 600; color: #4ade80; }
+.ts-tip-row b { font-weight: 500; color: var(--t-1); }
+.ts-tip-k { display: inline-flex; align-items: center; gap: 6px; }
+.ts-tip-k i { width: 8px; height: 8px; border-radius: 2px; }
 .ts-tip-hint { margin-top: 6px; font-size: 11px; color: #6f7782; }
 .ts-brush { position: relative; height: 36px; margin-top: 4px; display: flex; align-items: center; direction: ltr; }
 .ts-brush svg { height: 28px; border-radius: 6px; background: var(--g-900); box-shadow: inset 0 0 0 1px var(--line); }
@@ -411,3 +417,22 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
 @keyframes sr-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .sr-spin { animation: none; border-color: #4ade80; } }
 select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
+
+/* time series: several layers, chart type */
+.dark-ui .ts-multi { display: flex; align-items: center; gap: 8px; text-align: start; cursor: pointer; }
+.ts-multi-dots { display: inline-flex; gap: 3px; flex: none; }
+.ts-multi-dots i, .ts-opt i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.ts-multi-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-multi .ico { width: 14px; height: 14px; flex: none; color: var(--t-2); }
+.ts-menu { position: fixed; z-index: 2000; padding: 4px; border-radius: 10px; background: rgba(18,21,25,.98); box-shadow: 0 12px 32px rgba(0,0,0,.45), inset 0 0 0 1px var(--line); }
+.ts-menu[hidden] { display: none; }
+.ts-opt { display: grid; grid-template-columns: 16px 8px auto 1fr; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 6px; font-size: 13px; color: var(--t-1); cursor: pointer; }
+.ts-opt:hover { background: rgba(255,255,255,.05); }
+.ts-opt input { width: 14px; height: 14px; margin: 0; accent-color: #22c55e; cursor: pointer; }
+.ts-opt input:disabled { cursor: not-allowed; opacity: .6; }
+.ts-opt-name { font-weight: 500; }
+.ts-opt-sub { font-size: 12px; color: #7c838d; white-space: nowrap; }
+.dark-ui .ts-chart-type { width: 96px; flex: none; height: 28px; font-size: 12px; }
+.ts-key i.is-dash { height: 0; border-top: 1.5px dashed #9aa3ad; background: none; }
+.ts-key i.is-whisker { width: 2px; height: 10px; background: rgba(255,255,255,.35); }
+.ts-seg button:disabled { opacity: .35; cursor: not-allowed; }
