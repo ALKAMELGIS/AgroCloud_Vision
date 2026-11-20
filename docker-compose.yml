@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: agrocloud_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agrocloud
+      POSTGRES_PASSWORD: change_me
+      POSTGRES_DB: agrocloud_vision
+    ports:
+      - '5432:5432'
+    volumes:
+      - agrocloud_db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: agrocloud_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: db
+    ports:
+      - '4000:4000'
+
+  frontend:
+    build: ./frontend
+    container_name: agrocloud_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend/.env.local
+    ports:
+      - '3000:3000'
+
+  # ====== Open-Meteo ذاتي الاستضافة (اختياري — مُعطَّل افتراضياً) ======
+  # المصدر: https://github.com/open-meteo/open-meteo
+  # غير مُفعَّل تلقائياً لأنه يحتاج مزامنة بيانات النماذج الجوية (قد تصل لعشرات الجيجابايت)
+  # قبل أن يعطي نتائج. لتفعيله: شغّل `docker compose --profile weather up -d weather-api`
+  # بعد مزامنة البيانات (راجع قسم "تشغيل Open-Meteo ذاتياً" في README)، ثم اضبط في
+  # backend/.env:  OPEN_METEO_FORECAST_URL=http://weather-api:8080/v1/forecast
+  weather-api:
+    image: ghcr.io/open-meteo/open-meteo
+    container_name: agrocloud_weather_api
+    profiles: ['weather']
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    volumes:
+      - open_meteo_data:/app/data
+
+volumes:
+  agrocloud_db_data:
+  open_meteo_data:
