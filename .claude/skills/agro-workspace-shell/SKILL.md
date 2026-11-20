@@ -84,7 +84,7 @@ Both modes use the same two views:
 - `#mapContainer2` gets an opaque background, so map A never shows through screen B.
 - The clip makes `#mapContainer2` its own stacking layer. `#mapContainer` gets `position: relative; z-index: 0` in swipe so B still paints above A; without it, map A's Leaflet panes (z 400) cover screen B. The shell test samples a pixel right of the divider to catch this.
 - In swipe, screen B's scale bar shows and A's is hidden.
-- Each dock covers its own side of the divider.
+- Each dock stays in its own fixed half of the map (A left, B right), above the divider, and does not move or resize when the divider is dragged.
 - `#swipeDivider` is a 2 px line with a 40 px round handle (`#swipeHandle`, `role="slider"`):
   - drag it with the pointer (pointer capture);
   - ←/→ move it by 2 %, Home/End jump to the edges;
