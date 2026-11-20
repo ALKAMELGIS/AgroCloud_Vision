@@ -169,8 +169,18 @@
     const ranked = list.map((f) => ({ f, r: img && img.resultFor(f.id) })).filter((x) => x.r && Number.isFinite(x.r.mean) && x.r.indexKey === 'ndvi').sort((a, b) => b.r.mean - a.r.mean);
     const bar = (v, max, col) => `<span class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100"><span class="block h-full rounded-full" style="width:${max ? (100 * v) / max : 0}%;background:${col}"></span></span>`;
     const maxCrop = Math.max(0, ...byCrop.values()), maxType = Math.max(0, ...byType.values());
+    const openId = window.__openFieldId && list.some((f) => f.id === window.__openFieldId) ? window.__openFieldId : (list[0] && list[0].id);
     el.innerHTML = `
       <div class="space-y-6">
+        <div class="rounded-xl p-3 ring-1 ring-gray-200">
+          <div class="flex items-center justify-between"><span class="text-[13px] font-medium text-gray-900">Field report</span><span class="text-[11px] text-gray-500">A4 · 2 pages</span></div>
+          <div class="mt-2 flex gap-2">
+            <select id="rpField" class="fp-input min-w-0 flex-1">${list.map((f) => `<option value="${f.id}"${f.id === openId ? ' selected' : ''} translate="no">${escapeHtml(f.name)}</option>`).join('')}</select>
+            <button type="button" id="rpField2" class="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50">${icon('fileText')}Create</button>
+          </div>
+          <div id="rpFieldStatus" class="mt-2 hidden text-[12px] text-gray-500"></div>
+        </div>
+        <div class="text-[12px] font-medium text-gray-500">Farm summary</div>
         <div class="grid grid-cols-2 gap-2">
           <div class="rounded-lg bg-gray-50 p-3"><div class="text-[12px] text-gray-500">Fields</div><div class="num mt-1 font-mono text-[20px] text-gray-900">${list.length}</div></div>
           <div class="rounded-lg bg-gray-50 p-3"><div class="text-[12px] text-gray-500">Area</div><div class="num mt-1 font-mono text-[20px] text-gray-900">${formatHa(area)}</div></div>
@@ -191,6 +201,15 @@
         const r = img && img.resultFor(f.id);
         return [f.name, (f.areaHectares || 0).toFixed(2), currentCropOf(f), f.irrigation || '', r && r.indexKey === 'ndvi' && Number.isFinite(r.mean) ? r.mean.toFixed(3) : '', r ? r.scene.day : '', acts.filter((a) => a.fieldId === f.id).length];
       }))));
+    el.querySelector('#rpField2').addEventListener('click', async () => {
+      const btn = el.querySelector('#rpField2'), st = el.querySelector('#rpFieldStatus');
+      btn.disabled = true; st.classList.remove('hidden'); st.classList.remove('text-red-700');
+      try {
+        await window.FieldReport.open(el.querySelector('#rpField').value, (t) => { st.textContent = t; });
+        st.textContent = 'Report opened in a new tab';
+      } catch (err) { st.textContent = err.message || 'Could not build the report'; st.classList.add('text-red-700'); }
+      finally { btn.disabled = false; }
+    });
     el.querySelector('#rpPrint').addEventListener('click', () => printReport(farm, list, acts, ranked, byCrop, year));
   }
 

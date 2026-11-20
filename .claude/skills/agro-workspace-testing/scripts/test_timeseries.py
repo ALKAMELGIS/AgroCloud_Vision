@@ -31,7 +31,7 @@ def weather(route):
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
     ctx = b.new_context(viewport={'width': 1600, 'height': 900}, accept_downloads=True)
-    ctx.add_init_script(f"localStorage.setItem('imgProvider', 'es'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
+    ctx.add_init_script(f"localStorage.setItem('theme', 'dark'); localStorage.setItem('imgProvider', 'es'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
     pg = ctx.new_page(); cdn_routes.install(pg); errors = []
     pg.route('**/weather/field/*/history*', weather)
     pg.on('pageerror', lambda e: errors.append(str(e)))

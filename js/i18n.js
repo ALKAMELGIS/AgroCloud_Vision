@@ -20,8 +20,8 @@
   root.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   // Theme (dark / light) is set here too, before first paint, so there is no flash.
-  let theme = 'dark';
-  try { theme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark'; } catch { /* storage off */ }
+  let theme = 'light';   // light by default; dark only when chosen
+  try { theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'; } catch { /* storage off */ }
   root.dataset.theme = theme;
   window.Theme = {
     get current() { return root.dataset.theme; },
