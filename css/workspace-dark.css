@@ -566,3 +566,7 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
 [dir="rtl"] .theme-pill { direction: ltr; }
 :root[data-theme="light"] .dark-ui .bg-brand-600 { background-color: var(--accent-btn) !important; }
 :root[data-theme="light"] .dark-ui .hover\:bg-brand-700:hover { background-color: #166534 !important; }
+
+.ts-opt-group { padding: 8px 10px 2px; font-size: 11px; font-weight: 500; color: var(--t-3); }
+.ts-opt-group:first-child { padding-top: 4px; }
+.ts-menu { max-height: min(460px, calc(100vh - 16px)); overflow-y: auto; }

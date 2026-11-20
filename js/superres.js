@@ -16,7 +16,8 @@
     x2: { file: 'models/sr/s2v2x2_spatrad.onnx', factor: 2, margin: 66, label: '5 m' },
     x4: { file: 'models/sr/wsx4_spatrad.onnx', factor: 4, margin: 130, label: '2.5 m' },
   };
-  const SUPPORTED = new Set(['ndvi', 'msavi', 'rgb']);
+  // everything that needs only blue, green, red and NIR (the four bands the models return)
+  const SUPPORTED = new Set(['ndvi', 'msavi', 'savi', 'evi', 'gndvi', 'ndwi', 'si', 'rgb']);
   const TILE = 96;            // core input pixels per tile
   const CACHE = 'agro-sr-v1';
 
@@ -103,7 +104,7 @@
     const p = (async () => {
       const I = window.Imagery._sr; const M = MODELS[modelKey];
       if (!M) throw new Error('Unknown model');
-      if (!SUPPORTED.has(indexKey)) throw new Error('Sharpening works with NDVI, MSAVI and natural colour');
+      if (!SUPPORTED.has(indexKey)) throw new Error('Sharpening works with indices from blue, green, red and NIR');
       await I.libs();
       const sess = await session(modelKey, (f) => onProgress && onProgress({ phase: 'model', f }));
       const f = M.factor, m = Math.ceil(M.margin / f), crop = m * f, px = 10 / f;
@@ -167,7 +168,7 @@
         if (si < 0 || !keep.has(scl.data[si])) continue;
         const B = out[0][i] / 1e4, G = out[1][i] / 1e4, R = out[2][i] / 1e4, N = out[3][i] / 1e4;
         if (rgba) { const [cr, cg, cb] = toRGB(R, G, B); rgba.set([cr, cg, cb, 255], i * 4); values[i] = 1; validPx++; continue; }
-        const v = idx.f({ red: R, nir: N });
+        const v = idx.f({ blue: B, green: G, red: R, nir: N });
         if (!Number.isFinite(v)) continue;
         values[i] = v; validPx++; sorted.push(v);
       }

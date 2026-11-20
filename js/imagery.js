@@ -54,6 +54,12 @@
   const RDYLGN = [[0, [165, 0, 38]], [0.1, [215, 48, 39]], [0.2, [244, 109, 67]], [0.3, [253, 174, 97]], [0.4, [254, 224, 139]],
     [0.5, [255, 255, 191]], [0.6, [217, 239, 139]], [0.7, [166, 217, 106]], [0.8, [102, 189, 99]], [0.9, [26, 152, 80]], [1, [0, 104, 55]]];
   const MOIST = [[0, [140, 81, 10]], [0.25, [216, 179, 101]], [0.45, [246, 232, 195]], [0.6, [199, 234, 229]], [0.8, [90, 180, 172]], [1, [1, 102, 94]]];
+  // soil: green where plants cover it, through dry sand to bare umber earth
+  const SOIL = [[0, [47, 93, 52]], [0.3, [143, 163, 91]], [0.5, [232, 220, 192]], [0.75, [196, 154, 108]], [1, [122, 75, 42]]];
+  // salinity: dark loam (low) to pale crust and rust (high)
+  const SALT = [[0, [66, 84, 60]], [0.3, [154, 165, 107]], [0.55, [232, 217, 168]], [0.8, [217, 139, 79]], [1, [156, 61, 46]]];
+  // surface water: dry soil to open water
+  const WATER = [[0, [140, 106, 67]], [0.35, [217, 201, 163]], [0.5, [242, 239, 232]], [0.7, [127, 178, 214]], [1, [31, 95, 158]]];
   const DIVERGE = [[0, [178, 24, 43]], [0.33, [244, 165, 130]], [0.5, [247, 247, 247]], [0.67, [166, 219, 160]], [1, [27, 120, 55]]];
   function rampAt(stops, t) {
     t = Math.max(0, Math.min(1, t));
@@ -73,14 +79,26 @@
   const msavi = (r, n) => (2 * n + 1 - Math.sqrt(Math.max(0, (2 * n + 1) ** 2 - 8 * (n - r)))) / 2;
   const nd = (a, b) => (a + b > 0 ? (a - b) / (a + b) : NaN);
   const INDICES = {
-    ndvi: { label: 'NDVI', name: 'Vegetation', bands: ['red', 'nir'], f: (b) => nd(b.nir, b.red), range: [0, 1], ramp: RDYLGN },
-    ndre: { label: 'NDRE', name: 'Chlorophyll (red edge)', bands: ['rededge1', 'nir08'], f: (b) => nd(b.nir08, b.rededge1), range: [0, 0.7], ramp: RDYLGN },
-    msavi: { label: 'MSAVI', name: 'Early growth, soil adjusted', bands: ['red', 'nir'], f: (b) => msavi(b.red, b.nir), range: [0, 1], ramp: RDYLGN },
-    ndmi: { label: 'NDMI', name: 'Water content', bands: ['nir08', 'swir16'], f: (b) => nd(b.nir08, b.swir16), range: [-0.4, 0.6], ramp: MOIST },
-    reci: { label: 'ReCI', name: 'Chlorophyll content', bands: ['nir', 'rededge1'], f: (b) => (b.rededge1 > 0 ? b.nir / b.rededge1 - 1 : NaN), range: [0, 8], ramp: RDYLGN },
-    vmi: { label: 'VMI', name: 'MSAVI · NDRE · NDVI composite', bands: ['red', 'nir', 'rededge1', 'nir08'], composite: true,
+    ndvi: { label: 'NDVI', name: 'Vegetation', group: 'Vegetation', bands: ['red', 'nir'], f: (b) => nd(b.nir, b.red), range: [0, 1], ramp: RDYLGN },
+    // SAVI (Huete 1988), L = 0.5: less soil brightness in sparse canopies
+    savi: { label: 'SAVI', name: 'Vegetation, soil adjusted', group: 'Vegetation', bands: ['red', 'nir'], f: (b) => (b.nir + b.red + 0.5 > 0 ? (1.5 * (b.nir - b.red)) / (b.nir + b.red + 0.5) : NaN), range: [0, 0.9], ramp: RDYLGN },
+    // EVI (Huete 2002): does not saturate in dense canopies
+    evi: { label: 'EVI', name: 'Dense canopy vigour', group: 'Vegetation', bands: ['blue', 'red', 'nir'], f: (b) => { const d = b.nir + 6 * b.red - 7.5 * b.blue + 1; return d > 0 ? Math.max(-1, Math.min(1.2, (2.5 * (b.nir - b.red)) / d)) : NaN; }, range: [0, 1], ramp: RDYLGN },
+    // GNDVI (Gitelson 1996): follows chlorophyll and nitrogen better than NDVI
+    gndvi: { label: 'GNDVI', name: 'Nitrogen status', group: 'Vegetation', bands: ['green', 'nir'], f: (b) => nd(b.nir, b.green), range: [0, 0.9], ramp: RDYLGN },
+    ndre: { label: 'NDRE', name: 'Chlorophyll (red edge)', group: 'Vegetation', bands: ['rededge1', 'nir08'], f: (b) => nd(b.nir08, b.rededge1), range: [0, 0.7], ramp: RDYLGN },
+    msavi: { label: 'MSAVI', name: 'Early growth, soil adjusted', group: 'Vegetation', bands: ['red', 'nir'], f: (b) => msavi(b.red, b.nir), range: [0, 1], ramp: RDYLGN },
+    ndmi: { label: 'NDMI', name: 'Water content', group: 'Water', bands: ['nir08', 'swir16'], f: (b) => nd(b.nir08, b.swir16), range: [-0.4, 0.6], ramp: MOIST },
+    // NDWI (McFeeters 1996): standing water, flooding, ponding under pivots
+    ndwi: { label: 'NDWI', name: 'Surface water', group: 'Water', bands: ['green', 'nir'], f: (b) => nd(b.green, b.nir), range: [-0.6, 0.4], ramp: WATER },
+    // BSI (Rikimaru 2002): bare soil vs cover, for fallow, tillage and residue
+    bsi: { label: 'BSI', name: 'Bare soil', group: 'Soil', bands: ['blue', 'red', 'nir', 'swir16'], f: (b) => nd(b.swir16 + b.red, b.nir + b.blue), range: [-0.4, 0.4], ramp: SOIL },
+    // SI (Khan 2005) = sqrt(blue x red): salt crust is bright in visible bands; read it on bare or sparse soil only
+    si: { label: 'SI', name: 'Soil salinity, bare soil', group: 'Soil', bands: ['blue', 'red'], f: (b) => (b.blue > 0 && b.red > 0 ? Math.sqrt(b.blue * b.red) : NaN), range: [0.03, 0.3], ramp: SALT },
+    reci: { label: 'ReCI', name: 'Chlorophyll content', group: 'Vegetation', bands: ['nir', 'rededge1'], f: (b) => (b.rededge1 > 0 ? b.nir / b.rededge1 - 1 : NaN), range: [0, 8], ramp: RDYLGN },
+    vmi: { label: 'VMI', name: 'MSAVI · NDRE · NDVI composite', group: 'Vegetation', bands: ['red', 'nir', 'rededge1', 'nir08'], composite: true,
       f: (b) => nd(b.nir, b.red), range: [0, 1], ramp: RDYLGN },
-    rgb: { label: 'Natural colour', name: 'True colour image', bands: [], rgb: true },
+    rgb: { label: 'Natural colour', name: 'True colour image', group: 'Image', bands: [], rgb: true },
   };
 
   // ------------------------------------------------------------ loading
@@ -515,7 +533,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
         <select id="${id('imgSource')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Sentinel-2 source">${Object.entries(PROVIDERS).map(([k, l]) => `<option value="${k}"${k === provider ? ' selected' : ''}>Sentinel-2 · ${l}</option>`).join('')}</select>
         <span class="h-5 w-px bg-white/10"></span>
         <select id="${id('imgIndex')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] font-medium outline-none" title="Layer">
-          ${Object.entries(INDICES).map(([k, x]) => `<option value="${k}">${x.label}</option>`).join('')}
+          ${['Vegetation', 'Water', 'Soil', 'Image'].map((g) => `<optgroup label="${g}">${Object.entries(INDICES).filter(([, x]) => x.group === g).map(([k, x]) => `<option value="${k}">${x.label}</option>`).join('')}</optgroup>`).join('')}
         </select>
         <select id="${id('imgRes')}" class="num h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Pixel size. 5 m and 2.5 m are sharpened by a model from the 10 m bands">
           <option value="10">10 m</option><option value="x2">5 m</option><option value="x4">2.5 m</option>
@@ -601,7 +619,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     v.$('imgIndex').value = v.indexKey;
     const canSharpen = !!window.SuperRes && window.SuperRes.SUPPORTED.has(v.indexKey);
     const rs = v.$('imgRes'); rs.disabled = !canSharpen; rs.value = canSharpen ? v.res : '10';
-    rs.title = canSharpen ? 'Pixel size. 5 m and 2.5 m are sharpened by a model from the 10 m bands' : 'Only NDVI, MSAVI and natural colour can be sharpened';
+    rs.title = canSharpen ? 'Pixel size. 5 m and 2.5 m are sharpened by a model from the 10 m bands' : 'This index needs red-edge or SWIR bands, which cannot be sharpened';
     if (!canSharpen || v.res === '10') srNote(v, '');
     if (idx.rgb) { el.classList.add('hidden'); el.classList.remove('flex'); return; }
     el.classList.remove('hidden'); el.classList.add('flex');
@@ -852,6 +870,11 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (indexKey === 'ndvi' || indexKey === 'msavi' || indexKey === 'vmi') return v < 0.2 ? 'Bare soil or stress' : v < 0.4 ? 'Sparse vegetation' : v < 0.6 ? 'Moderate vegetation' : v < 0.8 ? 'Healthy vegetation' : 'Dense vegetation';
     if (indexKey === 'ndre') return v < 0.2 ? 'Low chlorophyll' : v < 0.4 ? 'Moderate chlorophyll' : 'High chlorophyll';
     if (indexKey === 'ndmi') return v < -0.2 ? 'Water stress' : v < 0 ? 'Low water content' : v < 0.2 ? 'Moderate water content' : v < 0.4 ? 'High water content' : 'Very high water content';
+    if (indexKey === 'savi' || indexKey === 'evi') return v < 0.15 ? 'Bare soil or emerging' : v < 0.3 ? 'Sparse vegetation' : v < 0.5 ? 'Moderate vegetation' : 'Vigorous vegetation';
+    if (indexKey === 'gndvi') return v < 0.3 ? 'Low chlorophyll' : v < 0.55 ? 'Moderate chlorophyll' : 'High chlorophyll';
+    if (indexKey === 'ndwi') return v > 0.2 ? 'Open water' : v > 0 ? 'Wet surface or ponding' : v > -0.3 ? 'Moist cover' : 'Dry or vegetated';
+    if (indexKey === 'bsi') return v > 0.15 ? 'Bare soil' : v > 0 ? 'Mostly bare, little cover' : v > -0.15 ? 'Partial cover' : 'Full cover';
+    if (indexKey === 'si') return v > 0.2 ? 'High salinity signal' : v > 0.14 ? 'Moderate salinity signal' : 'Low salinity signal';
     if (indexKey === 'reci') return v < 2 ? 'Low chlorophyll' : v < 4 ? 'Moderate chlorophyll' : 'High chlorophyll';
     return '';
   }

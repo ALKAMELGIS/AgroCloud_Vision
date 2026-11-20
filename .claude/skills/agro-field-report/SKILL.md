@@ -19,7 +19,7 @@ Page 1, condition on the image date:
 
 Page 2, season and actions:
 - NDVI curve with P10–P90 band (time series panel points if it shows this field, else up to 14 clear dates in 150 days), sowing marker.
-- NDVI / NDRE / MSAVI / NDMI on the same date with a plain reading.
+- Indices on the same date, full-width table: NDVI, SAVI, GNDVI, NDRE, NDMI, BSI, SI with what each measures and a reading. SI under a closed canopy says "read on bare patches only"; high SI on sparse cover → soil EC sampling and leaching plan.
 - Change vs previous clear date: means, area that dropped against the field, up to 5 scouting points with coordinates (from `Imagery.compare`).
 - Weather, last 30 days (archive lags ~6 days): rain, mean max/min, GDD base 10 (cap 35 °C), days ≥ 40 °C (Gulf heat), top-soil moisture.
 - Operations, last 12 months: date, operation, product and rate.
@@ -42,7 +42,7 @@ Field area = stored boundary area (PostGIS, geodesic). Zone and class areas = sh
 
 ## Design
 
-Warm paper (`#fffefb`), ink text, one field-green accent, hairlines `#e7e3da`, IBM Plex Sans, tabular figures, sentence case. Zone colours: terracotta / sand / field green. No gradients except the NDVI ramp. Each `.page` is exactly 297 mm; the test asserts no overflow and a 2-page PDF.
+Warm paper (`#fffefb`), ink text, one field-green accent, hairlines `#e7e3da`, IBM Plex Sans, tabular figures, sentence case. Zone colours: terracotta / sand / field green. No gradients except the NDVI ramp. Each `.page` is exactly 297 mm; the test asserts no overflow and a 2-page PDF. If real data makes a page too long, `fitPages()` (run **from the opener**: scripts written into the new tab do not run) zooms the page's blocks down in 2 % steps to 84 % at most, after fonts load and before print.
 
 ## Test
 

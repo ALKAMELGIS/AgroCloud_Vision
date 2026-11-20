@@ -28,6 +28,14 @@ with sync_playwright() as p:
     ctx.add_init_script(f"localStorage.setItem('imgProvider', 'es'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
     cdn_routes.install(ctx) if hasattr(cdn_routes, 'install_ctx') else None
     pg = ctx.new_page(); cdn_routes.install(pg); pg.on('pageerror', lambda e: errors.append(str(e)))
+    def weather(route):
+        from urllib.parse import urlparse, parse_qs
+        q = parse_qs(urlparse(route.request.url).query); a = datetime.date.fromisoformat(q['start'][0]); e = datetime.date.fromisoformat(q['end'][0])
+        days = []; d = a
+        while d <= e:
+            k = (d - a).days; days.append({'date': d.isoformat(), 'temperatureMaxC': 41 if k % 4 == 0 else 34, 'temperatureMinC': 24, 'precipitationMm': 3.0 if k == 9 else 0, 'soilMoisture': 0.14}); d += datetime.timedelta(days=1)
+        route.fulfill(body=json.dumps({'days': days}), headers={'content-type': 'application/json', 'access-control-allow-origin': '*'})
+    pg.route('**/weather/field/*/history*', weather)
     pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(2500)
     check('light theme by default', pg.evaluate("document.documentElement.dataset.theme") == 'light')
@@ -37,6 +45,7 @@ with sync_playwright() as p:
     with ctx.expect_page() as newp:
         pg.click('#rpField2')
     rp = newp.value
+    rp.route('**/weather/field/*/history*', weather)
     cdn_routes.install(rp); rp.on('pageerror', lambda e: errors.append('report: ' + str(e)))
     expect(rp.locator('section.page')).to_have_count(2, timeout=90000)
     rp.wait_for_timeout(1200)
@@ -47,10 +56,11 @@ with sync_playwright() as p:
     check('zone areas add up to the field', len(zones) == 3 and abs(sum(zones) - total) < 0.05 and not all(abs(z - total / 3) < 0.5 for z in zones), (zones, total))
     check('two maps with field outline', rp.locator('svg.map').count() == 2 and rp.locator('svg.map image').count() >= 2)
     check('season curve drawn', rp.locator('.page:nth-of-type(2) svg path[stroke="#2f7a29"]').count() == 1 or 'Not enough clear dates' in txt)
-    check('indices table', all(k in txt for k in ['NDVI', 'NDRE', 'MSAVI', 'NDMI']))
+    check('indices table', all(re.search(r'\b' + k + r'\b', txt) for k in ['NDVI', 'SAVI', 'GNDVI', 'NDRE', 'NDMI', 'BSI', 'SI']))
     check('operations listed', 'Fertilizer' in txt and 'Urea' in txt, '')
     check('forage note: drop can be a cut', 'Alfalfa' in txt and ('cut' in txt or 'Stable' in txt or 'growing' in txt))
     check('recommended actions', 'Recommended actions' in txt)
+    check('weather summary with heat days', 'Days ≥ 40 °C' in txt and 'Rain' in txt and '3.0 mm' in txt, '')
     h = rp.evaluate("[...document.querySelectorAll('section.page')].map((s) => [s.scrollHeight, s.clientHeight])")
     check('nothing overflows a page', all(sh <= ch + 1 for sh, ch in h), h)
     rp.screenshot(path=S + 'shots/r1_report.png', full_page=True)

@@ -24,11 +24,12 @@
   const iso = (t) => new Date(t).toISOString().slice(0, 10);
   const t0 = (d) => Date.parse(d + 'T00:00:00Z');
   const fmtShort = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-  const INDEX_KEYS = ['ndvi', 'ndre', 'msavi', 'ndmi', 'reci'];
+  const INDEX_KEYS = ['ndvi', 'savi', 'evi', 'gndvi', 'ndre', 'msavi', 'reci', 'ndmi', 'ndwi', 'bsi', 'si'];
   // same hues in both themes; on light paper they are a step deeper so lines keep their contrast
   const PALETTES = {
-    dark: { ndvi: '#7cc46a', ndre: '#e08a5b', msavi: '#d4b26a', ndmi: '#5ea7e0', reci: '#4fb8a5' },
-    light: { ndvi: '#4a9a3a', ndre: '#c2622f', msavi: '#a8822a', ndmi: '#3577b5', reci: '#25877a' },
+    // greens for canopy, copper for red edge, ochre and umber for soil, blues for water, stone for salt
+    dark: { ndvi: '#7cc46a', savi: '#b6c25a', evi: '#3fae6a', gndvi: '#9ccf8a', ndre: '#e08a5b', msavi: '#d4b26a', reci: '#4fb8a5', ndmi: '#5ea7e0', ndwi: '#8fc3e8', bsi: '#b8875a', si: '#c9b8a0' },
+    light: { ndvi: '#4a9a3a', savi: '#7f8c1f', evi: '#1f7d48', gndvi: '#5f9a4a', ndre: '#c2622f', msavi: '#a8822a', reci: '#25877a', ndmi: '#3577b5', ndwi: '#4f8fc0', bsi: '#8a5a32', si: '#8a7a64' },
   };
   const COLORS = { ...PALETTES[window.Theme && Theme.current === 'light' ? 'light' : 'dark'] };
   const WEATHER_INK = '#9aa3ad';
@@ -149,7 +150,8 @@
     const keys = keysOrdered();
     $('tsIndex').innerHTML = `<span class="ts-multi-dots">${keys.map((k) => `<i style="background:${COLORS[k]}"></i>`).join('')}</span><span class="ts-multi-text">${keys.map((k) => I.indices[k].label).join(', ')}</span>${icon('chevronDown')}`;
     hydrateIcons($('tsIndex'));
-    menu.innerHTML = INDEX_KEYS.filter((k) => I.indices[k]).map((k) => `
+    let lastGroup = '';
+    menu.innerHTML = INDEX_KEYS.filter((k) => I.indices[k]).map((k) => (I.indices[k].group !== lastGroup ? `<div class="ts-opt-group">${(lastGroup = I.indices[k].group)}</div>` : '') + `
       <label class="ts-opt"><input type="checkbox" value="${k}"${ts.indices.includes(k) ? ' checked' : ''}${ts.indices.length === 1 && ts.indices[0] === k ? ' disabled' : ''}>
         <i style="background:${COLORS[k]}"></i><span class="ts-opt-name">${I.indices[k].label}</span><span class="ts-opt-sub">${I.indices[k].name}</span></label>`).join('');
     $('tsChartType').value = ts.chart;

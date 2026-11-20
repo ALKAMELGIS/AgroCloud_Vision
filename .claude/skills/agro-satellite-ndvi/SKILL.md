@@ -103,6 +103,22 @@ Dock control `#imgRes`: 10 m (original) / 5 m / 2.5 m. Choice kept in `localStor
   because the model output is an estimate, not a measurement.
 - Test: `agro-workspace-testing/scripts/test_superres.py` (mock scenes need `blue` and `green` assets).
 
+## Index catalogue (`INDICES` in js/imagery.js, grouped in the dock and the time series menu)
+
+| Group | Index | Formula (reflectance) | Range shown | Ramp | Notes |
+|---|---|---|---|---|---|
+| Vegetation | NDVI | (NIR−R)/(NIR+R) | 0–1 | red-yellow-green | |
+| | SAVI | 1.5(NIR−R)/(NIR+R+0.5) | 0–0.9 | red-yellow-green | Huete 1988, L=0.5: sparse canopy, soil shows |
+| | EVI | 2.5(NIR−R)/(NIR+6R−7.5B+1) | 0–1 | red-yellow-green | dense canopy, does not saturate; clamped −1…1.2 |
+| | GNDVI | (NIR−G)/(NIR+G) | 0–0.9 | red-yellow-green | chlorophyll / nitrogen status |
+| | NDRE, MSAVI, ReCI, VMI | as before | | | |
+| Water | NDMI | (B8A−B11)/(B8A+B11) | −0.4–0.6 | brown-teal | canopy water |
+| | NDWI | (G−NIR)/(G+NIR) | −0.6–0.4 | dry soil → open water blue | McFeeters: ponding, flooding |
+| Soil | BSI | ((B11+R)−(NIR+B))/((B11+R)+(NIR+B)) | −0.4–0.4 | green cover → sand → umber | bare soil, tillage, fallow |
+| | SI | √(B·R) | 0.03–0.3 | dark loam → pale crust → rust | Khan 2005 salinity; **only meaningful on bare/sparse soil**, confirm with EC |
+
+Hover readings and report readings exist for every index. Sharpening supports indices built only from blue, green, red, NIR (NDVI, MSAVI, SAVI, EVI, GNDVI, NDWI, SI, natural colour); red-edge/SWIR ones disable the control. New ramps must stay earth/water/plant colours, never violet or neon. Test: `agro-workspace-testing/scripts/test_indices.py` (mock blue = green = red, so NDWI = −GNDVI and SAVI < NDVI are known answers).
+
 ## Sources
 
 | Source | Dates | Pixels |

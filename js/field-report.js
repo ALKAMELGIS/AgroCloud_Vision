@@ -123,7 +123,7 @@
     const r = await img.analyse(field, scene, 'ndvi');
     if (!Number.isFinite(r.mean)) throw new Error('The field is covered by cloud on this date. Pick a clear date on the timeline');
     const others = {};
-    await Promise.all(['ndre', 'msavi', 'ndmi'].map(async (k) => { try { others[k] = await img.analyse(field, scene, k); } catch { /* skip */ } }));
+    await Promise.all(['savi', 'gndvi', 'ndre', 'ndmi', 'bsi', 'si'].map(async (k) => { try { others[k] = await img.analyse(field, scene, k); } catch { /* skip */ } }));
 
     // zones relative to the field mean (as in VRA practice): low < 90 %, high > 110 % of the mean
     const vals = []; for (let i = 0; i < r.values.length; i++) if (r.inField[i] && Number.isFinite(r.values[i])) vals.push(r.values[i]);
@@ -196,6 +196,10 @@
     if (!Number.isFinite(v)) return '—';
     if (k === 'ndvi') return vigour(v);
     if (k === 'msavi') return v < 0.3 ? 'Soil still shows between plants' : 'Canopy closing';
+    if (k === 'savi') return v < 0.15 ? 'Mostly soil' : v < 0.3 ? 'Sparse cover' : v < 0.5 ? 'Moderate cover' : 'Vigorous cover';
+    if (k === 'gndvi') return v < 0.3 ? 'Low chlorophyll / nitrogen' : v < 0.55 ? 'Moderate nitrogen status' : 'Good nitrogen status';
+    if (k === 'bsi') return v > 0.15 ? 'Bare soil' : v > 0 ? 'Little cover' : v > -0.15 ? 'Partial cover' : 'Full cover';
+    if (k === 'si') return ndvi > 0.4 ? 'Canopy hides the soil; read on bare patches only' : v > 0.2 ? 'High salinity signal: confirm with EC test' : v > 0.14 ? 'Moderate salinity signal' : 'Low salinity signal';
     if (k === 'ndre') return ndvi > 0.6 && v < 0.25 ? 'Chlorophyll low for this canopy' : v < 0.2 ? 'Low chlorophyll' : v < 0.4 ? 'Moderate chlorophyll' : 'High chlorophyll';
     if (k === 'ndmi') return v < 0 ? 'Water stress likely' : v < 0.2 ? 'Moderate water content' : 'Adequate water content';
     return '';
@@ -233,6 +237,8 @@
     const ndmi = d.others.ndmi && d.others.ndmi.mean, ndre = d.others.ndre && d.others.ndre.mean;
     if (Number.isFinite(ndmi) && ndmi < 0) act.push('NDMI is below 0: check the irrigation schedule against crop water use (ET) and soil moisture before the next heat spell.');
     if (Number.isFinite(ndre) && d.mean > 0.6 && ndre < 0.25) act.push('Chlorophyll (NDRE) is low for this canopy: take a tissue or SPAD sample before adding nitrogen.');
+    const si = d.others.si && d.others.si.mean;
+    if (Number.isFinite(si) && si > 0.2 && d.mean < 0.4) act.push('The salinity signal is high on exposed soil: take soil EC samples in the low zone before the next sowing, and plan leaching if EC is high.');
     if (w && w.hot >= 5) out.push(`${w.hot} days at 40 °C or more in the last ${w.n} days: expect heat stress, especially in the low zone.`);
     if (low.share > 30) act.push(`The low zone covers ${pct(low.share)} of the field: map it for variable-rate seeding or fertiliser (VRA maps).`);
     if (!act.length) act.push('No action needed now. Keep the next clear image under watch, and log operations so changes can be explained.');
@@ -277,7 +283,7 @@
     const now = new Date();
     const pin = change ? change.points : [];
     const ramp = img.gradient(img.indices.ndvi.ramp);
-    const idxRows = [['ndvi', r], ['ndre', d.others.ndre], ['msavi', d.others.msavi], ['ndmi', d.others.ndmi]].filter(([, x]) => x && Number.isFinite(x.mean));
+    const idxRows = [['ndvi', r], ['savi', d.others.savi], ['gndvi', d.others.gndvi], ['ndre', d.others.ndre], ['ndmi', d.others.ndmi], ['bsi', d.others.bsi], ['si', d.others.si]].filter(([, x]) => x && Number.isFinite(x.mean));
     const maxShare = Math.max(...classes.map((c) => c.share), 1);
     const typeLabel = Object.fromEntries((window.ActivityTypes || []).map(([v, l]) => [v, l]));
     const header = (page) => `
@@ -341,13 +347,18 @@
   .empty { padding: 8mm 0; text-align: center; color: #8a857c; font-size: 8.5pt; }
   .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
   .notes ul { margin: 0; padding-inline-start: 4mm; } .notes li { margin-bottom: 1.4mm; }
-  .notes .act { background: #f4f8f1; border-color: #d8e6d0; }
+  .notes .act, .card.act { background: #f4f8f1; border-color: #d8e6d0; }
+  .notes1 ul { margin: 0; padding-inline-start: 4mm; } .notes1 li { margin-bottom: 1.2mm; }
   .wx { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm 4mm; }
-  .wx div { font-size: 7.8pt; color: #6b675f; } .wx b { display: block; font-size: 11.5pt; font-weight: 500; color: #1c1b19; }
+  .wx div { font-size: 7.8pt; color: #6b675f; } .wx b { display: block; font-size: 10.5pt; font-weight: 500; color: #1c1b19; white-space: nowrap; }
   .sp { flex: 1; }
   .ft span:last-child { white-space: nowrap; }
   .ft { display: flex; justify-content: space-between; gap: 8mm; margin-top: 3mm; padding-top: 2.5mm; border-top: 1px solid #e7e3da; font-size: 7pt; color: #8a857c; }
   .mb { margin-bottom: 4mm; }
+  .p2 .title { margin: 4mm 0 3mm; } .p2 h1 { font-size: 17pt; }
+  .p2 .mb { margin-bottom: 3mm; } .p2 .card { padding: 2.6mm 3mm; } .p2 h2 { margin-bottom: 1.6mm; }
+  .p2 td { padding: 1mm 2mm; } .p2 th { padding: 1mm 2mm; }
+  .p2 .empty { padding: 4mm 0; }
   @media print { body { background: #fff; } .bar { display: none; } .page { margin: 0; box-shadow: none; page-break-after: always; } .page:last-child { page-break-after: auto; } }
 </style></head><body>
 <div class="bar"><button type="button" onclick="print()">Print or save as PDF</button><button type="button" class="ghost" onclick="close()">Close</button></div>
@@ -411,21 +422,21 @@
   ${footer}
 </section>
 
-<section class="page">
+<section class="page p2">
   ${header(2)}
   <div class="title"><div><h1>Season and actions</h1><div class="sub">${esc(field.name)}${crop ? ' · ' + esc(crop.cropType) : ''}</div></div><div class="stamp">Image <b>${day(scene.day)}</b></div></div>
 
   <div class="card mb">
     <div class="cap"><b>NDVI over the season</b><span>mean and P10–P90 spread · ${d.season.length} clear dates</span></div>
-    ${seasonChart(d, 640, 150)}
+    ${seasonChart(d, 680, 92)}
   </div>
 
-  <div class="two mb">
-    <div class="card">
+  <div class="card mb">
       <h2>Indices on ${dayShort(scene.day)}</h2>
-      <table><thead><tr><th>Index</th><th class="r">Mean</th><th class="r">P10–P90</th><th>Reading</th></tr></thead>
-      <tbody>${idxRows.map(([k, x]) => `<tr><td>${img.indices[k].label} <span style="color:#8a857c">${img.indices[k].name}</span></td><td class="r">${f2(x.mean)}</td><td class="r">${f2(x.p10)}–${f2(x.p90)}</td><td>${readIndex(k, x.mean, d.mean)}</td></tr>`).join('')}</tbody></table>
+      <table><thead><tr><th>Index</th><th>Measures</th><th class="r">Mean</th><th class="r">P10–P90</th><th>Reading</th></tr></thead>
+      <tbody>${idxRows.map(([k, x]) => `<tr><td><b style="font-weight:500">${img.indices[k].label}</b></td><td style="color:#6b675f">${img.indices[k].name}</td><td class="r">${f2(x.mean)}</td><td class="r">${f2(x.p10)}–${f2(x.p90)}</td><td>${readIndex(k, x.mean, d.mean)}</td></tr>`).join('')}</tbody></table>
     </div>
+  <div class="two mb">
     <div class="card">
       <h2>Change since the previous clear date</h2>
       ${change ? `<table><tbody>
@@ -436,9 +447,6 @@
       ${pin.length ? `<table style="margin-top:2mm"><thead><tr><th>Scouting point</th><th class="r">Area, ha</th><th class="r">Drop</th><th class="r">Location</th></tr></thead><tbody>${pin.map((p, i) => `<tr><td>${i + 1}</td><td class="r">${ha(p.ha)}</td><td class="r">${f2(p.meanDrop)}</td><td class="r">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:3mm 0">No patch dropped against the rest of the field</div>'}`
         : '<div class="empty">No earlier clear date on the same tile</div>'}
     </div>
-  </div>
-
-  <div class="two mb">
     <div class="card">
       <h2>Weather, last ${w ? w.n : 30} days</h2>
       ${w ? `<div class="wx">
@@ -446,24 +454,38 @@
         <div>Mean max / min<b>${w.tmax.toFixed(1)} / ${w.tmin.toFixed(1)} °C</b></div>
         <div>Growing degree days<b>${Math.round(w.gdd)}</b>base 10 °C</div>
         <div>Days ≥ 40 °C<b>${w.hot}</b></div>
-        <div>Top-soil moisture<b>${Number.isFinite(w.soil) ? w.soil.toFixed(2) + ' m³/m³' : '—'}</b></div>
+        <div>Soil moisture<b>${Number.isFinite(w.soil) ? w.soil.toFixed(2) + ' m³/m³' : '—'}</b></div>
         <div>Period<b style="font-size:9pt">${dayShort(w.from)} – ${dayShort(w.to)}</b></div>
       </div>` : '<div class="empty">Weather archive not reachable</div>'}
     </div>
+  </div>
+  <div class="two mb">
     <div class="card">
       <h2>Operations, last 12 months</h2>
       ${d.acts.length ? `<table><thead><tr><th>Date</th><th>Operation</th><th>Product, rate</th></tr></thead><tbody>${d.acts.slice(0, 7).map((a) => `<tr><td>${dayShort(a.date)}</td><td>${esc(typeLabel[a.type] || a.type)}</td><td>${esc([a.product, a.rate != null ? `${a.rate} ${a.unit || ''}` : ''].filter(Boolean).join(' · ') || a.notes || '—').slice(0, 48)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No operations logged for this field</div>'}
     </div>
+    <div class="card notes1"><h2>What the image shows</h2><ul>${n.out.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
   </div>
-
-  <div class="notes">
-    <div class="card"><h2>What the image shows</h2><ul>${n.out.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
-    <div class="card act"><h2>Recommended actions</h2><ul>${n.act.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
-  </div>
+  <div class="card act notes1"><h2>Recommended actions</h2><ul>${n.act.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>
   <div class="sp"></div>
   ${footer}
 </section>
 </body></html>`;
+  }
+
+  /** Long notes or many operations: scale the page's blocks down a little rather than spill onto a third page. */
+  function fitPages(doc) {
+    doc.querySelectorAll('.page').forEach((pg) => {
+      const parts = pg.querySelectorAll(':scope > .card, :scope > .two, :scope > .maps, :scope > .kpis, :scope > .notes');
+      let z = 1; parts.forEach((x) => { x.style.zoom = ''; });
+      while (pg.scrollHeight > pg.clientHeight + 1 && z > 0.84) { z -= 0.02; parts.forEach((x) => { x.style.zoom = z; }); }
+    });
+  }
+  function keepFitted(win) {
+    const run = () => { try { if (!win.closed) fitPages(win.document); } catch { /* closed */ } };
+    run(); win.addEventListener('load', run); win.addEventListener('beforeprint', run);
+    if (win.document.fonts) { win.document.fonts.ready.then(run); win.document.fonts.addEventListener('loadingdone', run); }
+    setTimeout(run, 400); setTimeout(run, 1500);
   }
 
   /** Builds the report for a field and opens it in a new tab. */
@@ -475,11 +497,11 @@
     try {
       const d = await gather(field, onStep);
       const doc = html(d);
-      if (win && !win.closed) { win.document.open(); win.document.write(doc); win.document.close(); }
+      if (win && !win.closed) { win.document.open(); win.document.write(doc); win.document.close(); keepFitted(win); }
       else { const u = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); window.open(u, '_blank'); }
       return d;
     } catch (err) { if (win && !win.closed) win.close(); throw err; }
   }
 
-  window.FieldReport = { open, gather, html };
+  window.FieldReport = { open, gather, html, fitPages };
 })();
