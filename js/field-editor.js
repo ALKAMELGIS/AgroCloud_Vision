@@ -114,7 +114,7 @@
         <span id="dfArea" class="num font-mono text-[24px] font-medium text-gray-900">—</span>
         <span id="dfCorners" class="num font-mono text-[12px] text-gray-500"></span>
       </div>
-      <p class="mt-1 text-[12px] text-gray-500">Drag the white corners to adjust. Drag a small midpoint to add a corner</p>
+      <p class="mt-1 text-[12px] text-gray-500">Drag the corners to adjust</p>
     </div>
     <form id="dfForm" class="thin-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4" autocomplete="off">
       <div id="dfStatus"></div>

@@ -122,7 +122,7 @@
   transition: background-color .12s; }
 .field-card:hover { background: var(--g-850); }
 .field-card[aria-current="true"] { background: var(--g-800); box-shadow: inset 2px 0 0 var(--accent); }
-.badge-s2 { display: inline-flex; align-items: center; height: 16px; padding: 0 5px; border-radius: 4px; font: 500 10px ui-monospace, Menlo, monospace;
+.badge-s2 { display: inline-flex; align-items: center; height: 16px; padding: 0 5px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: .02em;
   color: var(--accent-ink); background: rgba(34,197,94,.12); }
 
 /* timeline */
@@ -145,7 +145,7 @@
 .nav-rail { width: 248px; background: var(--g-950); transition: width .25s cubic-bezier(.2,.8,.2,1); }
 .nav-rail.collapsed { width: 60px; }
 .nav-scroll { scrollbar-width: none; } .nav-scroll::-webkit-scrollbar { display: none; }
-.nav-heading { padding: 0 10px; margin-bottom: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #535a63; }
+.nav-heading { padding: 0 10px; margin-bottom: 4px; font-size: 12px; font-weight: 500; color: #5f6670; }
 .nav-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; height: 32px; padding: 0 10px; border-radius: 6px;
   font-size: 13px; color: #8d949e; text-align: start; cursor: pointer; user-select: none; transition: background-color .15s, color .15s; }
 .nav-row:hover { background: rgba(255,255,255,.05); color: #e3e6ea; }
@@ -161,7 +161,7 @@
 .nav-badge.alert { color: #fca5a5; background: rgba(239,68,68,.16); }
 .nav-row .kbd { display: none; } .nav-row:hover .kbd { display: inline-flex; }
 .kbd { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 0 6px; border-radius: 4px; cursor: default;
-  font: 500 10px ui-monospace, Menlo, monospace; color: #8d949e; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); }
+  font: 500 10px/1 inherit; font-variant-numeric: tabular-nums; color: #8d949e; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); }
 .nav-chev { width: 14px !important; height: 14px !important; color: #535a63 !important; transition: transform .2s; }
 .nav-item-wrap[data-open="true"] > .nav-row .nav-chev { transform: rotate(90deg); }
 .nav-children { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .3s ease-in-out, opacity .3s ease-in-out; }
@@ -197,11 +197,11 @@
 
 /* command palette */
 .cmdk-box { background: var(--g-900); box-shadow: 0 24px 64px rgba(0,0,0,.55), inset 0 0 0 1px var(--line-strong); animation: rise .16s cubic-bezier(.2,.8,.2,1); }
-.cmdk-group { padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #535a63; }
+.cmdk-group { padding: 8px 10px 4px; font-size: 12px; font-weight: 500; color: #5f6670; }
 .cmdk-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 0 10px; border-radius: 8px; font-size: 13px; color: #c9ced4; text-align: start; }
 .cmdk-item .ico { color: #6f7782; }
 .cmdk-item[aria-selected="true"] { background: rgba(255,255,255,.07); color: var(--t-1); }
-.cmdk-item .cmdk-hint { margin-inline-start: auto; font: 11px ui-monospace, Menlo, monospace; color: #6f7782; }
+.cmdk-item .cmdk-hint { margin-inline-start: auto; font-size: 11px; color: #6f7782; }
 
 /* hover readout (both screens) */
 .hover-readout { position: absolute; z-index: 570; pointer-events: none; transform: translate(-50%, calc(-100% - 14px)); min-width: 132px; padding: 10px 14px;
@@ -261,7 +261,7 @@
 .fe-status b { font-weight: 500; color: var(--t-1); }
 .fe-list { margin: 8px 0 0 24px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--t-2); }
 .fe-list li { display: flex; justify-content: space-between; gap: 12px; }
-.fe-list .num { font-family: ui-monospace, Menlo, monospace; color: #fbbf24; }
+.fe-list .num { color: #fbbf24; }
 .fe-choice { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; font-size: 13px; color: var(--t-1);
   background: rgba(245, 158, 11, .08); box-shadow: inset 0 0 0 1px rgba(245, 158, 11, .3); }
 .fe-history { position: relative; display: flex; flex-direction: column; gap: 14px; padding-inline-start: 16px; }
@@ -277,7 +277,7 @@
    English: left-to-right, sidebar on the left. Arabic: right-to-left, sidebar on the right.
    The sidebar and panel come first in the DOM, so the flex row follows the direction. */
 #navRail, #sidePanel { border-inline-end: 1px solid var(--line); }
-[lang="ar"] body { font-family: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif; }
+[lang="ar"] body { font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; }
 [lang="ar"] .nav-heading, [lang="ar"] .cmdk-group { letter-spacing: 0; text-transform: none; }
 /* the map stays left-to-right: Leaflet, the panes A|B and the swipe divider depend on it */
 #mapRow, .leaflet-container { direction: ltr; }
@@ -303,7 +303,7 @@
 [dir="rtl"] .dark-ui .leaflet-control-scale, [dir="rtl"] .leaflet-control-scale { margin-left: 0 !important; margin-right: 44px !important; float: right; }
 [dir="rtl"] .geo-search .geo-input { text-align: right; }
 .lang-switch { display: flex; align-items: center; justify-content: space-between; }
-.lang-switch .lang-code { font: 500 11px ui-monospace, Menlo, monospace; color: #6f7782; }
+.lang-switch .lang-code { font-size: 11px; font-weight: 500; letter-spacing: .04em; color: #6f7782; }
 
 /* ------------------------------------------------------------ fields panel fold (js/shell.js)
    The panel folds to zero width; its content keeps 320px so nothing reflows while it moves.
@@ -329,3 +329,13 @@
 [dir="rtl"] .panel-tab svg { transform: scaleX(-1); }
 [dir="rtl"] .panel-tab:hover svg { transform: scaleX(-1) translateX(-1px); }
 [dir="rtl"] #appRoot.side-collapsed .panel-tab svg { transform: scaleX(-1) rotate(180deg); }
+
+/* ------------------------------------------------------------ type
+   One family in both languages: IBM Plex Sans with its Arabic cut, so English and Arabic
+   read as the same product. Figures use the same face with tabular numerals instead of a
+   code font; only keyboard keys stay monospaced. */
+body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+.dark-ui .font-mono, .dark-ui .num { font-family: inherit; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.dark-ui .kbd, .dark-ui kbd { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.dark-ui h1, .dark-ui h2 { letter-spacing: -0.005em; }
+.dark-ui .leaflet-control-scale-line { font-family: inherit; font-size: 11px; font-variant-numeric: tabular-nums; }

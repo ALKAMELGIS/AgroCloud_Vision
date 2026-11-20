@@ -59,9 +59,21 @@ def sh_mock(route):
         return route.fulfill(body=buf.getvalue(), headers={**cors, 'content-type': 'image/tiff'})
     return route.fulfill(status=400, body='<ServiceExceptionReport><ServiceException>bad</ServiceException></ServiceExceptionReport>', headers=cors)
 
+def fonts_css():
+    out = []
+    for fam, pkg, subset in [('IBM Plex Sans', 'ibm-plex-sans', 'latin'), ('IBM Plex Sans Arabic', 'ibm-plex-sans-arabic', 'arabic')]:
+        for w in (400, 500, 600):
+            out.append(f"@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;src:url(https://fonts.gstatic.com/local/{pkg}/files/{pkg}-{subset}-{w}-normal.woff2) format('woff2');}}")
+    return '\n'.join(out)
+
 def install(page, api='http://localhost:4000/api/v1'):
     def handler(route):
         url = route.request.url
+        if url.startswith('https://fonts.googleapis.com/css2'):
+            return route.fulfill(body=fonts_css(), headers={'content-type': 'text/css', 'access-control-allow-origin': '*'})
+        if url.startswith('https://fonts.gstatic.com/local/'):
+            path = os.path.join(LIBS, '@fontsource', url.split('/local/', 1)[1])
+            return route.fulfill(path=path, headers={'content-type': 'font/woff2', 'access-control-allow-origin': '*'})
         if url.startswith('https://services.sentinel-hub.com/ogc/'):
             if SHMOCK: return sh_mock(route)
             return route.abort()

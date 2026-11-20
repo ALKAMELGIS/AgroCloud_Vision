@@ -19,7 +19,8 @@ import { WeatherModule } from './weather/weather.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot(typeOrmConfig),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    // 100/min was reached by one person using the map (every view, field and boundary check is a request)
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 1000 }]),
 
     AuthModule,
     UsersModule,

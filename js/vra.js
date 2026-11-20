@@ -372,7 +372,6 @@
       const sameTile = img ? img.state.scenes.filter((s) => s.tileCloud < 80 && (!cur || s.tile === cur.tile)) : [];
       if (type === 'vra-builder' && !st.layers.length && cur) st.layers = [{ sceneId: cur.id, index: 'ndvi', weight: 100 }];
       el.innerHTML = `
-        <p class="text-[12px] leading-5 text-gray-500">${T.hint}</p>
         <div class="mt-4 space-y-3">
           <div><label class="fp-label">Field</label><select id="vraField" class="fp-input">${fieldOptions(st.fieldId)}</select></div>
           ${T.source === 'date' ? `
@@ -381,7 +380,7 @@
               <div><label class="fp-label">Index</label><select id="vraIndex" class="fp-input">${['ndvi', 'ndre', 'reci', 'msavi'].map((k) => `<option value="${k}" ${k === st.index ? 'selected' : ''}>${img.indices[k].label}</option>`).join('')}</select></div>
             </div>` : ''}
           ${T.source === 'productivity' ? `
-            <div><label class="fp-label">Productivity from the clearest dates of the period</label>
+            <div><label class="fp-label" for="vraDates">Dates</label>
               <select id="vraDates" class="fp-input">${[3, 6, 10, 16].map((n) => `<option value="${n}" ${n === st.dates ? 'selected' : ''}>${n} clearest NDVI dates</option>`).join('')}</select></div>` : ''}
           ${T.source === 'builder' ? `
             <div><label class="fp-label">Layers (up to 5)</label>
@@ -626,7 +625,6 @@
     if (!list.length) { el.innerHTML = '<p class="text-[13px] text-gray-500">Add fields first</p>'; return; }
     if (!ss.fieldId || !list.some((f) => f.id === ss.fieldId)) ss.fieldId = (window.FieldPanel && FieldPanel.fieldId) || list[0].id;
     el.innerHTML = `
-      <p class="text-[12px] leading-5 text-gray-500">Sampling points inside the field, away from its edges. Grid: one composite sample per cell. Zones: points per productivity zone</p>
       <div class="mt-4 space-y-3">
         <div><label class="fp-label">Field</label><select id="ssField" class="fp-input">${fieldOptions(ss.fieldId)}</select></div>
         <div class="flex rounded-md bg-gray-100 p-0.5 text-[12px]">${[['grid', 'Grid'], ['zones', 'By zones']].map(([k, l]) => `<button type="button" data-m="${k}" class="h-7 flex-1 rounded ${ss.method === k ? 'bg-white text-gray-900' : 'text-gray-500'}">${l}</button>`).join('')}</div>

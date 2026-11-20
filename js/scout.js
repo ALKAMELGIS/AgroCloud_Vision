@@ -73,7 +73,7 @@
               <button type="button" data-del="${t.id}" class="ml-auto rounded p-1 text-gray-400 hover:text-red-600" title="Delete task">${icon('trash')}</button>
             </div>
           </div>`;
-        }).join('') || `<p class="py-3 text-[13px] text-gray-500">${sc.filter === 'done' ? 'No finished tasks' : 'No open tasks. Create one from the map or from an NDVI drop in a field’s Analytics'}</p>`}
+        }).join('') || `<p class="py-3 text-[13px] text-gray-500">${sc.filter === 'done' ? 'No finished tasks' : 'No open tasks'}</p>`}
       </div>`;
     el.querySelector('#scNew').addEventListener('click', () => startPick(el));
     el.querySelector('#scCsv').addEventListener('click', () => window.downloadCsv(`scout_tasks_${today()}.csv`,

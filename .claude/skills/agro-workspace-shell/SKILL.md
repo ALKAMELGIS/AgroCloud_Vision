@@ -117,7 +117,17 @@ Both modes use the same two views:
   - zone colours (Zone 1 green → weak zones red);
   - risk dots (red high drop, amber drop, grey no data, green none);
   - priority pins.
-- Figures use `num font-mono` (tabular). Labels are sentence case. Icons are lucide line icons from `ICONS` in workspace.html, 16 px, 1.5 stroke. No emoji, no glows.
+- **Type:** one family in both languages, IBM Plex Sans with IBM Plex Sans Arabic, loaded from Google Fonts.
+  - Figures use the same face with tabular numerals. `.font-mono` and `.num` are remapped in `workspace-dark.css`, so keep writing `num font-mono` for numbers; only keycaps stay monospaced.
+  - Weights are 400 and 500, with 600 only for small badges.
+  - Section headings (nav groups, palette groups) are sentence case at 12 px / 500. Never uppercase or tracked.
+- **Copy:** labels, not explanations.
+  - No helper paragraphs under headings. The control names say what it does (the VRA type hints and the soil sampling description were removed for this reason).
+  - Empty states are a few words ("No open tasks").
+  - Source footnotes stay out of panels.
+- **Arabic layout:** number ranges get `dir="ltr"`, and `i18n.js` wraps percentages and ranges in Unicode isolates so they read in order.
+- **Icons:** lucide line icons from `ICONS` in workspace.html, 16 px, 1.5 stroke. No emoji, no glows.
+- **Check before shipping:** `test_click_all.py` clicks every control in every view, the field panel tabs and the activity log, and fails on any JavaScript or 5xx error.
 - Inputs that sit inside a styled box get the class `bare`.
 
 ## Layering (z-index)

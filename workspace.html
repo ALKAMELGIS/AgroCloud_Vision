@@ -6,7 +6,7 @@
 <title>Workspace — AgroCloud Vision</title>
 <script src="js/i18n.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" />
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = { theme: { extend: {
@@ -291,7 +291,6 @@
       <h2 class="text-[17px] font-medium">New farm</h2>
       <button type="button" data-close class="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700" aria-label="Close"><span data-icon="x"></span></button>
     </div>
-    <p class="mb-5 text-[13px] text-gray-500">A farm groups fields together. Switch between farms from the top of the sidebar</p>
     <label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="groupNameInput">Farm name</label>
     <input id="groupNameInput" required maxlength="120" placeholder="e.g. North pivots" class="h-10 w-full rounded-lg border border-gray-200 px-3 text-[14px] outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20" />
     <p id="groupError" class="hidden mt-3 text-[13px] text-red-600"></p>

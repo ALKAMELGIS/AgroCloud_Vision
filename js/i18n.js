@@ -185,6 +185,8 @@
     if (out === undefined) out = s;
     out = out.replace(/(\d) ha\b/g, '$1 هكتار');
     if (/\d/.test(out)) out = out.replace(MONTH_RE, (mo) => MONTHS[mo] || mo);   // dates only, not names
+    // keep percentages and number ranges in reading order inside Arabic text
+    out = out.replace(/~?[\d.,]+%|[\d.,]+\s?[–-]\s?[\d.,]+/g, (m) => '\u2066' + m + '\u2069');
     cache.set(s, out);
     return lead + out + tail;
   }

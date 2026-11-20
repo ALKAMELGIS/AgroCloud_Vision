@@ -92,7 +92,7 @@
               const pct = (100 * v) / total;
               return `<div class="flex items-center gap-2 text-[12px]">
                 <span class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:${col}"></span>
-                <span class="num w-[84px] shrink-0 whitespace-nowrap font-mono text-gray-500">${a.toFixed(idx.range[1] > 2 ? 1 : 2)}–${b.toFixed(idx.range[1] > 2 ? 1 : 2)}</span>
+                <span dir="ltr" class="num w-[84px] shrink-0 whitespace-nowrap text-start font-mono text-gray-500">${a.toFixed(idx.range[1] > 2 ? 1 : 2)}–${b.toFixed(idx.range[1] > 2 ? 1 : 2)}</span>
                 <span class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100"><span class="block h-full rounded-full" style="width:${pct}%;background:${col}"></span></span>
                 <span class="num w-16 shrink-0 text-right font-mono text-gray-500">${fa.unit === 'ha' ? formatHa(v) : pct.toFixed(1) + ' %'}</span>
               </div>`;
@@ -106,9 +106,8 @@
         </div>
         <div>
           <div class="mb-2 flex items-center justify-between"><span class="fp-h !mb-0">${idx.label} over the season</span>${series ? '' : '<button type="button" id="faSeries" class="text-[12px] font-medium text-brand-700">Build chart</button>'}</div>
-          <div id="faSeriesOut">${series ? seriesHtml(series, idx) : '<p class="text-[12px] text-gray-400">Reads the clearest dates of this period; dates with more than 40% cloud over the field are left out</p>'}</div>
+          <div id="faSeriesOut">${series ? seriesHtml(series, idx) : ''}</div>
         </div>
-        <p class="text-[11px] leading-4 text-gray-400">Sentinel-2 L2A, 10 m · Element84 Earth Search · clouds masked with the scene classification layer</p>
       </div>`;
     el.querySelectorAll('[data-unit]').forEach((b) => b.addEventListener('click', () => { fa.unit = b.dataset.unit; draw(el, field, r); }));
     el.querySelector('#faCmp').addEventListener('change', (e) => { fa.cmp = e.target.value; runCompare(el, field, r); });
@@ -186,7 +185,7 @@
     list.sort((a, b) => (lb.mode === 'drop' ? a.r.change - b.r.change : b.r.change - a.r.change));
     const nodata = rows.filter((x) => x.r && !Number.isFinite(x.r.change));
     el.innerHTML = `
-      <p class="text-[12px] leading-5 text-gray-500">NDVI change between ${fmtDay(scene.day)} and each field's previous clear image on the same tile</p>
+      <p class="text-[12px] text-gray-500">NDVI change · ${fmtDay(scene.day)} vs previous clear date</p>
       <div class="mt-3 flex rounded-lg bg-gray-100 p-0.5 text-[12px]">${[['drop', 'Biggest drops'], ['rise', 'Biggest gains']].map(([k, l]) => `<button type="button" data-lb="${k}" class="h-7 flex-1 rounded-md ${lb.mode === k ? 'bg-white text-gray-900' : 'text-gray-500'}">${l}</button>`).join('')}</div>
       ${pending ? `<div class="mt-3">${status('Comparing fields with their previous clear image')}</div>` : ''}
       <div class="mt-3 divide-y divide-gray-100">
