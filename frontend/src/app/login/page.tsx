@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login, register, saveSession } from '@/lib/api';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function LoginPage() {
       saveSession(response);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'An error occurred during authentication');
+      setError(getErrorMessage(err, 'An error occurred during authentication'));
     } finally {
       setLoading(false);
     }

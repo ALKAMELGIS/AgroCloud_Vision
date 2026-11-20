@@ -7,6 +7,7 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 import { Hexagon, Circle as CircleIcon, Plus, X, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/utils';
 
 interface FieldRecord {
   id: string;
@@ -147,7 +148,7 @@ export default function FieldMap({ center, farmId, fields, onFieldAdded }: Field
       setFieldName('');
       onFieldAdded?.();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Could not save this field. Please try again.');
+      setError(getErrorMessage(err, 'Could not save this field. Please try again.'));
     } finally {
       setSaving(false);
     }
