@@ -119,6 +119,11 @@
     'Full name': 'الاسم الكامل', 'Organization or farm name': 'اسم المؤسسة أو المزرعة', 'Create an organization': 'أنشئ مؤسسة', 'No account yet?': 'لا تملك حساباً؟',
     'At least 8 characters': '8 أحرف على الأقل', 'e.g. Al Khatim Farms': 'مثال: مزارع الختم', 'Your farms and fields open on the map right after': 'تفتح مزارعك وحقولك على الخريطة مباشرة بعد ذلك',
     'e.g. North pivots': 'مثال: المحاور الشمالية',
+    'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
+    'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
+    'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',
+    'No clear dates in this period': 'لا توجد تواريخ صافية في هذه الفترة', 'Click to open this date': 'انقر لفتح هذا التاريخ', 'Cloud': 'السحب',
+    'Pick a field': 'اختر حقلاً', 'No fields': 'لا حقول', 'Index over time': 'المؤشر عبر الزمن',
     'Hide fields panel': 'إخفاء لوحة الحقول', 'Show fields panel': 'إظهار لوحة الحقول', 'Add layer': 'إضافة طبقة', 'ha': 'هكتار', 'owner': 'مالك', 'manager': 'مدير', 'gis_analyst': 'محلل GIS', 'agronomist': 'مهندس زراعي',
     'field_supervisor': 'مشرف حقل', 'viewer': 'مشاهد',
   };
@@ -147,6 +152,7 @@
     [/^overlap of (.+) cut away$/, (m) => `قُصّ تداخل بمساحة ${m[1]}`],
     [/^overlap (.+) cut$/, (m) => `قُصّ تداخل ${m[1]}`],
     [/^Boundary saved$/, () => 'حُفظت الحدود'],
+    [/^(\d+) clear dates$/, (m) => `${m[1]} تاريخاً صافياً`],
     [/^NDVI change between (.+) and each field's previous clear image on the same tile$/, (m) => `تغيّر NDVI بين ${m[1]} وآخر صورة صافية سابقة لكل حقل على نفس البلاطة`],
     [/^(\S+@\S+)$/, (m) => m[1]],
   ];

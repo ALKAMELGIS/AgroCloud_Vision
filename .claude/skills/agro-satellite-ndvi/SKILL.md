@@ -39,6 +39,28 @@ Index formulas (reflectance; 20 m bands sampled on the 10 m grid):
 
 EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 
+## Time series (`js/timeseries.js`)
+
+- **Opening:** the chart button `#tsBtn` sits in the map tools under the ruler. It opens `#tsPanel`, a 304 px drawer under the map: `#mapMain.ts-open` shortens `#mapRow`, then both maps are invalidated.
+- **Data:**
+  - `Imagery.searchScenes([field.geometry], 'ts:'+fieldId, lookback)`, filtered to the period, tile cloud < 70 %, and the scene covering the field;
+  - `Imagery.analyse` with three workers;
+  - only dates with the field ≤ 40 % cloudy are kept;
+  - points arrive progressively and the status shows `done / total`.
+- **Chart:** an SVG drawn by hand, consistent with the rest of the app:
+  - the mean as a monotone cubic line (no overshoot) with a soft area fill, and the P10–P90 band at 8 %;
+  - month ticks, with the year on January;
+  - crop seasons (`/crops/by-field`) as labelled bands along the top;
+  - weather from `/weather/field/:id/history` on a right axis: Temp is the daily mean as a 7-day running line, Rain is bars, Soil is the daily mean of hourly `soil_moisture_0_to_7cm`.
+  - Weather stays dimmer than the index line, which leads.
+- **Interaction:**
+  - hovering shows a tooltip;
+  - clicking a point calls `Imagery.showScene(scene)`, which also adds dates older than the timeline;
+  - the strip below zooms: drag the window or its handles, double-click or use the reset button to show everything;
+  - quick periods 3M / 6M / 1Y / 2Y; the period is at most 3 years;
+  - CSV export: date, mean, P10, P90, cloud, temperature, rain, soil.
+- **Tests:** `test_timeseries.py` (agro-workspace-testing) mocks the weather history route.
+
 ## Sources
 
 | Source | Dates | Pixels |

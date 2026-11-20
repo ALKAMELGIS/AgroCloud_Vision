@@ -458,7 +458,7 @@
   $('#fpZoom').addEventListener('click', () => fp.fieldId && flyToField(fp.fieldId));
 
   const editBar = document.createElement('div');
-  editBar.className = 'hidden absolute bottom-[136px] left-1/2 z-[580] -translate-x-1/2 items-center gap-3 rounded-xl bg-white p-2 ps-4 shadow-lg ring-1 ring-black/5';
+  editBar.className = 'fp-editbar hidden absolute bottom-[136px] left-1/2 z-[580] -translate-x-1/2 items-center gap-3 rounded-xl bg-white p-2 ps-4 shadow-lg ring-1 ring-black/5';
   editBar.innerHTML = `
     <span class="text-[13px] text-gray-600">Drag the white points to reshape <span id="fpEditArea" class="num ml-1 font-mono text-gray-900"></span></span>
     <span id="fpEditStatus" class="max-w-[280px] text-[12px]"></span>

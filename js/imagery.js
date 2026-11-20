@@ -868,7 +868,16 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     current: () => sceneById(views[0].sceneId),
     selectScene: (id) => selectScene(views[0], id),
     refresh: () => refresh(views[0]),
-    setSplit, setCompare, setSwipe, swipe: () => swipeFrac, loadFarm, invalidate, labelFor, setProvider, provider: () => provider,
+    setSplit, setCompare, setSwipe, swipe: () => swipeFrac, loadFarm,
+    /** Opens a scene on the main screen even if it is older than the timeline's period (time series). */
+    showScene(scene) {
+      if (!scene) return;
+      if (!sceneById(scene.id)) {
+        state_.scenes.push(scene);
+        state_.scenes.sort((a, b) => (a.day < b.day ? 1 : -1));
+      }
+      selectScene(views[0], scene.id);
+    }, invalidate, labelFor, setProvider, provider: () => provider,
     resultFor: (fieldId) => views[0].results.get(fieldId), riskFor: (fieldId) => state_.risks.get(fieldId),
     rampAt, gradient, css, fmtDay, friendly,
     showDelta(res, delta) {

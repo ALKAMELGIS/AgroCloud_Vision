@@ -86,6 +86,8 @@ export class WeatherService {
       'temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max',
     );
     url.searchParams.set('timezone', 'auto');
+    // daily mean of top-soil moisture (0–7 cm, m³/m³) for the time-series chart
+    if (historical) url.searchParams.set('hourly', 'soil_moisture_0_to_7cm');
 
     let response: Response;
     try {
@@ -104,16 +106,30 @@ export class WeatherService {
 
     const data = (await response.json()) as OpenMeteoDailyResponse;
 
+    const soil = new Map<string, number[]>();
+    const hourly = (data as any).hourly;
+    if (hourly?.time && hourly.soil_moisture_0_to_7cm) {
+      hourly.time.forEach((t: string, i: number) => {
+        const v = hourly.soil_moisture_0_to_7cm[i];
+        if (v == null) return;
+        const d = t.slice(0, 10);
+        if (!soil.has(d)) soil.set(d, []);
+        soil.get(d)!.push(v);
+      });
+    }
+    const mean = (a?: number[]) => (a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
     const days = data.daily.time.map((date, i) => ({
       date,
       temperatureMaxC: data.daily.temperature_2m_max[i],
       temperatureMinC: data.daily.temperature_2m_min[i],
       precipitationMm: data.daily.precipitation_sum[i],
       windSpeedMaxKmh: data.daily.windspeed_10m_max[i],
+      soilMoisture: mean(soil.get(date)),
     }));
 
     // تخزين كمرجع (Cache) - لا يوقف الاستجابة إذا فشل
-    this.cacheSnapshots(fieldId, days).catch((err) =>
+    // only short ranges are kept as snapshots; a season chart would otherwise store a year of rows on every view
+    if (days.length <= 31) this.cacheSnapshots(fieldId, days).catch((err) =>
       this.logger.warn(`تعذّر حفظ snapshot الطقس: ${err.message}`),
     );
 
