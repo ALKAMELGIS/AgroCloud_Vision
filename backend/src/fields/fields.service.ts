@@ -3,7 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Field } from './field.entity';
 import { Farm } from '../farms/farm.entity';
-import { BulkCreateFieldsDto, CreateFieldDto } from './dto/create-field.dto';
+import { BulkCreateFieldsDto, CreateFieldDto, UpdateFieldDto } from './dto/create-field.dto';
+
+/** UPDATE … RETURNING through TypeORM's postgres driver yields [rows, count]; INSERT yields rows. */
+function firstRow(result: any) {
+  return Array.isArray(result?.[0]) ? result[0][0] : result?.[0];
+}
 
 const RETURNING = `RETURNING id, name, "farmId", irrigation, "areaHectares", "createdAt"`;
 
@@ -37,6 +42,53 @@ export class FieldsService {
   private async assertFarmInOrganization(farmId: string, organizationId: string) {
     const farm = await this.farmsRepo.findOne({ where: { id: farmId, organizationId } });
     if (!farm) throw new NotFoundException('المزرعة غير موجودة');
+  }
+
+  /** يتأكد أن الحقل يتبع مزرعة في منظمة المستخدم (عزل المستأجرين). تستخدمه وحدات المحاصيل والأنشطة أيضاً. */
+  async assertFieldInOrganization(fieldId: string, organizationId: string) {
+    const [row] = await this.fieldsRepo.query(
+      `SELECT f.id FROM fields f JOIN farms fa ON fa.id = f."farmId"
+       WHERE f.id::text = $1 AND fa."organizationId"::text = $2`,
+      [fieldId, organizationId],
+    );
+    if (!row) throw new NotFoundException('الحقل غير موجود');
+  }
+
+  /** تعديل الاسم / الري / المزرعة / الحدود. تغيير الحدود يعيد حساب المساحة. */
+  async update(id: string, dto: UpdateFieldDto, organizationId: string) {
+    await this.assertFieldInOrganization(id, organizationId);
+    if (dto.farmId) await this.assertFarmInOrganization(dto.farmId, organizationId);
+    if (dto.boundary) {
+      const problem = polygonProblem(dto.boundary);
+      if (problem) throw new BadRequestException(problem);
+    }
+    const irrigation = dto.irrigation === undefined ? undefined : dto.irrigation || null;
+    try {
+      await this.fieldsRepo.query(
+        `UPDATE fields SET
+           name = COALESCE($2, name),
+           "farmId" = COALESCE($3, "farmId"),
+           irrigation = CASE WHEN $4::boolean THEN $5 ELSE irrigation END,
+           boundary = COALESCE(ST_SetSRID(ST_Force2D(ST_GeomFromGeoJSON($6)), 4326), boundary)
+         WHERE id = $1
+         ${RETURNING}`,
+        [id, dto.name?.trim() || null, dto.farmId || null, irrigation !== undefined, irrigation ?? null,
+         dto.boundary ? JSON.stringify(dto.boundary) : null],
+      );
+      return firstRow(await this.fieldsRepo.query(
+        `UPDATE fields SET "areaHectares" = ST_Area(boundary::geography) / 10000 WHERE id = $1 ${RETURNING}`,
+        [id],
+      ));
+    } catch {
+      throw new BadRequestException('تعذّر تعديل الحقل: الشكل غير صالح');
+    }
+  }
+
+  async remove(id: string, organizationId: string) {
+    await this.assertFieldInOrganization(id, organizationId);
+    await this.fieldsRepo.query(`DELETE FROM weather_snapshots WHERE "fieldId"::text = $1`, [id]).catch(() => undefined);
+    await this.fieldsRepo.query(`DELETE FROM fields WHERE id = $1`, [id]);
+    return { id, deleted: true };
   }
 
   /**
@@ -92,11 +144,13 @@ export class FieldsService {
     }
   }
 
-  findAllForFarm(farmId: string) {
+  async findAllForFarm(farmId: string, organizationId: string) {
+    await this.assertFarmInOrganization(farmId, organizationId);
     return this.fieldsRepo.find({ where: { farmId }, relations: ['crops'] });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, organizationId: string) {
+    await this.assertFieldInOrganization(id, organizationId);
     const field = await this.fieldsRepo.findOne({
       where: { id },
       relations: ['crops', 'activities', 'farm'],
@@ -124,7 +178,8 @@ export class FieldsService {
   }
 
   /** يعيد حدود الحقل كـ GeoJSON جاهز للعرض على الخريطة (Leaflet). */
-  async getBoundaryAsGeoJson(id: string) {
+  async getBoundaryAsGeoJson(id: string, organizationId: string) {
+    await this.assertFieldInOrganization(id, organizationId);
     const [row] = await this.fieldsRepo.query(
       `SELECT ST_AsGeoJSON(boundary) AS geojson FROM fields WHERE id = $1`,
       [id],

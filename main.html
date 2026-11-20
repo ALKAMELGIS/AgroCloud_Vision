@@ -7,36 +7,61 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = { theme: { extend: { colors: { brand: {
-    50:'#eafbf0',600:'#16a34a',700:'#0f3d22',900:'#052e16'
+    50:'#eafbf0',600:'#16a34a',700:'#0f3d22',800:'#0a2e18',900:'#052e16'
   } } } } };
 </script>
 </head>
-<body class="min-h-screen bg-emerald-50 flex items-center justify-center p-4">
+<body class="min-h-screen bg-[#f6f6f3] text-gray-900 antialiased">
+<style>
+  .num { font-variant-numeric: tabular-nums; }
+  .inp { height: 44px; width: 100%; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; padding: 0 12px; font-size: 14px; outline: none; transition: border-color .12s, box-shadow .12s; }
+  .inp:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgb(22 163 74 / .15); }
+  .lbl { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500; color: #6b7280; }
+</style>
 
-  <div class="w-full max-w-md rounded-xl bg-white p-8 shadow-lg relative">
-    <a href="index.html" class="absolute -top-8 left-0 text-sm text-gray-500 hover:text-brand-700">&larr; Back to home</a>
+  <div class="mx-auto flex min-h-screen max-w-5xl items-center px-4 py-10">
+    <div class="grid w-full overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_-24px_rgba(17,24,39,0.25)] ring-1 ring-gray-900/10 md:grid-cols-2">
+      <div class="p-8 sm:p-10">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-900 text-[13px] font-semibold text-white">A</div>
+          <span class="text-[15px] font-medium text-brand-900">AgroCloud Vision</span>
+        </a>
 
-    <h1 class="mb-1 text-2xl font-bold text-brand-900">AgroCloud Vision</h1>
-    <p id="subtitle" class="mb-6 text-sm text-gray-500">Sign in to your account</p>
+        <h1 id="subtitle" class="mt-10 text-[24px] font-medium tracking-[-0.01em] text-gray-900">Sign in to your account</h1>
+        <p id="subtitleHint" class="mt-1 text-[14px] text-gray-500">Your farms and fields open on the map right after</p>
 
-    <form id="authForm" class="space-y-4" autocomplete="off">
-      <div id="registerFields" class="space-y-4 hidden">
-        <input id="organizationName" class="w-full rounded-lg border p-3" placeholder="Organization / Farm name">
-        <input id="fullName" class="w-full rounded-lg border p-3" placeholder="Full name">
+        <form id="authForm" class="mt-8 space-y-4" autocomplete="off">
+          <div id="registerFields" class="space-y-4 hidden">
+            <div><label class="lbl" for="organizationName">Organization or farm name</label><input id="organizationName" class="inp" placeholder="e.g. Al Khatim Farms"></div>
+            <div><label class="lbl" for="fullName">Full name</label><input id="fullName" class="inp"></div>
+          </div>
+          <div><label class="lbl" for="email">Email</label><input id="email" name="agro-email" type="email" required autocomplete="off" value="demo@agrocloud.test" class="inp"></div>
+          <div><label class="lbl" for="password">Password</label><input id="password" name="agro-password" type="password" required minlength="8" autocomplete="new-password" value="Demo12345!" class="inp" placeholder="At least 8 characters"></div>
+
+          <p id="errorMsg" class="hidden rounded-lg bg-red-50 px-3 py-2.5 text-[13px] text-red-700 ring-1 ring-red-100"></p>
+
+          <button id="submitBtn" type="submit" class="h-11 w-full rounded-[10px] bg-brand-600 text-[15px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-60">Sign in</button>
+        </form>
+
+        <button id="toggleMode" class="mt-5 text-[14px] text-gray-600 transition-colors hover:text-gray-900">No account yet? <span class="font-medium text-brand-700">Create an organization</span></button>
       </div>
-      <input id="email" name="agro-email" type="email" required autocomplete="off" value="demo@agrocloud.test" class="w-full rounded-lg border p-3" placeholder="Email address">
-      <input id="password" name="agro-password" type="password" required minlength="8" autocomplete="new-password" value="Demo12345!" class="w-full rounded-lg border p-3" placeholder="Password (min 8 characters)">
 
-      <p id="errorMsg" class="hidden text-sm text-red-600"></p>
-
-      <button id="submitBtn" type="submit" class="w-full rounded-lg bg-brand-600 p-3 font-semibold text-white hover:bg-brand-700 disabled:opacity-60">
-        Sign In
-      </button>
-    </form>
-
-    <button id="toggleMode" class="mt-4 w-full text-center text-sm text-brand-700 underline">
-      Don't have an account? Create an organization
-    </button>
+      <!-- pivots from above -->
+      <div class="relative hidden bg-[#d9c9a6] md:block">
+        <svg class="absolute inset-0 h-full w-full" viewBox="0 0 460 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs><radialGradient id="c" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#4f7a3a"/><stop offset="1" stop-color="#3c612c"/></radialGradient></defs>
+          <g stroke="#e8dcc0" stroke-width="3" fill="none"><path d="M-20 40 L480 330"/><path d="M230 -20 L130 580"/></g>
+          <circle cx="120" cy="140" r="112" fill="url(#c)"/><circle cx="350" cy="260" r="110" fill="url(#c)"/><circle cx="140" cy="430" r="108" fill="url(#c)"/><circle cx="380" cy="520" r="96" fill="#77744a"/>
+          <g fill="none" stroke="#fff" stroke-opacity=".07" stroke-width="1.5"><circle cx="120" cy="140" r="40"/><circle cx="120" cy="140" r="80"/><circle cx="350" cy="260" r="40"/><circle cx="350" cy="260" r="80"/></g>
+          <g fill="none" stroke="#22c55e" stroke-width="2"><circle cx="120" cy="140" r="112"/><circle cx="350" cy="260" r="110"/></g>
+          <circle cx="140" cy="430" r="108" fill="#22c55e" fill-opacity=".14" stroke="#22c55e" stroke-width="2.5"/>
+        </svg>
+        <div class="absolute bottom-6 left-6 rounded-lg bg-white/95 px-3 py-2 shadow-sm ring-1 ring-gray-900/10">
+          <div class="text-[13px] font-medium text-gray-900">Pivot 2</div>
+          <div class="num font-mono text-[12px] text-gray-500">79.19 ha · Center pivot</div>
+        </div>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -57,15 +82,16 @@ if (localStorage.getItem('accessToken')) {
 
 toggleBtn.addEventListener('click', () => {
   mode = mode === 'login' ? 'register' : 'login';
-  subtitle.textContent = mode === 'login' ? 'Sign in to your account' : 'Create a new organization';
+  subtitle.textContent = mode === 'login' ? 'Sign in to your account' : 'Create your organization';
+  document.getElementById('subtitleHint').textContent = mode === 'login' ? 'Your farms and fields open on the map right after' : 'You become its owner and can invite your team later';
   registerFields.classList.toggle('hidden', mode !== 'register');
   // Owner account is prefilled for sign-in only; registering starts empty.
   document.getElementById('email').value = mode === 'login' ? 'demo@agrocloud.test' : '';
   document.getElementById('password').value = mode === 'login' ? 'Demo12345!' : '';
-  submitBtn.textContent = mode === 'login' ? 'Sign In' : 'Create Account';
-  toggleBtn.textContent = mode === 'login'
-    ? "Don't have an account? Create an organization"
-    : 'Already have an account? Sign in';
+  submitBtn.textContent = mode === 'login' ? 'Sign in' : 'Create organization';
+  toggleBtn.innerHTML = mode === 'login'
+    ? 'No account yet? <span class="font-medium text-brand-700">Create an organization</span>'
+    : 'Already have an account? <span class="font-medium text-brand-700">Sign in</span>';
   errorMsg.classList.add('hidden');
 });
 
@@ -73,7 +99,7 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   errorMsg.classList.add('hidden');
   submitBtn.disabled = true;
-  submitBtn.textContent = '...';
+  submitBtn.textContent = mode === 'login' ? 'Signing in' : 'Creating';
 
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -108,11 +134,11 @@ form.addEventListener('submit', async (e) => {
     localStorage.setItem('user', JSON.stringify(data.user));
     window.location.href = 'workspace.html';
   } catch (err) {
-    errorMsg.textContent = err.message || 'Could not reach the server. It may be waking up from sleep (free tier) — please try again in 30-60 seconds.';
+    errorMsg.textContent = err.message || 'Could not reach the server. It may be waking up (free tier), so try again in 30 to 60 seconds';
     errorMsg.classList.remove('hidden');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+    submitBtn.textContent = mode === 'login' ? 'Sign in' : 'Create organization';
   }
 });
 </script>

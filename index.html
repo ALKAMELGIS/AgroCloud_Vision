@@ -3,195 +3,291 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AgroCloud Vision — Agricultural Intelligence Platform</title>
-<meta name="description" content="Farm and field management, live PostGIS boundaries, and real weather forecasting in one dashboard.">
+<title>AgroCloud Vision — Field boundaries, area and weather for every farm</title>
+<meta name="description" content="Draw or import field boundaries on satellite imagery. Every field gets its exact area, its own weather forecast and a record your whole team works from.">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-  tailwind.config = { theme: { extend: { colors: { brand: {
-    50:'#eafbf0',100:'#d2f3df',600:'#16a34a',700:'#0f3d22',800:'#0a2e18',900:'#052e16'
-  } } } } };
+  tailwind.config = { theme: { extend: {
+    colors: { brand: { 50:'#eafbf0',100:'#d2f3df',600:'#16a34a',700:'#0f3d22',800:'#0a2e18',900:'#052e16' } },
+    fontFamily: { mono: ['ui-monospace','SFMono-Regular','Menlo','Consolas','monospace'] },
+  } } };
 </script>
 <style>
-  .grid-fade {
-    background-image:
-      linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 85%),
-      linear-gradient(rgba(5,46,22,0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(5,46,22,0.06) 1px, transparent 1px);
-    background-size: auto, 40px 40px, 40px 40px;
-  }
+  .num { font-variant-numeric: tabular-nums; }
+  .ico { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .enter { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
+  .enter-2 { animation-delay: .08s; }
+  @media (prefers-reduced-motion: reduce) { .enter { animation: none; } }
 </style>
 </head>
-<body class="bg-white text-gray-800">
+<body class="bg-white text-gray-900 antialiased">
 
-  <header class="sticky top-0 z-50 border-b border-gray-100/80 bg-white/90 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <div class="flex items-center gap-2.5">
-        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-brand-900 text-white text-sm font-bold">A</div>
-        <span class="text-[15px] font-semibold tracking-tight text-brand-900">AgroCloud Vision</span>
-      </div>
-      <nav class="hidden items-center gap-8 text-sm font-medium text-gray-600 sm:flex">
-        <a href="#features" class="hover:text-brand-800">Features</a>
-        <a href="#pricing" class="hover:text-brand-800">Pricing</a>
-        <a href="https://github.com/ALKAMELGIS/AgroCloud_Vision" class="hover:text-brand-800">Source</a>
+  <header class="sticky top-0 z-50 border-b border-gray-900/5 bg-white/90 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-900 text-[13px] font-semibold text-white">A</div>
+        <span class="text-[15px] font-medium text-brand-900">AgroCloud Vision</span>
+      </a>
+      <nav class="hidden items-center gap-8 text-[14px] text-gray-600 sm:flex">
+        <a href="#features" class="transition-colors hover:text-gray-900">Features</a>
+        <a href="#pricing" class="transition-colors hover:text-gray-900">Pricing</a>
+        <a href="https://github.com/ALKAMELGIS/AgroCloud_Vision" class="transition-colors hover:text-gray-900">Source</a>
       </nav>
-      <div class="flex items-center gap-3">
-        <a href="main.html" class="hidden text-sm font-medium text-gray-600 hover:text-brand-800 sm:inline">Sign In</a>
-        <a href="main.html" class="rounded-lg bg-brand-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-800">Get Started</a>
+      <div class="flex items-center gap-4">
+        <a href="main.html" class="hidden text-[14px] text-gray-600 transition-colors hover:text-gray-900 sm:inline">Sign in</a>
+        <a href="main.html" class="rounded-lg bg-brand-900 px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-800">Get started</a>
       </div>
     </div>
   </header>
 
   <!-- ====== Hero ====== -->
-  <section class="grid-fade">
-    <div class="mx-auto max-w-4xl px-6 pb-16 pt-20 text-center sm:pt-28">
-      <span class="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-800">
-        <span class="h-1.5 w-1.5 rounded-full bg-brand-600"></span>
-        Live backend · Live PostGIS database · No mock data
-      </span>
-      <h1 class="mt-6 text-4xl font-bold tracking-tight text-brand-900 sm:text-5xl">
-        Run every farm from one<br class="hidden sm:block"> intelligent dashboard
-      </h1>
-      <p class="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-gray-500">
-        Draw field boundaries on a real map, track weather by field, and keep
-        every farm your organization manages in one system — built for the
-        people who actually run the operation, not a demo.
-      </p>
-      <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
-        <a href="main.html" class="rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition-colors hover:bg-brand-700">
-          Create your organization
-        </a>
-        <a href="main.html" class="rounded-lg border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50">
-          Sign in
-        </a>
+  <section class="overflow-hidden bg-[#f6f6f3]">
+    <div class="mx-auto max-w-6xl px-6 pt-16 sm:pt-24">
+      <div class="enter max-w-2xl">
+        <h1 class="text-[36px] font-medium leading-[1.1] tracking-[-0.02em] text-brand-900 sm:text-[52px]">
+          Every field on your farms, mapped to the hectare
+        </h1>
+        <p class="mt-5 max-w-xl text-[17px] leading-relaxed text-gray-600">
+          Draw pivots and blocks on satellite imagery, or import them from a Shapefile, KML,
+          GeoPackage or File Geodatabase. Each field gets its exact area and its own weather forecast.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-4">
+          <a href="main.html" class="rounded-lg bg-brand-600 px-5 py-3 text-[15px] font-medium text-white transition-colors hover:bg-brand-700">Create your organization</a>
+          <a href="main.html" class="px-1 py-3 text-[15px] font-medium text-gray-700 transition-colors hover:text-gray-900">Sign in</a>
+        </div>
+      </div>
+
+      <!-- Product preview: the workspace, pivots from above -->
+      <div class="enter enter-2 relative mt-14 sm:mt-16">
+        <div class="overflow-hidden rounded-t-2xl bg-white shadow-[0_24px_60px_-20px_rgba(17,24,39,0.25)] ring-1 ring-gray-900/10">
+          <div class="flex h-9 items-center gap-1.5 border-b border-gray-900/5 bg-gray-50 px-4">
+            <span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span><span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span><span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span>
+          </div>
+          <div class="flex h-[300px] sm:h-[460px]">
+            <!-- sidebar -->
+            <div class="hidden w-56 shrink-0 flex-col border-r border-gray-900/5 px-3 py-4 md:flex">
+              <div class="px-2 text-[12px] font-medium text-gray-500">Farms</div>
+              <div class="mt-2 flex h-8 items-center justify-between rounded-lg bg-brand-900 px-2 text-[13px] text-white"><span>Al Khatim pivots</span><span class="num font-mono text-[11px] text-white/60">6</span></div>
+              <div class="mt-0.5 flex h-8 items-center justify-between rounded-lg px-2 text-[13px] text-gray-700"><span>Liwa date blocks</span><span class="num font-mono text-[11px] text-gray-400">14</span></div>
+              <div class="mt-6 px-2 text-[12px] font-medium text-gray-500">Fields</div>
+              <div class="mt-2 flex flex-col gap-0.5 text-[13px] text-gray-700">
+                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Pivot 1</span><span class="num font-mono text-[11px] text-gray-400">81.28 ha</span></div>
+                <div class="flex h-8 items-center justify-between rounded-lg bg-gray-100 px-2"><span>Pivot 2</span><span class="num font-mono text-[11px] text-gray-500">79.19 ha</span></div>
+                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Pivot 3</span><span class="num font-mono text-[11px] text-gray-400">78.12 ha</span></div>
+                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Pivot 4</span><span class="num font-mono text-[11px] text-gray-400">80.40 ha</span></div>
+                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Fodder block</span><span class="num font-mono text-[11px] text-gray-400">30.70 ha</span></div>
+              </div>
+            </div>
+            <!-- map -->
+            <div class="relative flex-1">
+              <svg class="absolute inset-0 h-full w-full" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid slice" aria-label="Center pivot fields seen from above">
+                <defs>
+                  <radialGradient id="crop" cx="50%" cy="50%" r="50%">
+                    <stop offset="0" stop-color="#4f7a3a"/><stop offset=".7" stop-color="#466f33"/><stop offset="1" stop-color="#3c612c"/>
+                  </radialGradient>
+                  <radialGradient id="cropDry" cx="50%" cy="50%" r="50%">
+                    <stop offset="0" stop-color="#8b8a55"/><stop offset="1" stop-color="#77744a"/>
+                  </radialGradient>
+                  <pattern id="rings" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="none"/></pattern>
+                </defs>
+                <rect width="900" height="460" fill="#d9c9a6"/>
+                <!-- tracks -->
+                <g stroke="#e8dcc0" stroke-width="3" fill="none">
+                  <path d="M-20 70 L920 300"/><path d="M180 -20 L60 480"/><path d="M520 -20 L420 480"/><path d="M860 -20 L760 480"/>
+                </g>
+                <!-- pivots -->
+                <g>
+                  <circle cx="250" cy="150" r="118" fill="url(#crop)"/>
+                  <circle cx="500" cy="300" r="116" fill="url(#crop)"/>
+                  <circle cx="760" cy="170" r="112" fill="url(#cropDry)"/>
+                  <circle cx="230" cy="420" r="110" fill="url(#crop)"/>
+                  <circle cx="790" cy="430" r="108" fill="url(#crop)"/>
+                </g>
+                <!-- irrigation rings -->
+                <g fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-width="1.5">
+                  <circle cx="250" cy="150" r="30"/><circle cx="250" cy="150" r="60"/><circle cx="250" cy="150" r="90"/>
+                  <circle cx="500" cy="300" r="30"/><circle cx="500" cy="300" r="60"/><circle cx="500" cy="300" r="90"/>
+                  <circle cx="760" cy="170" r="30"/><circle cx="760" cy="170" r="60"/><circle cx="760" cy="170" r="90"/>
+                </g>
+                <!-- pivot arms -->
+                <g stroke="#e9e4d4" stroke-opacity=".55" stroke-width="2">
+                  <line x1="250" y1="150" x2="355" y2="205"/><line x1="500" y1="300" x2="420" y2="215"/><line x1="760" y1="170" x2="860" y2="130"/>
+                </g>
+                <!-- saved field boundaries -->
+                <g fill="none" stroke="#22c55e" stroke-width="2">
+                  <circle cx="250" cy="150" r="118"/><circle cx="760" cy="170" r="112"/><circle cx="230" cy="420" r="110"/><circle cx="790" cy="430" r="108"/>
+                  <rect x="590" y="36" width="58" height="58" fill="#22c55e" fill-opacity=".14"/>
+                </g>
+                <!-- selected field -->
+                <circle cx="500" cy="300" r="116" fill="#22c55e" fill-opacity=".14" stroke="#22c55e" stroke-width="2.5"/>
+              </svg>
+              <!-- selected field tag -->
+              <div class="absolute left-[44%] top-[38%] rounded-lg bg-white/95 px-3 py-2 shadow-sm ring-1 ring-gray-900/10">
+                <div class="text-[13px] font-medium text-gray-900">Pivot 2</div>
+                <div class="num font-mono text-[12px] text-gray-500">79.19 ha · Center pivot</div>
+              </div>
+              <div class="absolute right-3 top-3 flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-[12px] font-medium text-gray-900 shadow-sm ring-1 ring-gray-900/5">
+                <svg class="ico !h-4 !w-4" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Add field
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ====== Features ====== -->
-  <section id="features" class="mx-auto max-w-5xl px-6 py-20">
-    <div class="mx-auto mb-12 max-w-xl text-center">
-      <h2 class="text-2xl font-bold tracking-tight text-brand-900">Everything the field work needs, nothing it doesn't</h2>
-      <p class="mt-3 text-sm text-gray-500">Three things the system does well today — more are on the roadmap, and we say so inside the app instead of pretending they already ship.</p>
+  <section id="features" class="mx-auto max-w-6xl px-6 py-24">
+    <div class="max-w-xl">
+      <h2 class="text-[28px] font-medium leading-tight tracking-[-0.01em] text-brand-900">One record per field, shared by the whole team</h2>
+      <p class="mt-3 text-[15px] leading-relaxed text-gray-600">The boundary is the start. Everything else the team does on that field attaches to it.</p>
     </div>
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
-      <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm shadow-gray-900/[0.03]">
-        <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 20V12l7-7 7 7v8"/><path d="M9 20v-6h6v6"/></svg>
+
+    <div class="mt-12 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <!-- wide: boundaries -->
+      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:col-span-2 lg:p-8">
+        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M3.5 8.7c-.7.5-1 1.4-.7 2.2l2.8 8.7c.3.8 1 1.4 1.9 1.4h9.1c.9 0 1.6-.6 1.9-1.4l2.8-8.7c.3-.8 0-1.7-.7-2.2l-7.4-5.3a2.1 2.1 0 0 0-2.4 0Z"/></svg>Boundaries
         </div>
-        <h3 class="font-semibold text-brand-900">Farm &amp; field management</h3>
-        <p class="mt-2 text-sm leading-relaxed text-gray-500">Draw a field's exact boundary straight on the map — polygon or circle — and the system stores it in PostGIS and calculates its area automatically.</p>
+        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Draw them, or bring the files you already have</h3>
+        <p class="mt-2 max-w-lg text-[15px] leading-relaxed text-gray-600">Trace a polygon or drop a pivot circle on satellite imagery. Or import a survey: every polygon becomes a field, its name comes from the file, and any projection is converted to WGS84 before it is saved in PostGIS.</p>
+        <div class="mt-6 flex flex-wrap gap-2">
+          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">GeoJSON</span>
+          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">KML / KMZ</span>
+          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">Shapefile</span>
+          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">File Geodatabase</span>
+          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">GeoPackage</span>
+        </div>
       </div>
-      <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm shadow-gray-900/[0.03]">
-        <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.3-2A5 5 0 0 0 5 18"/><path d="M16 14v6m-4-4v6m-4-2v4"/></svg>
+      <!-- weather -->
+      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:p-8">
+        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.3-2A5 5 0 0 0 5 18"/><path d="M16 14v6m-4-4v6m-4-2v4"/></svg>Weather
         </div>
-        <h3 class="font-semibold text-brand-900">Real weather, per field</h3>
-        <p class="mt-2 text-sm leading-relaxed text-gray-500">A live 7-day forecast for each field's own coordinates, pulled from Open-Meteo — temperature range, rainfall, and wind, not a generic city forecast.</p>
+        <h3 class="mt-3 text-[20px] font-medium text-gray-900">A forecast for the field, not the city</h3>
+        <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Seven days of temperature and rainfall at each field's own coordinates, from Open-Meteo.</p>
       </div>
-      <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm shadow-gray-900/[0.03]">
-        <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+      <!-- area -->
+      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:p-8">
+        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>Area
         </div>
-        <h3 class="font-semibold text-brand-900">Multi-tenant &amp; role-based</h3>
-        <p class="mt-2 text-sm leading-relaxed text-gray-500">Every organization's farms and fields are isolated at the database level, with JWT authentication and roles — Owner, Manager, GIS Analyst — enforced on every request.</p>
+        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Measured on the ellipsoid</h3>
+        <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Area is calculated by PostGIS on the WGS84 ellipsoid, so the hectares match a survey, not a flat screen.</p>
+      </div>
+      <!-- monitoring -->
+      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:col-span-2 lg:p-8">
+        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></svg>Monitoring
+        </div>
+        <h3 class="mt-3 text-[20px] font-medium text-gray-900">See which part of a pivot fell behind</h3>
+        <p class="mt-2 max-w-lg text-[15px] leading-relaxed text-gray-600">Sentinel-2 NDVI for each field with clouds masked inside the field, the hectares in each growth class, a season curve, and a date comparison that marks the areas that dropped against the rest of the field.</p>
+      </div>
+      <!-- operations -->
+      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:p-8">
+        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Operations
+        </div>
+        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Crops and the activity log</h3>
+        <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Seasons and growth stages per field, and every fertilizer, spray, irrigation or harvest with its product and rate, on a monthly calendar you can export.</p>
+      </div>
+      <!-- team -->
+      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:col-span-2 lg:p-8">
+        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>Team
+        </div>
+        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Each organization sees only its own farms</h3>
+        <p class="mt-2 max-w-lg text-[15px] leading-relaxed text-gray-600">Farms and fields are separated per organization in the database, and roles decide who can add or change fields: owner, manager, GIS analyst, agronomist, field supervisor or viewer.</p>
       </div>
     </div>
   </section>
 
   <!-- ====== How it works ====== -->
-  <section class="border-y border-gray-100 bg-gray-50/60">
-    <div class="mx-auto max-w-5xl px-6 py-20">
-      <div class="mx-auto mb-12 max-w-xl text-center">
-        <h2 class="text-2xl font-bold tracking-tight text-brand-900">From empty map to tracked field in three steps</h2>
-      </div>
-      <div class="grid grid-cols-1 gap-8 sm:grid-cols-3">
+  <section class="border-y border-gray-900/5 bg-[#f6f6f3]">
+    <div class="mx-auto max-w-6xl px-6 py-24">
+      <h2 class="max-w-xl text-[28px] font-medium leading-tight tracking-[-0.01em] text-brand-900">From an empty map to a tracked field in three steps</h2>
+      <div class="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-3">
         <div>
-          <div class="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-brand-900 text-xs font-semibold text-white">1</div>
-          <h3 class="font-semibold text-brand-900">Register your organization</h3>
-          <p class="mt-2 text-sm leading-relaxed text-gray-500">Create an account and add your first farm by name — coordinates are optional, you can set them later.</p>
+          <div class="num font-mono text-[13px] text-gray-400">01</div>
+          <h3 class="mt-3 text-[17px] font-medium text-gray-900">Create your organization</h3>
+          <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Register, then add your first farm by name. Coordinates are optional.</p>
         </div>
         <div>
-          <div class="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-brand-900 text-xs font-semibold text-white">2</div>
-          <h3 class="font-semibold text-brand-900">Draw the field boundary</h3>
-          <p class="mt-2 text-sm leading-relaxed text-gray-500">Open the farm, tap "Add Field," and trace the boundary directly on the map canvas — freehand polygon or a circle.</p>
+          <div class="num font-mono text-[13px] text-gray-400">02</div>
+          <h3 class="mt-3 text-[17px] font-medium text-gray-900">Add the fields</h3>
+          <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Open Add field to draw a polygon or a circle, or upload the boundary file from your survey or GIS team.</p>
         </div>
         <div>
-          <div class="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-brand-900 text-xs font-semibold text-white">3</div>
-          <h3 class="font-semibold text-brand-900">Track it from day one</h3>
-          <p class="mt-2 text-sm leading-relaxed text-gray-500">The field's area, boundary, and weather are now live in your dashboard — the same record every other tool in the system builds on.</p>
+          <div class="num font-mono text-[13px] text-gray-400">03</div>
+          <h3 class="mt-3 text-[17px] font-medium text-gray-900">Work from the same record</h3>
+          <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Area, boundary, irrigation type and weather are saved with the field, and every other tool builds on it.</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ====== Pricing ====== -->
-  <section id="pricing" class="mx-auto max-w-5xl px-6 py-20">
-    <div class="mx-auto mb-12 max-w-xl text-center">
-      <h2 class="text-2xl font-bold tracking-tight text-brand-900">Plans for one farm or a whole operation</h2>
-      <p class="mt-3 text-sm text-gray-500">Pricing below reflects where the platform is headed. Billing isn't wired up yet — Professional and Enterprise are available by request during early access.</p>
+  <section id="pricing" class="mx-auto max-w-6xl px-6 py-24">
+    <div class="max-w-xl">
+      <h2 class="text-[28px] font-medium leading-tight tracking-[-0.01em] text-brand-900">Plans for one farm or a whole operation</h2>
+      <p class="mt-3 text-[15px] leading-relaxed text-gray-600">Billing is not live yet. Professional and Enterprise are available on request during early access.</p>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <!-- Starter -->
-      <div class="flex flex-col rounded-2xl border border-gray-200 bg-white p-7">
-        <h3 class="font-semibold text-brand-900">Starter</h3>
-        <p class="mt-1 text-sm text-gray-500">For a single farm getting its fields mapped.</p>
-        <div class="mt-5 flex items-baseline gap-1">
-          <span class="text-3xl font-bold tracking-tight text-brand-900">Free</span>
-        </div>
-        <ul class="mt-6 flex-1 space-y-3 text-sm text-gray-600">
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Up to 2 farms</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Up to 10 mapped fields</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>7-day weather per field</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>1 team member</li>
+    <div class="mt-12 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div class="flex flex-col rounded-2xl p-7 ring-1 ring-gray-900/10">
+        <h3 class="text-[17px] font-medium text-gray-900">Starter</h3>
+        <p class="mt-1 text-[14px] text-gray-500">For a single farm getting its fields mapped</p>
+        <div class="mt-6 text-[32px] font-medium tracking-[-0.01em] text-brand-900">Free</div>
+        <ul class="mt-6 flex-1 space-y-3 text-[14px] text-gray-600">
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Up to 2 farms</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Up to 10 fields</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Draw and import boundaries</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>7-day weather per field</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>1 team member</li>
         </ul>
-        <a href="main.html" class="mt-8 rounded-lg border border-gray-200 py-2.5 text-center text-sm font-semibold text-brand-900 transition-colors hover:bg-gray-50">Start for free</a>
+        <a href="main.html" class="mt-8 rounded-lg py-2.5 text-center text-[14px] font-medium text-gray-900 ring-1 ring-gray-900/10 transition-colors hover:bg-gray-50">Start for free</a>
       </div>
 
-      <!-- Professional -->
-      <div class="relative flex flex-col rounded-2xl border-2 border-brand-600 bg-white p-7 shadow-lg shadow-brand-600/10">
-        <span class="absolute -top-3 left-7 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white">Most teams choose this</span>
-        <h3 class="font-semibold text-brand-900">Professional</h3>
-        <p class="mt-1 text-sm text-gray-500">For organizations running several farms and a team.</p>
-        <div class="mt-5 flex items-baseline gap-1">
-          <span class="text-3xl font-bold tracking-tight text-brand-900">$49</span>
-          <span class="text-sm text-gray-500">/ organization / month</span>
+      <div class="flex flex-col rounded-2xl p-7 ring-2 ring-brand-600">
+        <h3 class="text-[17px] font-medium text-gray-900">Professional</h3>
+        <p class="mt-1 text-[14px] text-gray-500">For organizations running several farms and a team</p>
+        <div class="mt-6 flex items-baseline gap-1.5">
+          <span class="num text-[32px] font-medium tracking-[-0.01em] text-brand-900">$49</span>
+          <span class="text-[14px] text-gray-500">per organization, per month</span>
         </div>
-        <ul class="mt-6 flex-1 space-y-3 text-sm text-gray-600">
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Unlimited farms &amp; fields</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Role-based team access (Owner, Manager, GIS Analyst)</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>7-day weather for every field</li>
-          <li class="flex gap-2 text-gray-400"><svg class="mt-0.5 h-4 w-4 shrink-0 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Satellite &amp; NDVI layers <span class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">Soon</span></li>
+        <ul class="mt-6 flex-1 space-y-3 text-[14px] text-gray-600">
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Unlimited farms and fields</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Team roles: owner, manager, GIS analyst and more</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Bulk import from GIS files</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>7-day weather for every field</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Sentinel-2 NDVI per field, with date compare</li>
         </ul>
-        <a href="main.html" class="mt-8 rounded-lg bg-brand-600 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-brand-700">Request early access</a>
+        <a href="main.html" class="mt-8 rounded-lg bg-brand-600 py-2.5 text-center text-[14px] font-medium text-white transition-colors hover:bg-brand-700">Request early access</a>
       </div>
 
-      <!-- Enterprise -->
-      <div class="flex flex-col rounded-2xl border border-gray-200 bg-white p-7">
-        <h3 class="font-semibold text-brand-900">Enterprise</h3>
-        <p class="mt-1 text-sm text-gray-500">For large operations with IoT fleets and compliance needs.</p>
-        <div class="mt-5 flex items-baseline gap-1">
-          <span class="text-3xl font-bold tracking-tight text-brand-900">Custom</span>
-        </div>
-        <ul class="mt-6 flex-1 space-y-3 text-sm text-gray-600">
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Everything in Professional</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>IoT device &amp; ERP integrations</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>SSO and custom roles</li>
-          <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Dedicated support &amp; SLA</li>
+      <div class="flex flex-col rounded-2xl p-7 ring-1 ring-gray-900/10">
+        <h3 class="text-[17px] font-medium text-gray-900">Enterprise</h3>
+        <p class="mt-1 text-[14px] text-gray-500">For large operations with sensor fleets and compliance needs</p>
+        <div class="mt-6 text-[32px] font-medium tracking-[-0.01em] text-brand-900">Custom</div>
+        <ul class="mt-6 flex-1 space-y-3 text-[14px] text-gray-600">
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Everything in Professional</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>IoT device and ERP integrations</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Single sign-on and custom roles</li>
+          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Dedicated support and SLA</li>
         </ul>
-        <a href="https://github.com/ALKAMELGIS/AgroCloud_Vision" class="mt-8 rounded-lg border border-gray-200 py-2.5 text-center text-sm font-semibold text-brand-900 transition-colors hover:bg-gray-50">Talk to us</a>
+        <a href="https://github.com/ALKAMELGIS/AgroCloud_Vision" class="mt-8 rounded-lg py-2.5 text-center text-[14px] font-medium text-gray-900 ring-1 ring-gray-900/10 transition-colors hover:bg-gray-50">Talk to us</a>
       </div>
     </div>
   </section>
 
-  <!-- ====== Footer ====== -->
-  <footer class="border-t border-gray-100">
-    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-gray-400 sm:flex-row">
+  <footer class="border-t border-gray-900/5">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-[13px] text-gray-500 sm:flex-row">
       <div class="flex items-center gap-2">
-        <div class="flex h-6 w-6 items-center justify-center rounded bg-brand-900 text-[11px] font-bold text-white">A</div>
+        <div class="flex h-6 w-6 items-center justify-center rounded bg-brand-900 text-[11px] font-semibold text-white">A</div>
         <span>© 2026 AgroCloud Vision</span>
       </div>
-      <a href="https://github.com/ALKAMELGIS/AgroCloud_Vision" class="underline hover:text-brand-700">Source on GitHub</a>
+      <a href="https://github.com/ALKAMELGIS/AgroCloud_Vision" class="transition-colors hover:text-gray-900">Source on GitHub</a>
     </div>
   </footer>
 

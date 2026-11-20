@@ -43,6 +43,17 @@ export class ActivityLog {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  /** المادة المستخدمة: سماد، مبيد، صنف بذور... */
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  product: string | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  rate: number | null;
+
+  /** وحدة المعدل: kg/ha, L/ha, seeds/ha, mm ... */
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  unit: string | null;
+
   @Column({ nullable: true })
   performedByUserId: string;
 

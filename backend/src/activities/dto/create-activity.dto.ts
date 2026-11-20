@@ -1,4 +1,4 @@
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { ActivityType } from '../activity-log.entity';
 
 export class CreateActivityDto {
@@ -13,5 +13,21 @@ export class CreateActivityDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  product?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  rate?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(16)
+  unit?: string;
 }

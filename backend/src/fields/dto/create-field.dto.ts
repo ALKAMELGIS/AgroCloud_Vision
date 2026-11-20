@@ -64,3 +64,26 @@ export class BulkCreateFieldsDto {
   @Type(() => BulkFieldItemDto)
   fields: BulkFieldItemDto[];
 }
+
+export class UpdateFieldDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  farmId?: string;
+
+  /** '' يمسح نوع الري */
+  @IsOptional()
+  @IsIn(['', ...IRRIGATION_TYPES])
+  irrigation?: string;
+
+  @IsOptional()
+  @IsObject()
+  boundary?: {
+    type: 'Polygon';
+    coordinates: number[][][];
+  };
+}

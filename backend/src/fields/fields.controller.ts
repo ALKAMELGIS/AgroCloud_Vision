@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles, Role } from '../common/decorators/roles.decorator';
 import { FieldsService } from './fields.service';
-import { BulkCreateFieldsDto, CreateFieldDto } from './dto/create-field.dto';
+import { BulkCreateFieldsDto, CreateFieldDto, UpdateFieldDto } from './dto/create-field.dto';
 import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 @Controller('fields')
@@ -31,17 +31,29 @@ export class FieldsController {
   }
 
   @Get('by-farm/:farmId')
-  findAllForFarm(@Param('farmId') farmId: string) {
-    return this.fieldsService.findAllForFarm(farmId);
+  findAllForFarm(@CurrentUser() user: CurrentUserPayload, @Param('farmId') farmId: string) {
+    return this.fieldsService.findAllForFarm(farmId, user.organizationId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.fieldsService.findOne(id);
+  findOne(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.fieldsService.findOne(id, user.organizationId);
   }
 
   @Get(':id/boundary.geojson')
-  getBoundary(@Param('id') id: string) {
-    return this.fieldsService.getBoundaryAsGeoJson(id);
+  getBoundary(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.fieldsService.getBoundaryAsGeoJson(id, user.organizationId);
+  }
+
+  @Patch(':id')
+  @Roles(Role.OWNER, Role.MANAGER, Role.GIS_ANALYST)
+  update(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: UpdateFieldDto) {
+    return this.fieldsService.update(id, dto, user.organizationId);
+  }
+
+  @Delete(':id')
+  @Roles(Role.OWNER, Role.MANAGER)
+  remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.fieldsService.remove(id, user.organizationId);
   }
 }

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: add-ndmi-index
+expected_outcome: |
+  js/ndvi.js reads nir08 and swir16 (20 m) for the field window using the same window logic as SCL, computes NDMI = (nir08 - swir16) / (nir08 + swir16) with the asset scale/offset, masks with SCL, adds an NDMI toggle with its own legend, and the mock scene generator and test cover it.
