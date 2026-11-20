@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { Field } from './field.entity';
 import { CreateFieldDto } from './dto/create-field.dto';
 
@@ -17,13 +17,18 @@ export class FieldsService {
   async create(dto: CreateFieldDto) {
     const geoJson = JSON.stringify(dto.boundary);
 
-    const field = this.fieldsRepo.create({
+    // Built as a plain DeepPartial<Field> (not run through repo.create()) so
+    // TypeORM's save() overload resolves to the single-entity signature
+    // instead of the array signature, which an `any`-typed argument can
+    // otherwise pick ambiguously.
+    const fieldData: DeepPartial<Field> = {
       name: dto.name,
       farmId: dto.farmId,
-      boundary: () => `ST_SetSRID(ST_GeomFromGeoJSON('${geoJson}'), 4326)`,
-    } as any);
+      boundary: (() =>
+        `ST_SetSRID(ST_GeomFromGeoJSON('${geoJson}'), 4326)`) as any,
+    };
 
-    const saved: Field = await this.fieldsRepo.save(field as Field);
+    const saved = await this.fieldsRepo.save(fieldData);
 
     const [{ area_hectares }] = await this.fieldsRepo.query(
       `SELECT ST_Area(boundary::geography) / 10000 AS area_hectares FROM fields WHERE id = $1`,
@@ -31,7 +36,7 @@ export class FieldsService {
     );
 
     saved.areaHectares = parseFloat(area_hectares);
-    return this.fieldsRepo.save(saved) as Promise<Field>;
+    return this.fieldsRepo.save(saved);
   }
 
   findAllForFarm(farmId: string) {
