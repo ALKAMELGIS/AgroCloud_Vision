@@ -41,6 +41,7 @@
     open: false, fieldId: null, weather: 'none',
     indices: stored('tsIndices', 'ndvi').split(',').filter((k) => INDEX_KEYS.includes(k)),
     chart: CHARTS[stored('tsChart', 'area')] ? stored('tsChart', 'area') : 'area',
+    mode: ['chart', 'heat', 'sky'].includes(stored('tsMode', 'chart')) ? stored('tsMode', 'chart') : 'chart',
     from: iso(Date.now() - 365 * DAY), to: iso(Date.now()),
     points: [], crops: [], weatherDays: null, weatherKey: '', view: null,
     token: 0, done: 0, total: 0, hover: null,
@@ -85,6 +86,11 @@
       <div class="ts-top">
         <div class="ts-legend" id="tsLegend"></div>
         <span class="ts-status" id="tsStatus"></span>
+        <div class="ts-modes" id="tsModes" role="tablist" aria-label="View">
+          <button type="button" role="tab" data-mode="chart" title="Chart">${icon('chartSpline')}</button>
+          <button type="button" role="tab" data-mode="heat" title="Heatmap">${icon('heatmap')}</button>
+          <button type="button" role="tab" data-mode="sky" title="3D skyline">${icon('cube')}</button>
+        </div>
         <select id="tsChartType" class="ts-input ts-chart-type" title="Chart" aria-label="Chart">${Object.entries(CHARTS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
         <div class="ts-quick" id="tsQuick" role="group" aria-label="Period">
           <button type="button" data-m="3">3M</button><button type="button" data-m="6">6M</button>
@@ -93,7 +99,7 @@
         <button type="button" id="tsCsv" class="ts-icon" title="Download CSV">${icon('download')}</button>
         <button type="button" id="tsClose" class="ts-icon" title="Close">${icon('x')}</button>
       </div>
-      <div class="ts-chart" id="tsChart"><div class="ts-progress" id="tsProgress" hidden><i></i></div><svg id="tsSvg" role="img" aria-label="Index over time"></svg><div class="ts-tip" id="tsTip" hidden></div></div>
+      <div class="ts-chart" id="tsChart"><div class="ts-progress" id="tsProgress" hidden><i></i></div><div class="ts-alt" id="tsAlt" hidden></div><svg id="tsSvg" role="img" aria-label="Index over time"></svg><div class="ts-tip" id="tsTip" hidden></div></div>
       <div class="ts-brush" id="tsBrush">
         <svg id="tsMini" aria-hidden="true"></svg>
         <div class="ts-window" id="tsWindow"><span class="ts-handle" data-h="a"></span><span class="ts-handle" data-h="b"></span></div>
@@ -166,6 +172,13 @@
     store('tsIndices', keysOrdered().join(','));
     fillIndices(); placeMenu(); load();
   });
+  function setMode(m) {
+    ts.mode = m; store('tsMode', m); ts.hover = null; ts.sweepAt = performance.now();
+    $('tsModes').querySelectorAll('[data-mode]').forEach((b) => { b.setAttribute('aria-selected', String(b.dataset.mode === m)); });
+    draw();
+  }
+  $('tsModes').querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  $('tsModes').querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === ts.mode)));
   $('tsChartType').addEventListener('change', (e) => { ts.chart = e.target.value; store('tsChart', ts.chart); ts.sweepAt = performance.now(); draw(); });
   /** ReCI next to other layers takes the right axis, so weather has nowhere to go. */
   function syncWeather() {
@@ -376,6 +389,17 @@
     const I = window.Imagery;
     const svg = $('tsSvg');
     if (!I) { svg.innerHTML = ''; return; }
+    // heatmap and 3D skyline (js/ts-calendar.js) take the chart area
+    const alt = ts.mode !== 'chart' && window.TimeSeriesViews && TimeSeriesViews[ts.mode];
+    svg.style.display = alt ? 'none' : ''; $('tsAlt').hidden = !alt; $('tsBrush').hidden = !!alt; $('tsChartType').hidden = !!alt;
+    if (alt) {
+      const loading = ts.total > 0 && ts.done < ts.total;
+      const pr = $('tsProgress'); pr.hidden = !loading; if (loading) pr.firstChild.style.width = Math.round((100 * ts.done) / ts.total) + '%';
+      $('tsTip').hidden = true;
+      alt.draw({ ts, keys: keysOrdered(), colors: COLORS, el: $('tsAlt'), legendEl: $('tsLegend'), tipEl: $('tsTip'), loading, sinceSweep: performance.now() - ts.sweepAt, fmtShort, iso, t0, DAY });
+      return;
+    }
+    if (window.TimeSeriesViews) Object.values(TimeSeriesViews).forEach((v) => v.hide && v.hide());
     const { W, H, P } = geometry();
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     const [a, b] = viewRange();
@@ -616,5 +640,5 @@
   };
   setPeriod(ts.from, ts.to);
 
-  window.TimeSeries = { open: () => setOpen(true), close: () => setOpen(false), state: ts, load, colors: COLORS };
+  window.TimeSeries = { open: () => setOpen(true), close: () => setOpen(false), state: ts, load, colors: COLORS, redraw: () => draw(), setMode };
 })();

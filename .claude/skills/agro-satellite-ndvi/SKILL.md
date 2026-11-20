@@ -73,6 +73,14 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 - A redraw during the sweep (hover, resize) continues it with negative `animation-delay` instead of restarting. Never call `draw()` from a rAF right after the sweep without cancelling the pending frame.
 - `prefers-reduced-motion` turns all of it off.
 
+**Views: chart / heatmap / 3D skyline** (`#tsModes`, `localStorage.tsMode`; heatmap and skyline in `js/ts-calendar.js`, registered as `window.TimeSeriesViews`, drawn into `#tsAlt` while `#tsSvg`, the zoom strip and the chart-type select hide).
+- Day cells: week columns, weekday rows (Mon first). One layer at a time (first ticked, or the chip in the legend).
+- Days between two clear dates are **linear estimates, drawn muted** and labelled "Estimated A – B" in the tooltip; days outside the first/last clear date are empty. Never present estimates as measurements.
+- Five levels from the period's min to max: dark surface → layer colour → light tint. Stats: Average (n clear dates), Peak, Lowest, Latest with change.
+- Heatmap motion: cells settle in as a wave along time (col·9 + row·14 ms). Skyline (canvas, painter's order by rotated depth, only sides facing the viewer drawn): starts flat at 88°, tilts to 34° in 0.75 s while columns rise along time; drag turns (yaw), double-click eases back. Hover hit-tests the drawn polygons; click opens a clear date.
+- Gotcha: `.ts-chart svg` is absolute and 100% high for the chart; the heatmap SVG needs inline width/height or it covers the top bar.
+- Visual probe with a synthetic year: `agro-workspace-testing/scripts/probe_cal.py`.
+
 ## Sharpening / super-resolution (`js/superres.js`)
 
 Dock control `#imgRes`: 10 m (original) / 5 m / 2.5 m. Choice kept in `localStorage.imgRes`.

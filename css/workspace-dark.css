@@ -456,3 +456,41 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
   .ts-line.is-enter, .ts-area.is-enter, .ts-band.is-enter, .ts-dot.is-enter, .ts-bar.is-enter { animation: none; stroke-dashoffset: 0; opacity: unset; }
   .ts-band.is-enter { opacity: .1; }
 }
+
+/* time series: view tabs, heatmap, 3D skyline */
+.ts-modes { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--g-850); flex: none; }
+.ts-modes button { display: grid; place-items: center; width: 28px; height: 24px; border-radius: 6px; color: var(--t-2); transition: background-color .12s, color .12s; }
+.ts-modes button:hover { color: var(--t-1); }
+.ts-modes button[aria-selected="true"] { background: var(--g-750, #2a2f36); color: var(--t-1); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.ts-modes .ico { width: 15px; height: 15px; }
+.ts-brush[hidden], .ts-chart-type[hidden] { display: none !important; }
+.ts-alt { position: absolute; inset: 0; }
+.ts-alt[hidden] { display: none; }
+.tsc-heatmode { display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+.ts-chart svg.tsc-heat { position: static; display: block; flex: none; width: auto; overflow: visible; cursor: default; }
+.tsc-cell { cursor: default; transition: filter .12s; }
+.tsc-cell.is-clear { cursor: pointer; }
+.tsc-cell:hover { filter: brightness(1.35); }
+.tsc-cell.is-enter { transform-box: fill-box; transform-origin: center; animation: tsc-settle .42s cubic-bezier(.22,.61,.36,1) backwards; }
+@keyframes tsc-settle { from { opacity: 0; transform: scale(.4); } }
+.tsc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 0 8px 0 30px; }
+.tsc-stat { display: flex; flex-direction: column; min-width: 0; }
+.tsc-stat-l { font-size: 11px; color: #7c838d; }
+.tsc-stat-v { font-size: 22px; line-height: 28px; font-weight: 500; letter-spacing: -.01em; }
+.tsc-stat-s { font-size: 11px; color: #7c838d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tsc-chips { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--g-850); }
+.tsc-chips button { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; color: var(--t-2); }
+.tsc-chips button[aria-pressed="true"] { background: var(--g-750, #2a2f36); color: var(--t-1); }
+.tsc-chips i { width: 8px; height: 8px; border-radius: 2px; }
+.tsc-scale { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: #7c838d; }
+.tsc-scale i { width: 10px; height: 10px; border-radius: 2px; }
+.tsc-scale .num:first-child { margin-inline-end: 3px; } .tsc-scale .num:last-child { margin-inline-start: 3px; }
+.tsc-skymode { overflow: hidden; }
+.tsc-canvas { position: absolute; inset: 0; cursor: grab; touch-action: none; }
+.tsc-canvas:active { cursor: grabbing; }
+.tsc-corner { position: absolute; display: flex; gap: 20px; pointer-events: none; }
+.tsc-tr { top: 6px; right: 8px; text-align: end; }
+.tsc-tr .tsc-stat { align-items: flex-end; }
+.tsc-bl { bottom: 22px; left: 8px; }
+.tsc-hint { position: absolute; right: 8px; bottom: 4px; font-size: 11px; color: #5f6670; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .tsc-cell.is-enter { animation: none; } }

@@ -128,6 +128,8 @@
     'Layers': 'الطبقات', 'Chart': 'نوع الرسم', 'Area': 'مساحة', 'Bars': 'أعمدة', 'Points': 'نقاط', 'Change': 'التغيّر',
     'right axis': 'المحور الأيمن', 'Change since previous date': 'التغيّر عن التاريخ السابق', 'ReCI uses the right axis': 'ReCI يستخدم المحور الأيمن',
     'Line': 'خط',
+    'Heatmap': 'خريطة حرارية', '3D skyline': 'مجسّم ثلاثي الأبعاد', 'View': 'العرض', 'Average': 'المتوسط', 'Peak': 'الذروة', 'Lowest': 'الأدنى', 'Latest': 'الأحدث',
+    'Estimated': 'تقديري', 'Drag to turn · double-click to reset': 'اسحب للتدوير · نقر مزدوج للإرجاع', 'No clear image around this day': 'لا توجد صورة صافية حول هذا اليوم',
     'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
     'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
     'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',
