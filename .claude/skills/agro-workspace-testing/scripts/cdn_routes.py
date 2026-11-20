@@ -1,8 +1,7 @@
 import os, re, json, mimetypes, urllib.request, urllib.error
-# Env: GIS_LIBS = node_modules with the CDN packages, REPO = repo root, TAILWIND_SHIM = optional js, S2MOCK = mock Sentinel-2 dir
-LIBS = os.environ.get('GIS_LIBS', os.path.abspath('node_modules')) + '/'
-REPO = os.environ.get('REPO', os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..'))) + '/'
-TW = os.environ.get('TAILWIND_SHIM', '')
+LIBS = os.environ.get('GIS_LIBS', 'libs/node_modules') + '/'
+REPO = os.environ.get('REPO', os.getcwd()) + '/'
+TW = os.environ.get('TAILWIND_SHIM', 'tailwind-shim.js')
 
 def local_for(url):
     m = re.match(r'https://cdn\.jsdelivr\.net/npm/((?:@[^/]+/)?[^@/]+)@[^/]+/(.*)', url) or \
@@ -29,9 +28,43 @@ def serve_range(route, path, ctype):
     S2LOG.append((os.path.basename(path), len(data)))
     return route.fulfill(status=200, body=data, headers=cors)
 
+SHMOCK = os.environ.get('SHMOCK', '')
+SHLOG = []
+
+def sh_mock(route):
+    import io, datetime, urllib.parse, base64
+    import numpy as np, tifffile
+    url = route.request.url
+    q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
+    cors = {'access-control-allow-origin': '*'}
+    SHLOG.append(q)
+    if q.get('REQUEST') == 'GetCapabilities':
+        xml = '<?xml version="1.0"?><WMS_Capabilities version="1.3.0"><Capability><Layer><Title>root</Title><Layer><Name>TRUE-COLOR</Name></Layer><Layer><Name>NDVI</Name></Layer></Layer></Capability></WMS_Capabilities>'
+        return route.fulfill(body=xml, headers={**cors, 'content-type': 'text/xml'})
+    if q.get('REQUEST') == 'GetFeature':
+        today = datetime.date.today()
+        days = [(5, 10.0), (15, 60.0), (25, 5.0)] if q.get('FEATURE_OFFSET', '0') == '0' else []
+        feats = [{'type': 'Feature', 'geometry': None, 'properties': {'id': f'S2B_T39RVJ_{d}', 'date': str(today - datetime.timedelta(days=d)), 'time': '07:05:31', 'cloudCoverPercentage': c}} for d, c in days]
+        return route.fulfill(body=json.dumps({'type': 'FeatureCollection', 'features': feats}), headers={**cors, 'content-type': 'application/json'})
+    if q.get('REQUEST') == 'GetMap':
+        w, h = int(q['WIDTH']), int(q['HEIGHT'])
+        script = base64.b64decode(q['EVALSCRIPT']).decode()
+        assert 'B8A' in script and 'SCL' in script and q['FORMAT'] == 'image/tiff'
+        col = np.tile(np.arange(w, dtype=np.float32) / max(1, w - 1), (h, 1))
+        nir = 0.3 + 0.3 * col
+        old = q['TIME'].split('/')[0] != str(datetime.date.today() - datetime.timedelta(days=5))
+        if old: nir = nir + 0.1          # older date greener -> drop to now
+        bands = [np.full((h, w), v, np.float32) for v in (0.04, 0.07, 0.05, 0.15)] + [nir, nir, np.full((h, w), 0.2, np.float32), np.full((h, w), 4, np.float32)]
+        buf = io.BytesIO(); tifffile.imwrite(buf, np.stack(bands).astype(np.float32), photometric='minisblack', planarconfig='separate')
+        return route.fulfill(body=buf.getvalue(), headers={**cors, 'content-type': 'image/tiff'})
+    return route.fulfill(status=400, body='<ServiceExceptionReport><ServiceException>bad</ServiceException></ServiceExceptionReport>', headers=cors)
+
 def install(page, api='http://localhost:4000/api/v1'):
     def handler(route):
         url = route.request.url
+        if url.startswith('https://services.sentinel-hub.com/ogc/'):
+            if SHMOCK: return sh_mock(route)
+            return route.abort()
         if S2MOCK and url.startswith('https://earth-search.aws.element84.com/v1/search'):
             if route.request.method == 'OPTIONS':
                 return route.fulfill(status=204, headers={'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*'})

@@ -1,8 +1,14 @@
 /*
  * AgroCloud Vision — satellite imagery engine and map timeline
  *
- * Sentinel-2 L2A from Element84 Earth Search (free, no key), read in the
- * browser with geotiff.js. Only each field's window is read from the
+ * Sentinel-2 L2A from one of two sources, both read in the browser with geotiff.js:
+ * - Sentinel Hub (default): configuration instance below. Dates come from WFS
+ *   (DSS2 = Sentinel-2 L2A); each field is one WMS GetMap FLOAT32 GeoTIFF on its
+ *   UTM 10 m grid with an evalscript that returns B02 B03 B04 B05 B08 B8A B11 SCL.
+ *   The instance needs at least one layer; the evalscript overrides it.
+ * - Element84 Earth Search (free, no key): STAC + Cloud-Optimized GeoTIFFs.
+ * If the chosen source cannot list dates, the other one is tried.
+ * Only each field's window is read from the
  * Cloud-Optimized GeoTIFFs (HTTP range requests); geotiff's block cache shares
  * tiles between neighbouring fields.
  *
@@ -36,7 +42,12 @@
     highDrop: -0.10,
     lowDrop: -0.03,
     clearFieldPct: 30,
+    // Sentinel Hub OGC configuration instance (meant to be used from web pages)
+    sentinelHub: { base: 'https://services.sentinel-hub.com/ogc', instance: '60de79ca-16a7-4afd-bcbd-0261bf0156fa', layer: null },
   };
+  const PROVIDERS = { sh: 'Sentinel Hub', es: 'Earth Search' };
+  let provider = 'sh';
+  try { if (PROVIDERS[localStorage.getItem('imgProvider')]) provider = localStorage.getItem('imgProvider'); } catch { /* storage off */ }
 
   // ------------------------------------------------------------ colour ramps
 
@@ -129,9 +140,10 @@
   // ------------------------------------------------------------ STAC
 
   const sceneCache = new Map();
-  async function searchScenes(geoms, key, lookbackDays) {
-    const cacheKey = key + '|' + lookbackDays;
+  async function searchScenes(geoms, key, lookbackDays, src = provider) {
+    const cacheKey = src + '|' + key + '|' + lookbackDays;
     if (sceneCache.has(cacheKey)) return sceneCache.get(cacheKey);
+    if (src === 'sh') { const sc = await shSearch(geoms, lookbackDays); sceneCache.set(cacheKey, sc); return sc; }
     const box = bboxOfGeoms(geoms);
     const end = new Date(), start = new Date(Date.now() - lookbackDays * 86400000);
     const body = {
@@ -162,6 +174,90 @@
     return scenes;
   }
 
+  // ------------------------------------------------------------ Sentinel Hub
+
+  const SH = CONFIG.sentinelHub;
+  const shUrl = (svc, params) => `${SH.base}/${svc}/${SH.instance}?` + new URLSearchParams(params).toString();
+  async function shText(res) { try { const t = await res.text(); const m = t.match(/<ServiceException[^>]*>([\s\S]*?)<\/ServiceException>/); return (m ? m[1] : t).trim().slice(0, 200); } catch { return ''; } }
+  async function shLayer() {
+    if (SH.layer) return SH.layer;
+    const res = await fetch(shUrl('wms', { SERVICE: 'WMS', REQUEST: 'GetCapabilities', VERSION: '1.3.0' }));
+    if (!res.ok) throw new Error('Sentinel Hub did not accept the configuration ID (' + res.status + ') ' + (await shText(res)));
+    const xml = new DOMParser().parseFromString(await res.text(), 'text/xml');
+    const names = [...xml.getElementsByTagName('Layer')].map((l) => [...l.children].find((c) => c.localName === 'Name')).filter(Boolean).map((n) => n.textContent.trim());
+    if (!names.length) throw new Error('The Sentinel Hub configuration has no layers. Add one (any Sentinel-2 L2A layer) in the Sentinel Hub dashboard');
+    SH.layer = names.find((n) => /NDVI/i.test(n)) || names.find((n) => /TRUE|COLOR|COLOUR/i.test(n)) || names[0];
+    return SH.layer;
+  }
+  const merc = ([lng, lat]) => [lng * 20037508.342789244 / 180, Math.log(Math.tan((90 + lat) * Math.PI / 360)) * 6378137];
+  function utmCodeFor(geoms) {
+    const [a, b, c, d] = bboxOfGeoms(geoms); const lng = (a + c) / 2, lat = (b + d) / 2;
+    return (lat >= 0 ? 32600 : 32700) + Math.min(60, Math.floor((lng + 180) / 6) + 1);
+  }
+  async function shSearch(geoms, lookbackDays) {
+    await shLayer();
+    const box = bboxOfGeoms(geoms); const lo = merc([box[0], box[1]]), hi = merc([box[2], box[3]]);
+    const end = new Date(), start = new Date(Date.now() - lookbackDays * 86400000);
+    const code = utmCodeFor(geoms);
+    const byDay = new Map();
+    for (let offset = 0, page = 0; page < 6; page++, offset += 100) {
+      const res = await fetch(shUrl('wfs', {
+        SERVICE: 'WFS', REQUEST: 'GetFeature', VERSION: '2.0.0', TYPENAMES: 'DSS2', OUTPUTFORMAT: 'application/json',
+        SRSNAME: 'EPSG:3857', BBOX: [lo[0], lo[1], hi[0], hi[1]].join(','), TIME: start.toISOString().slice(0, 10) + '/' + end.toISOString().slice(0, 10),
+        MAXFEATURES: '100', FEATURE_OFFSET: String(offset),
+      }));
+      if (!res.ok) throw new Error('Sentinel Hub could not list dates (' + res.status + ') ' + (await shText(res)));
+      const feats = (await res.json()).features || [];
+      feats.forEach((f) => {
+        const p = f.properties || {}; const day = String(p.date || '').slice(0, 10); if (!day) return;
+        const cloud = +(p.cloudCoverPercentage ?? 100); const prev = byDay.get(day);
+        if (!prev || cloud < prev.tileCloud) {
+          byDay.set(day, { id: 'sh:' + day, day, covers: true, tile: 'sh', tileCloud: cloud, sh: true,
+            item: { id: 'sh:' + day, properties: { datetime: day + 'T' + (p.time || '00:00:00'), 'proj:epsg': code, 'eo:cloud_cover': cloud }, assets: {} } });
+        }
+      });
+      if (feats.length < 100) break;
+    }
+    return [...byDay.values()].sort((a, b) => (a.day < b.day ? 1 : -1));
+  }
+  const SH_SCRIPT = `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B02", "B03", "B04", "B05", "B08", "B8A", "B11", "SCL"] }], output: { bands: 8, sampleType: "FLOAT32" } };
+}
+function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.B11, s.SCL]; }`;
+  const SH_BANDS = ['blue', 'green', 'red', 'rededge1', 'nir', 'nir08', 'swir16', 'scl'];
+  const shCache = new Map(); // scene|field -> { band: sampler }
+  function shRead(scene, fieldKey, ubox) {
+    const k = scene.id + '|' + fieldKey;
+    if (shCache.has(k)) return shCache.get(k);
+    const p = (async () => {
+      const layer = await shLayer();
+      const x0 = Math.floor((ubox[0] - 20) / 10) * 10, x1 = Math.ceil((ubox[2] + 20) / 10) * 10;
+      const y0 = Math.floor((ubox[1] - 20) / 10) * 10, y1 = Math.ceil((ubox[3] + 20) / 10) * 10;
+      const w = (x1 - x0) / 10, h = (y1 - y0) / 10;
+      if (w > 2500 || h > 2500) throw new Error('The field is too large for one Sentinel Hub request');
+      const res = await fetch(shUrl('wms', {
+        SERVICE: 'WMS', REQUEST: 'GetMap', VERSION: '1.3.0', LAYERS: layer, CRS: 'EPSG:' + epsgOf(scene.item),
+        BBOX: [x0, y0, x1, y1].join(','), WIDTH: String(w), HEIGHT: String(h), FORMAT: 'image/tiff',
+        TIME: scene.day + '/' + scene.day, MAXCC: '100', SHOWLOGO: 'false', TRANSPARENT: 'false', EVALSCRIPT: btoa(SH_SCRIPT),
+      }));
+      if (!res.ok || !/tiff/i.test(res.headers.get('content-type') || '')) throw new Error('Sentinel Hub image request failed (' + res.status + ') ' + (await shText(res)));
+      const img = await (await GeoTIFF.fromArrayBuffer(await res.arrayBuffer())).getImage();
+      const rasters = await img.readRasters();
+      if (rasters.length < 8 || img.getWidth() !== w || img.getHeight() !== h) throw new Error('Sentinel Hub returned an unexpected image');
+      const at = (x, y) => { const c = Math.floor((x - x0) / 10), r = Math.floor((y1 - y) / 10); return c < 0 || r < 0 || c >= w || r >= h ? -1 : r * w + c; };
+      const mk = (data) => ({ ox: x0, oy: y1, rx: 10, ry: -10, c0: 0, r0: 0, w, h, data, sc: { scale: 1, offset: 0 }, at });
+      const out = {}; SH_BANDS.forEach((b, i) => { out[b] = mk(rasters[i]); });
+      const vis = new Uint8ClampedArray(w * h * 3), [R, G, B] = [rasters[2], rasters[1], rasters[0]];
+      for (let i = 0; i < w * h; i++) { vis[i * 3] = R[i] * 2.5 * 255; vis[i * 3 + 1] = G[i] * 2.5 * 255; vis[i * 3 + 2] = B[i] * 2.5 * 255; }
+      out.visual = mk(vis);
+      return out;
+    })();
+    shCache.set(k, p);
+    p.catch(() => shCache.delete(k));
+    return p;
+  }
+
   // ------------------------------------------------------------ band reading
 
   const imgCache = new Map();
@@ -189,6 +285,7 @@
     const k = scene.id + '|' + fieldKey + '|' + band;
     if (bandCache.has(k)) return bandCache.get(k);
     const p = (async () => {
+      if (scene.sh) return (await shRead(scene, fieldKey, ubox))[band];
       const asset = assetOf(scene.item, band);
       const img = await openImage(asset.href);
       const [ox, oy] = img.getOrigin(); const [rx, ry] = img.getResolution();
@@ -387,7 +484,7 @@
   const sceneById = (id) => state_.scenes.find((s) => s.id === id);
   function friendly(err) {
     const m = (err && err.message) || '';
-    if (/fetch|network|cors|load failed/i.test(m)) return 'Could not reach the Sentinel-2 archive from this browser. Check the connection, or the image host may be blocking cross-site requests';
+    if (/fetch|network|cors|load failed/i.test(m)) return `Could not reach ${PROVIDERS[provider]} from this browser. Check the connection, or switch the source to ${PROVIDERS[provider === 'sh' ? 'es' : 'sh']}`;
     return m || 'Satellite data is not available right now';
   }
   function currentFields() {
@@ -410,7 +507,7 @@
     dockEl.innerHTML = `
       <div id="${id('imgLegend')}" class="chip-bar pointer-events-auto hidden items-center gap-3 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
       <div class="chip-bar pointer-events-auto flex h-11 items-center gap-1 rounded-xl px-1.5">
-        <select id="${id('imgSource')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Satellite"><option>Sentinel-2</option></select>
+        <select id="${id('imgSource')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Sentinel-2 source">${Object.entries(PROVIDERS).map(([k, l]) => `<option value="${k}"${k === provider ? ' selected' : ''}>Sentinel-2 · ${l}</option>`).join('')}</select>
         <span class="h-5 w-px bg-white/10"></span>
         <select id="${id('imgIndex')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] font-medium outline-none" title="Layer">
           ${Object.entries(INDICES).map(([k, x]) => `<option value="${k}">${x.label}</option>`).join('')}
@@ -438,6 +535,7 @@
     $('tlRangeBtn').addEventListener('click', (e) => { e.stopPropagation(); $('tlRangeMenu').classList.toggle('hidden'); $('tlRangeMenu').classList.toggle('flex'); });
     document.addEventListener('click', () => { $('tlRangeMenu').classList.add('hidden'); $('tlRangeMenu').classList.remove('flex'); });
     $('tlRangeMenu').querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => { state_.lookback = +b.dataset.days; loadFarm(true); }));
+    $('imgSource').addEventListener('change', (e) => setProvider(e.target.value));
     $('imgIndex').addEventListener('change', (e) => { v.indexKey = e.target.value; refresh(v); });
     $('imgContrast').addEventListener('click', () => { v.contrast = !v.contrast; $('imgContrast').setAttribute('aria-pressed', String(v.contrast)); refresh(v); });
     $('imgCloudy').addEventListener('click', () => {
@@ -558,6 +656,15 @@
 
   // ------------------------------------------------------------ farm flow
 
+  function setProvider(p) {
+    if (!PROVIDERS[p] || p === provider) return;
+    provider = p;
+    try { localStorage.setItem('imgProvider', p); } catch { /* storage off */ }
+    views.forEach((w) => { w.$('imgSource').value = p; });
+    resultCache.clear(); bandCache.clear(); shCache.clear();
+    loadFarm(true);
+  }
+
   async function loadFarm(force) {
     const fields = currentFields();
     const farmKey = state.selectedFarmId + ':' + fields.map((f) => f.id).sort().join(',');
@@ -569,7 +676,16 @@
     views.forEach((v) => renderTimeline(v, `${icon('loader', 'spin')}<span>Searching Sentinel-2 dates</span>`));
     try {
       await libs();
-      const scenes = await searchScenes(fields.map((f) => f.geometry), farmKey, state_.lookback);
+      const geoms = fields.map((f) => f.geometry);
+      let scenes;
+      try { scenes = await searchScenes(geoms, farmKey, state_.lookback); } catch (err) {
+        // the chosen source is unreachable: try the other one before giving up
+        const other = provider === 'sh' ? 'es' : 'sh';
+        try { scenes = await searchScenes(geoms, farmKey, state_.lookback, other); } catch { throw err; }
+        if (farmKey !== state_.farmKey) return;
+        provider = other; views.forEach((w) => { w.$('imgSource').value = other; });
+        console.warn('Imagery: ' + (err && err.message) + ' — using ' + PROVIDERS[other]);
+      }
       if (farmKey !== state_.farmKey) return;
       state_.scenes = scenes;
       const first = scenes.find((s) => s.tileCloud < 20 && s.covers) || scenes.find((s) => s.tileCloud < CONFIG.cloudThreshold) || scenes[0];
@@ -710,7 +826,7 @@
     current: () => sceneById(views[0].sceneId),
     selectScene: (id) => selectScene(views[0], id),
     refresh: () => refresh(views[0]),
-    setSplit, loadFarm, invalidate, labelFor,
+    setSplit, loadFarm, invalidate, labelFor, setProvider, provider: () => provider,
     resultFor: (fieldId) => views[0].results.get(fieldId), riskFor: (fieldId) => state_.risks.get(fieldId),
     rampAt, gradient, css, fmtDay, friendly,
     showDelta(res, delta) {
@@ -720,7 +836,7 @@
         .bindTooltip(`Drop ${i + 1}: ${cl.ha.toFixed(2)} ha, ${cl.meanDrop.toFixed(2)}`, { direction: 'top' }).addTo(mapInstance)));
     },
     clearDelta,
-    _caches: { sceneCache, resultCache, bandCache, imgCache },
+    _caches: { sceneCache, resultCache, bandCache, imgCache, shCache },
   };
   // compatibility: older callers read the main screen's settings from state
   Object.defineProperty(state_, 'sceneId', { get: () => views[0].sceneId });

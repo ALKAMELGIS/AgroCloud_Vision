@@ -39,10 +39,23 @@ Index formulas (reflectance; 20 m bands sampled on the 10 m grid):
 
 EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 
+## Sources
+
+| Source | Dates | Pixels |
+|---|---|---|
+| **Sentinel Hub** (default) | WFS `TYPENAMES=DSS2` (Sentinel-2 L2A), bbox in EPSG:3857 | one WMS GetMap per field: FLOAT32 GeoTIFF on the field's UTM 10 m grid. The evalscript returns B02 B03 B04 B05 B08 B8A B11 SCL and overrides the instance's layer. |
+| **Earth Search** | STAC search | COG range reads |
+
+- Sentinel Hub uses the configuration instance in `CONFIG.sentinelHub.instance`. An OGC instance ID is meant to be used from web pages. Never put an OAuth client secret in the frontend; that belongs in the backend's environment on Render.
+- The instance must contain at least one layer. The layer name comes from GetCapabilities, preferring a layer named NDVI.
+- If the chosen source cannot list dates, the other one is used automatically.
+- The user's choice is kept in `localStorage.imgProvider` (`sh` / `es`) and can be changed in the dock's source select.
+- Tests: `scripts/test_sentinelhub.py` with `SHMOCK=1`. The mock in `cdn_routes.py` serves capabilities, WFS and GetMap TIFFs.
+
 Public API: `window.Imagery`:
 - `analyse(field, scene, index)`, `compare(cur, prev)`;
 - `current()` (main screen), `resultFor(fieldId)`, `riskFor(fieldId)`;
-- `setSplit(on)`, `views`, `labelFor(index, v)`, `showDelta`, `invalidate()`;
+- `setSplit(on)`, `setProvider('sh'|'es')`, `provider()`, `views`, `labelFor(index, v)`, `showDelta`, `invalidate()`;
 - events `imagery:change` (main), `imagery:change-b` (second screen) and `imagery:risks`.
 
 All tunables are in `CONFIG` at the top of `js/imagery.js` (`Imagery.config`): collection, look-back, tile cloud threshold (50%, like EOS), risk thresholds, anomaly rule.
