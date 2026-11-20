@@ -12,6 +12,8 @@
 </script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -40,8 +42,38 @@
       </section>
 
       <section>
-        <h2 class="mb-2 font-semibold text-gray-700">Field Map</h2>
-        <div id="mapContainer" class="h-[420px] w-full rounded-xl border"></div>
+        <div class="mb-2 flex items-center justify-between">
+          <h2 class="font-semibold text-gray-700">Field Map</h2>
+          <span class="text-xs text-gray-400">Use "Add Field" to draw a boundary directly on the map</span>
+        </div>
+        <div class="relative h-[460px] w-full overflow-hidden rounded-xl border">
+          <div id="mapContainer" class="h-full w-full"></div>
+
+          <div class="absolute right-3 top-3 z-[500] flex flex-col items-end gap-2">
+            <button id="addFieldBtn" type="button"
+              class="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-[13px] font-medium text-brand-900 shadow-md ring-1 ring-gray-200 hover:bg-brand-600 hover:text-white">
+              + Add Field
+            </button>
+            <div id="drawMenu" class="hidden flex-col gap-1 rounded-lg bg-white p-1.5 shadow-md ring-1 ring-gray-200">
+              <button id="drawPolygonBtn" type="button" class="rounded-md px-3 py-2 text-left text-[13px] text-gray-600 hover:bg-brand-50 hover:text-brand-700">⬠ Draw polygon</button>
+              <button id="drawCircleBtn" type="button" class="rounded-md px-3 py-2 text-left text-[13px] text-gray-600 hover:bg-brand-50 hover:text-brand-700">◯ Draw circle</button>
+            </div>
+          </div>
+
+          <div id="savePanel" class="hidden absolute bottom-3 left-1/2 z-[500] w-[min(420px,92%)] -translate-x-1/2 rounded-xl bg-white p-3 shadow-xl ring-1 ring-gray-200">
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-[13px] font-medium text-gray-800">Name this field</span>
+              <button id="cancelFieldBtn" type="button" class="rounded-md p-1 text-gray-400 hover:bg-black/5 hover:text-gray-700">✕</button>
+            </div>
+            <div class="flex gap-2">
+              <input id="fieldNameInput" placeholder="e.g. North Wheat Block"
+                class="flex-1 rounded-md border px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-brand-600/40" />
+              <button id="saveFieldBtn" type="button"
+                class="rounded-md bg-brand-600 px-3 py-2 text-[13px] font-medium text-white disabled:opacity-50">Save</button>
+            </div>
+            <p id="fieldSaveError" class="hidden mt-2 text-[12px] text-red-600"></p>
+          </div>
+        </div>
         <p id="noCoordsMsg" class="hidden text-sm text-gray-400">No coordinates set for this farm yet.</p>
       </section>
 
@@ -114,24 +146,152 @@ function renderFieldsList(fields) {
   `).join('');
 }
 
-function renderMap(center, fieldsWithBoundary) {
+function circleToRingCoordinates(center, radiusMeters, points) {
+  points = points || 64;
+  const earthRadius = 6378137; // WGS84 radius (meters)
+  const latRad = (center.lat * Math.PI) / 180;
+  const ring = [];
+  for (let i = 0; i <= points; i++) {
+    const angle = (i / points) * 2 * Math.PI;
+    const dx = radiusMeters * Math.cos(angle);
+    const dy = radiusMeters * Math.sin(angle);
+    const dLat = dy / earthRadius;
+    const dLng = dx / (earthRadius * Math.cos(latRad));
+    const pointLat = center.lat + (dLat * 180) / Math.PI;
+    const pointLng = center.lng + (dLng * 180) / Math.PI;
+    ring.push([pointLng, pointLat]); // GeoJSON order: [lng, lat]
+  }
+  return ring;
+}
+
+function layerToPolygonGeoJson(layer, layerType) {
+  if (layerType === 'circle') {
+    const latlng = layer.getLatLng();
+    const radius = layer.getRadius();
+    return { type: 'Polygon', coordinates: [circleToRingCoordinates(latlng, radius)] };
+  }
+  return layer.toGeoJSON().geometry;
+}
+
+let mapInstance = null;
+let boundaryLayers = [];
+let drawnLayer = null;
+let activeDrawHandler = null;
+let pendingGeometry = null;
+let currentFarmId = null;
+
+function renderMap(center, fieldsWithBoundary, farmId) {
+  currentFarmId = farmId;
   const noCoordsMsg = document.getElementById('noCoordsMsg');
-  const mapContainer = document.getElementById('mapContainer');
+  const mapWrapper = document.querySelector('#mapContainer').closest('.relative');
   if (!center) {
-    mapContainer.classList.add('hidden');
+    mapWrapper.classList.add('hidden');
     noCoordsMsg.classList.remove('hidden');
     return;
   }
-  const map = L.map(mapContainer).setView(center, 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19,
-  }).addTo(map);
+
+  // أول مرة فقط: أنشئ الخريطة واربط أدوات الرسم. في كل تحديث لاحق (بعد حفظ حقل)
+  // لا نعيد إنشاء الخريطة — فقط نحدّث طبقات حدود الحقول، لأن Leaflet لا يسمح
+  // بتهيئة نفس الـ <div> كخريطة أكثر من مرة.
+  if (!mapInstance) {
+    const mapContainer = document.getElementById('mapContainer');
+    const map = L.map(mapContainer).setView(center, 15);
+    mapInstance = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    map.on(L.Draw.Event.CREATED, (event) => {
+      const layer = event.layer;
+      pendingGeometry = layerToPolygonGeoJson(layer, event.layerType);
+      if (drawnLayer) map.removeLayer(drawnLayer);
+      layer.setStyle && layer.setStyle({ color: '#16a34a', weight: 2, fillOpacity: 0.12, dashArray: '4 4' });
+      layer.addTo(map);
+      drawnLayer = layer;
+
+      document.getElementById('fieldNameInput').value = '';
+      document.getElementById('fieldSaveError').classList.add('hidden');
+      document.getElementById('savePanel').classList.remove('hidden');
+      document.getElementById('fieldNameInput').focus();
+    });
+
+    setupDrawControls(map);
+  }
+
+  boundaryLayers.forEach((l) => mapInstance.removeLayer(l));
+  boundaryLayers = [];
   fieldsWithBoundary.forEach((field) => {
     if (!field.boundaryGeoJson) return;
-    L.geoJSON(field.boundaryGeoJson, {
+    const layer = L.geoJSON(field.boundaryGeoJson, {
       style: { color: '#16a34a', weight: 2, fillOpacity: 0.15 },
-    }).bindPopup(escapeHtml(field.name)).addTo(map);
+    }).bindPopup(escapeHtml(field.name)).addTo(mapInstance);
+    boundaryLayers.push(layer);
+  });
+}
+
+function setupDrawControls(map) {
+  const addFieldBtn = document.getElementById('addFieldBtn');
+  const drawMenu = document.getElementById('drawMenu');
+  const shapeOptions = { color: '#16a34a', weight: 2, fillOpacity: 0.12 };
+
+  addFieldBtn.addEventListener('click', () => {
+    drawMenu.classList.toggle('hidden');
+    drawMenu.classList.toggle('flex');
+  });
+
+  document.getElementById('drawPolygonBtn').addEventListener('click', () => {
+    drawMenu.classList.add('hidden');
+    drawMenu.classList.remove('flex');
+    if (activeDrawHandler) activeDrawHandler.disable();
+    activeDrawHandler = new L.Draw.Polygon(map, { allowIntersection: false, showArea: true, shapeOptions });
+    activeDrawHandler.enable();
+  });
+
+  document.getElementById('drawCircleBtn').addEventListener('click', () => {
+    drawMenu.classList.add('hidden');
+    drawMenu.classList.remove('flex');
+    if (activeDrawHandler) activeDrawHandler.disable();
+    activeDrawHandler = new L.Draw.Circle(map, { shapeOptions });
+    activeDrawHandler.enable();
+  });
+
+  document.getElementById('cancelFieldBtn').addEventListener('click', () => {
+    if (drawnLayer) map.removeLayer(drawnLayer);
+    drawnLayer = null;
+    pendingGeometry = null;
+    document.getElementById('savePanel').classList.add('hidden');
+  });
+
+  document.getElementById('saveFieldBtn').addEventListener('click', async () => {
+    const name = document.getElementById('fieldNameInput').value.trim();
+    const errorEl = document.getElementById('fieldSaveError');
+    errorEl.classList.add('hidden');
+    if (!name || !pendingGeometry) return;
+
+    const saveBtn = document.getElementById('saveFieldBtn');
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE_URL}/fields`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, farmId: currentFarmId, boundary: pendingGeometry }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || 'Request failed: ' + res.status);
+      }
+      if (drawnLayer) map.removeLayer(drawnLayer);
+      drawnLayer = null;
+      pendingGeometry = null;
+      document.getElementById('savePanel').classList.add('hidden');
+      loadFarm();
+    } catch (err) {
+      errorEl.textContent = typeof err.message === 'string' ? err.message : 'Could not save this field. Please try again.';
+      errorEl.classList.remove('hidden');
+    } finally {
+      saveBtn.disabled = false;
+    }
   });
 }
 
@@ -157,7 +317,7 @@ async function loadFarm() {
     );
 
     if (farm.latitude && farm.longitude) {
-      renderMap([farm.latitude, farm.longitude], fieldsWithBoundary);
+      renderMap([farm.latitude, farm.longitude], fieldsWithBoundary, farm.id);
 
       const today = new Date();
       const in7Days = new Date(Date.now() + 7 * 86400000);
