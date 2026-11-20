@@ -68,8 +68,8 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 - `#tsChartType`: Area (default), Line, Bars (grouped per date), Points (with P10–P90 whiskers), Change (bars of the change since the previous clear date, zero line, signed ticks). The P10–P90 band shows only with one layer on Area/Line.
 
 **Speed and motion.** Six workers read dates; all layers of one date are analysed together (they share band reads, and `Imagery.analyse` caches by scene|field|index, so toggling a layer or changing the period reloads from cache in milliseconds).
-- While dates stream in: a thin grey progress bar on top, and only the points show, each popping in once (`ts.seen`). Lines, areas and the P10–P90 band wait.
-- When a load finishes, or the chart type changes, one sweep (`ts.sweepAt`): lines draw left to right in 0.62 s (`pathLength="1"` + dashoffset), area/band fade, points and bars pop/grow with a ≤ 260 ms stagger.
+- While dates stream in: a thin grey progress bar on top, and only the points show. Lines, areas and the P10–P90 band wait.
+- When a load finishes, or the chart type changes, one sweep (`ts.sweepAt`): lines draw left to right in 0.62 s (`pathLength="1"` + dashoffset), area/band fade, bars grow with a ≤ 260 ms stagger. **Points do not animate** (owner removed the pop-in); they just appear.
 - A redraw during the sweep (hover, resize) continues it with negative `animation-delay` instead of restarting. Never call `draw()` from a rAF right after the sweep without cancelling the pending frame.
 - `prefers-reduced-motion` turns all of it off.
 
@@ -80,6 +80,8 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 - Heatmap motion: cells settle in as a wave along time (col·9 + row·14 ms). Skyline (canvas, painter's order by rotated depth, only sides facing the viewer drawn): starts flat at 88°, tilts to 34° in 0.75 s while columns rise along time; drag turns (yaw), double-click eases back. Hover hit-tests the drawn polygons; click opens a clear date.
 - Gotcha: `.ts-chart svg` is absolute and 100% high for the chart; the heatmap SVG needs inline width/height or it covers the top bar.
 - Visual probe with a synthetic year: `agro-workspace-testing/scripts/probe_cal.py`.
+
+**Layout.** Side column 236 px, no scroll (`overflow: hidden`): dates sit side by side. The legend has its own row under the controls (never next to them: at 1366 px it was squeezed and spilled over the chart). Year ranges in the legend are `dir="ltr"`. Check with `probe_side.py` (en + ar at 1366×650).
 
 ## Sharpening / super-resolution (`js/superres.js`)
 

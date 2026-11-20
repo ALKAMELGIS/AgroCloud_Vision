@@ -396,15 +396,16 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
 .ts-panel { position: absolute; left: 0; right: 0; bottom: 0; z-index: 565; height: 304px; display: flex;
   background: var(--g-950, var(--g-1000)); border-top: 1px solid var(--line-strong); }
 .ts-panel[hidden] { display: none; }
-.ts-side { width: 220px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-inline-end: 1px solid var(--line); overflow-y: auto; }
+.ts-side { width: 236px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; border-inline-end: 1px solid var(--line); overflow: hidden; }
 .ts-title { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; font-size: 14px; font-weight: 500; color: var(--t-1); }
 .ts-title .ico { width: 16px; height: 16px; color: var(--accent-ink); }
-.ts-label { margin-top: 8px; font-size: 11px; font-weight: 500; color: var(--t-3); }
+.ts-label { margin-top: 6px; font-size: 11px; font-weight: 500; color: var(--t-3); }
 .dark-ui .ts-input { height: 32px; width: 100%; min-width: 0; padding: 0 8px; border-radius: 8px; font-size: 13px; color-scheme: dark; outline: none;
   background-color: var(--g-850) !important; border: 1px solid var(--line) !important; }
 .dark-ui .ts-input:focus { box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / .35) !important; }
-.ts-dates { display: grid; grid-template-columns: 1fr; gap: 4px; }
-.dark-ui .ts-dates .ts-input { padding: 0 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ts-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.dark-ui .ts-dates .ts-input { padding: 0 4px 0 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ts-dates .ts-input::-webkit-calendar-picker-indicator { margin-inline-start: 0; padding: 0; width: 12px; opacity: .55; cursor: pointer; }
 .ts-seg, .ts-quick { display: grid; grid-template-columns: repeat(4, 1fr); padding: 2px; gap: 2px; border-radius: 8px; background: var(--g-850); }
 .ts-quick { width: 168px; flex: none; }
 .ts-seg button, .ts-quick button { height: 26px; border-radius: 6px; font-size: 12px; color: var(--t-2); transition: background-color .12s, color .12s; }
@@ -412,12 +413,13 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
 .ts-seg button[aria-pressed="true"], .ts-quick button[aria-pressed="true"] { background: var(--g-750, var(--g-750)); color: var(--t-1); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .ts-main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 10px 16px 10px 12px; }
 .ts-top { display: flex; align-items: center; gap: 8px; height: 32px; }
-.ts-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; min-width: 0; flex: 1; }
+.ts-legend { display: flex; flex-wrap: nowrap; align-items: center; gap: 16px; min-width: 0; height: 22px; margin-top: 4px; padding-inline-start: 40px; overflow: hidden; white-space: nowrap; }
+.ts-legend > * { flex: none; }
 .ts-key { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--t-1); }
 .ts-key i { width: 14px; height: 2px; border-radius: 2px; }
 .ts-key i.is-band { height: 8px; }
 .ts-key-sub { color: var(--t-3); font-variant-numeric: tabular-nums; }
-.ts-status { font-size: 12px; color: var(--t-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ts-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--t-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ts-status.is-error { color: var(--danger-ink); }
 .ts-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--t-2); transition: background-color .12s, color .12s; }
 .ts-icon:hover { background: var(--g-850); color: var(--t-1); }
@@ -491,16 +493,14 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
 .ts-line.is-enter { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ts-sweep .62s cubic-bezier(.22,.61,.36,1) forwards; }
 .ts-area.is-enter, .ts-band.is-enter { opacity: 0; animation: ts-fade .5s ease-out .18s forwards; }
 .ts-band.is-enter { animation-name: ts-fade-band; }
-.ts-dot.is-enter { transform-box: fill-box; transform-origin: center; animation: ts-pop .32s cubic-bezier(.34,1.4,.64,1) backwards; }
 .ts-bar.is-enter { transform-box: fill-box; transform-origin: center bottom; animation: ts-grow .42s cubic-bezier(.22,.61,.36,1) backwards; }
 .ts-bar.is-enter.is-neg { transform-origin: center top; }
 @keyframes ts-sweep { to { stroke-dashoffset: 0; } }
 @keyframes ts-fade { to { opacity: 1; } }
 @keyframes ts-fade-band { to { opacity: .1; } }
-@keyframes ts-pop { from { transform: scale(0); opacity: 0; } }
 @keyframes ts-grow { from { transform: scaleY(0); } }
 @media (prefers-reduced-motion: reduce) {
-  .ts-line.is-enter, .ts-area.is-enter, .ts-band.is-enter, .ts-dot.is-enter, .ts-bar.is-enter { animation: none; stroke-dashoffset: 0; opacity: unset; }
+  .ts-line.is-enter, .ts-area.is-enter, .ts-band.is-enter, .ts-bar.is-enter { animation: none; stroke-dashoffset: 0; opacity: unset; }
   .ts-band.is-enter { opacity: .1; }
 }
 

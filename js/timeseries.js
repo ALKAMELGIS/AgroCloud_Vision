@@ -89,7 +89,6 @@
     </aside>
     <div class="ts-main">
       <div class="ts-top">
-        <div class="ts-legend" id="tsLegend"></div>
         <span class="ts-status" id="tsStatus"></span>
         <div class="ts-modes" id="tsModes" role="tablist" aria-label="View">
           <button type="button" role="tab" data-mode="chart" title="Chart">${icon('chartSpline')}</button>
@@ -104,6 +103,7 @@
         <button type="button" id="tsCsv" class="ts-icon" title="Download CSV">${icon('download')}</button>
         <button type="button" id="tsClose" class="ts-icon" title="Close">${icon('x')}</button>
       </div>
+      <div class="ts-legend" id="tsLegend"></div>
       <div class="ts-chart" id="tsChart"><div class="ts-progress" id="tsProgress" hidden><i></i></div><div class="ts-alt" id="tsAlt" hidden></div><svg id="tsSvg" role="img" aria-label="Index over time"></svg><div class="ts-tip" id="tsTip" hidden></div></div>
       <div class="ts-brush" id="tsBrush">
         <svg id="tsMini" aria-hidden="true"></svg>
@@ -478,10 +478,10 @@
         }
         // while dates stream in only the points show; the line sweeps in once the load is done
         if (line && !loading) front += `<path d="${line}" pathLength="1" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" class="ts-line${sweep ? ' is-enter' : ''}" style="animation-delay:${ki * 60 - off}ms" data-k="${k}"/>`;
-        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 4.5 : 2.75}" class="ts-dot${enter(k, d.p.t)}${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 4.5 : 2.75}" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else if (ts.chart === 'scatter') {
         front += vis.map((d) => `<line x1="${X(d.p.t).toFixed(1)}" x2="${X(d.p.t).toFixed(1)}" y1="${Y(d.lo).toFixed(1)}" y2="${Y(d.hi).toFixed(1)}" stroke="${c}" stroke-width="1.5" opacity=".35" class="ts-whisker"/>`).join('');
-        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 5 : 3.5}" class="ts-dot is-solid${enter(k, d.p.t)}${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 5 : 3.5}" class="ts-dot is-solid${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else {
         // bar and change: grouped bars from zero
         const n = ax.keys.length, bw = Math.max(1.5, groupW / n - (n > 1 ? 1 : 0));
@@ -518,7 +518,7 @@
     const years = ts.from.slice(0, 4) === ts.to.slice(0, 4) ? ts.to.slice(0, 4) : `${ts.from.slice(0, 4)}–${ts.to.slice(2, 4)}`;
     const single = ax.keys.length === 1;
     $('tsLegend').innerHTML = `
-      ${ax.keys.map((k, i) => `<span class="ts-key" data-k="${k}"><i style="background:${COLORS[k]}"></i>${I.indices[k].label}${ax.right.includes(k) ? ' <span class="ts-key-sub">right axis</span>' : ''}${i === 0 && !ax.right.includes(k) ? ` <span class="ts-key-sub">${years}</span>` : ''}</span>`).join('')}
+      ${ax.keys.map((k, i) => `<span class="ts-key" data-k="${k}"><i style="background:${COLORS[k]}"></i>${I.indices[k].label}${ax.right.includes(k) ? ' <span class="ts-key-sub">right axis</span>' : ''}${i === 0 && !ax.right.includes(k) ? ` <span class="ts-key-sub" dir="ltr">${years}</span>` : ''}</span>`).join('')}
       ${ts.chart === 'change' ? '<span class="ts-key-sub">Change since previous date</span>' : ''}
       ${single && (ts.chart === 'area' || ts.chart === 'line') ? `<span class="ts-key"><i class="is-band" style="background:${COLORS[ax.keys[0]]}2e"></i>P10–P90</span>` : ''}
       ${ts.chart === 'scatter' ? '<span class="ts-key"><i class="is-whisker"></i>P10–P90</span>' : ''}
