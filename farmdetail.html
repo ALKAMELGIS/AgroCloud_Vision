@@ -173,6 +173,47 @@ function layerToPolygonGeoJson(layer, layerType) {
   return layer.toGeoJSON().geometry;
 }
 
+// مركز افتراضي معقول (الإمارات) يُستخدم فقط إذا تعذّر تحديد موقع المتصفح —
+// لا يؤثر على أي بيانات محفوظة، فقط نقطة بداية لعرض الخريطة.
+const DEFAULT_FALLBACK_CENTER = [24.4667, 54.3667];
+
+function computeFieldsCentroid(fieldsWithBoundary) {
+  const firstWithBoundary = fieldsWithBoundary.find((f) => f.boundaryGeoJson);
+  if (!firstWithBoundary) return null;
+  try {
+    const ring =
+      firstWithBoundary.boundaryGeoJson.type === 'Polygon'
+        ? firstWithBoundary.boundaryGeoJson.coordinates[0]
+        : null;
+    if (!ring || !ring.length) return null;
+    const sum = ring.reduce((acc, [lng, lat]) => [acc[0] + lat, acc[1] + lng], [0, 0]);
+    return [sum[0] / ring.length, sum[1] / ring.length];
+  } catch {
+    return null;
+  }
+}
+
+function getFallbackCenter() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(DEFAULT_FALLBACK_CENTER);
+      return;
+    }
+    const timeout = setTimeout(() => resolve(DEFAULT_FALLBACK_CENTER), 3000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(timeout);
+        resolve([pos.coords.latitude, pos.coords.longitude]);
+      },
+      () => {
+        clearTimeout(timeout);
+        resolve(DEFAULT_FALLBACK_CENTER);
+      },
+      { timeout: 3000 },
+    );
+  });
+}
+
 let mapInstance = null;
 let boundaryLayers = [];
 let drawnLayer = null;
@@ -316,9 +357,18 @@ async function loadFarm() {
       }),
     );
 
-    if (farm.latitude && farm.longitude) {
-      renderMap([farm.latitude, farm.longitude], fieldsWithBoundary, farm.id);
+    // الخريطة تُفتح دائماً — رسم الحقول لا يحتاج إحداثيات مُسبقة للمزرعة.
+    // إذا لم تملك المزرعة إحداثيات بعد: نتمركز على أول حقل مرسوم فعلاً، وإلا
+    // نحاول موقع المتصفح الحالي، وإلا مركز افتراضي معقول — فقط لعرض الخريطة
+    // ليرسم المستخدم حقله الأول عليها مباشرة عبر أيقونة "Add Field".
+    const hasFarmCoords = !!(farm.latitude && farm.longitude);
+    const center = hasFarmCoords
+      ? [farm.latitude, farm.longitude]
+      : computeFieldsCentroid(fieldsWithBoundary) || (await getFallbackCenter());
 
+    renderMap(center, fieldsWithBoundary, farm.id);
+
+    if (hasFarmCoords) {
       const today = new Date();
       const in7Days = new Date(Date.now() + 7 * 86400000);
       const fmt = (d) => d.toISOString().slice(0, 10);
@@ -334,7 +384,7 @@ async function loadFarm() {
         }
       }
     } else {
-      renderMap(null, []);
+      renderWeather([]);
     }
   } catch (err) {
     document.getElementById('loadingMsg').classList.add('hidden');
