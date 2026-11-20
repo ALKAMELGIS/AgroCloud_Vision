@@ -51,7 +51,12 @@ vanilla JS, so `js/shell.js` reproduces it. Keep these parts consistent with it:
 
 - **Loading:** `js/i18n.js` loads first in `<head>` on `workspace.html` and `main.html`. It reads `localStorage.lang` and sets `<html lang dir>` before anything renders.
   - **English** is `ltr`, with the sidebar on the left.
-  - **Arabic** is `rtl`, and the whole layout mirrors: sidebar on the right, map tools and search on the right, Add fields on the left.
+  - **Arabic** is `rtl`, and the whole layout mirrors.
+- **Map controls in English:**
+  - search and tools (compare, zoom, measure) on the right edge of the map, with their menus opening to the left;
+  - scale and the ⓘ credit at the top left;
+  - the Add fields menu at the bottom left, next to its button.
+- **Map controls in Arabic:** the mirror of the English placement. The rules live in one block in `workspace-dark.css`.
 - **DOM order:** `#navRail`, `#sidePanel`, `#mapMain`. The flex row follows the direction, so never hard-code which side the sidebar sits on.
 - **Classes:** use logical classes and properties: `ms-` / `me-` / `ps-` / `text-start` / `text-end` / `border-inline-end` / `inset-inline-start`. Use `[dir="rtl"]` overrides only for absolutely placed map controls.
 - **The map stays `ltr`** (`#mapRow`, `.leaflet-container`). Leaflet, panes A|B and the swipe clip depend on it. The docks and hover readouts switch back to `rtl` for Arabic text.

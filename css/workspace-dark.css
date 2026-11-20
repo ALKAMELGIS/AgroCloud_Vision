@@ -286,13 +286,21 @@
 [dir="rtl"] .nav-chev, [dir="rtl"] .chev, [dir="rtl"] [data-icon="chevronRight"] svg, [dir="rtl"] [data-icon="chevronLeft"] svg,
 [dir="rtl"] #tlPrev svg, [dir="rtl"] #tlNext svg, [dir="rtl"] #tlPrev2 svg, [dir="rtl"] #tlNext2 svg, [dir="rtl"] #fpBack svg { transform: scaleX(-1); }
 [dir="rtl"] .nav-item-wrap[data-open="true"] > .nav-row .nav-chev { transform: rotate(90deg); }
-/* map controls mirror in Arabic: tools and search on the right, Add fields on the left */
-[dir="rtl"] #geoSearchWrap, [dir="rtl"] #mapTools { left: auto; right: 12px; }
-[dir="rtl"] #compareMenu, [dir="rtl"] #measureMenu { left: auto; right: 48px; }
-[dir="rtl"] #addMenu { right: auto; left: 12px; }
-[dir="rtl"] .map-credit { right: auto; left: 12px; flex-direction: row-reverse; }
-[dir="rtl"] .leaflet-top.leaflet-right { right: auto; left: 0; }
-[dir="rtl"] .dark-ui .leaflet-control-scale, [dir="rtl"] .leaflet-control-scale { margin-right: 0 !important; margin-left: 44px !important; float: left; }
+/* map controls follow the reading direction. English: search and tools on the right edge of the
+   map, scale and credits top left, the Add fields menu bottom left next to its button.
+   Arabic mirrors all of it. */
+#geoSearchWrap, #mapTools { left: auto; right: 12px; }
+#compareMenu, #measureMenu { left: auto; right: 48px; }
+#addMenu { right: auto; left: 12px; }
+.map-credit { right: auto; left: 12px; flex-direction: row-reverse; }
+.leaflet-top.leaflet-right { right: auto; left: 0; }
+.dark-ui .leaflet-control-scale, .leaflet-control-scale { margin-right: 0 !important; margin-left: 44px !important; float: left; }
+[dir="rtl"] #geoSearchWrap, [dir="rtl"] #mapTools { right: auto; left: 12px; }
+[dir="rtl"] #compareMenu, [dir="rtl"] #measureMenu { right: auto; left: 48px; }
+[dir="rtl"] #addMenu { left: auto; right: 12px; }
+[dir="rtl"] .map-credit { left: auto; right: 12px; }
+[dir="rtl"] .leaflet-top.leaflet-right { left: auto; right: 0; }
+[dir="rtl"] .dark-ui .leaflet-control-scale, [dir="rtl"] .leaflet-control-scale { margin-left: 0 !important; margin-right: 44px !important; float: right; }
 [dir="rtl"] .geo-search .geo-input { text-align: right; }
 .lang-switch { display: flex; align-items: center; justify-content: space-between; }
 .lang-switch .lang-code { font: 500 11px ui-monospace, Menlo, monospace; color: #6f7782; }
