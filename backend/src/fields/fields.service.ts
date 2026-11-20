@@ -23,7 +23,7 @@ export class FieldsService {
       boundary: () => `ST_SetSRID(ST_GeomFromGeoJSON('${geoJson}'), 4326)`,
     } as any);
 
-    const saved = await this.fieldsRepo.save(field);
+    const saved: Field = await this.fieldsRepo.save(field as Field);
 
     const [{ area_hectares }] = await this.fieldsRepo.query(
       `SELECT ST_Area(boundary::geography) / 10000 AS area_hectares FROM fields WHERE id = $1`,
@@ -31,7 +31,7 @@ export class FieldsService {
     );
 
     saved.areaHectares = parseFloat(area_hectares);
-    return this.fieldsRepo.save(saved);
+    return this.fieldsRepo.save(saved) as Promise<Field>;
   }
 
   findAllForFarm(farmId: string) {
