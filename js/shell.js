@@ -74,7 +74,7 @@
   const usr = JSON.parse(localStorage.getItem('user') || 'null');
   if (usr) document.getElementById('navUser').textContent = usr.email + (usr.role ? ' · ' + usr.role : '');
   document.querySelector('[data-action="logout"]').addEventListener('click', () => {
-    const keep = ['lang', 'navCollapsed', 'panelCollapsed', 'imgProvider'].map((k) => [k, localStorage.getItem(k)]);
+    const keep = ['lang', 'navCollapsed', 'panelCollapsed', 'imgProvider', 'imgContrast', 'imgRes', 'tsIndices', 'tsChart'].map((k) => [k, localStorage.getItem(k)]);
     localStorage.clear();
     keep.forEach(([k, v]) => { if (v != null) localStorage.setItem(k, v); });   // per-browser preferences survive sign-out
     window.location.href = 'main.html';

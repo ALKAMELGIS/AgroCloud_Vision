@@ -502,8 +502,9 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
    */
   const views = [];
   function createView(key, getMap, dockEl, sfx) {
-    let savedRes = '10'; try { savedRes = localStorage.getItem('imgRes') || '10'; } catch { /* private mode */ }
-    const v = { key, getMap, dockEl, sfx, sceneId: null, indexKey: 'ndvi', contrast: false, hidden: false, layers: [], layerFor: new Map(), results: new Map(), sr: new Map(), srTried: new Set(), srRunning: false, res: savedRes, token: 0 };
+    let savedRes = '10', savedContrast = true;
+    try { savedRes = localStorage.getItem('imgRes') || '10'; savedContrast = localStorage.getItem('imgContrast') !== '0'; } catch { /* private mode */ }
+    const v = { key, getMap, dockEl, sfx, sceneId: null, indexKey: 'ndvi', contrast: savedContrast, hidden: false, layers: [], layerFor: new Map(), results: new Map(), sr: new Map(), srTried: new Set(), srRunning: false, res: savedRes, token: 0 };
     const id = (n) => n + sfx;
     dockEl.innerHTML = `
       <div class="flex flex-wrap items-center justify-end gap-2">
@@ -520,7 +521,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
           <option value="10">10 m</option><option value="x2">5 m</option><option value="x4">2.5 m</option>
         </select>
         <span class="h-5 w-px bg-white/10"></span>
-        <button type="button" id="${id('imgContrast')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Contrast: stretch colours within each field">${icon('contrast')}</button>
+        <button type="button" id="${id('imgContrast')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="${v.contrast}" title="Contrast: stretch colours within each field">${icon('contrast')}</button>
         <button type="button" id="${id('imgCloudy')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Show cloudy dates">${icon('cloud')}</button>
         <button type="button" id="${id('imgHide')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Hide imagery">${icon('eye')}</button>
       </div>
@@ -546,7 +547,11 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     $('imgIndex').addEventListener('change', (e) => { v.indexKey = e.target.value; refresh(v); });
     $('imgRes').value = v.res;
     $('imgRes').addEventListener('change', (e) => { v.res = e.target.value; try { localStorage.setItem('imgRes', v.res); } catch { /* ignore */ } refresh(v); });
-    $('imgContrast').addEventListener('click', () => { v.contrast = !v.contrast; $('imgContrast').setAttribute('aria-pressed', String(v.contrast)); refresh(v); });
+    $('imgContrast').addEventListener('click', () => {
+      v.contrast = !v.contrast; $('imgContrast').setAttribute('aria-pressed', String(v.contrast));
+      try { localStorage.setItem('imgContrast', v.contrast ? '1' : '0'); } catch { /* ignore */ }
+      refresh(v);
+    });
     $('imgCloudy').addEventListener('click', () => {
       state_.showCloudy = !state_.showCloudy;
       views.forEach((w) => { w.$('imgCloudy').setAttribute('aria-pressed', String(state_.showCloudy)); renderTimeline(w); });
