@@ -3,149 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard — AgroCloud Vision</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = { theme: { extend: { colors: { brand: {
-    50:'#eafbf0',600:'#16a34a',700:'#0f3d22',900:'#052e16'
-  } } } } };
-</script>
+<title>Redirecting… — AgroCloud Vision</title>
+<meta http-equiv="refresh" content="0; url=workspace.html">
 </head>
-<body class="bg-[#f4f7f5] min-h-screen">
-
-  <header class="h-14 border-b bg-white flex items-center justify-between px-6">
-    <a href="index.html" class="flex items-center gap-2">
-      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white font-bold text-sm">A</div>
-      <span class="font-semibold text-brand-900">AgroCloud Vision</span>
-    </a>
-    <div class="flex items-center gap-4">
-      <span id="userEmail" class="text-sm text-gray-500"></span>
-      <button id="logoutBtn" class="text-sm text-gray-500 underline hover:text-brand-700">Log out</button>
-    </div>
-  </header>
-
-  <main class="mx-auto max-w-5xl p-6">
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-bold text-brand-900">Home</h1>
-        <p class="text-sm text-gray-500">Overview of your farms</p>
-      </div>
-    </div>
-
-    <form id="createFarmForm" class="mb-6 flex gap-2">
-      <input id="newFarmName" required class="flex-1 rounded-lg border p-3" placeholder="New farm name">
-      <button class="rounded-lg bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">+ Add Farm</button>
-    </form>
-
-    <p id="errorMsg" class="hidden mb-4 text-sm text-red-600"></p>
-    <div id="loadingMsg" class="text-gray-400">Loading...</div>
-    <p id="emptyMsg" class="hidden text-gray-400">No farms yet. Add your first farm above.</p>
-    <div id="farmsGrid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
-  </main>
-
-<script>
-const API_BASE_URL = 'https://agrocloud-backend-e9ea.onrender.com/api/v1';
-const token = localStorage.getItem('accessToken');
-const user = JSON.parse(localStorage.getItem('user') || 'null');
-
-if (!token || !user) {
-  window.location.href = 'main.html';
-}
-
-document.getElementById('userEmail').textContent = user?.email || '';
-
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
-  window.location.href = 'main.html';
-});
-
-async function apiGet(path) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (res.status === 401) {
-    localStorage.clear();
-    window.location.href = 'main.html';
-    return;
-  }
-  if (!res.ok) throw new Error('Request failed: ' + res.status);
-  return res.json();
-}
-
-async function apiPost(path, body) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.message || 'Request failed');
-  }
-  return res.json();
-}
-
-function renderFarms(farms) {
-  const grid = document.getElementById('farmsGrid');
-  const emptyMsg = document.getElementById('emptyMsg');
-  grid.innerHTML = '';
-  if (!farms.length) {
-    emptyMsg.classList.remove('hidden');
-    return;
-  }
-  emptyMsg.classList.add('hidden');
-  farms.forEach((farm) => {
-    const a = document.createElement('a');
-    a.href = `farmdetail.html?id=${farm.id}`;
-    a.className = 'block rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md';
-    a.innerHTML = `
-      <h2 class="text-lg font-semibold text-brand-900">${escapeHtml(farm.name)}</h2>
-      <p class="mt-1 text-sm text-gray-500">${(farm.fields || []).length} registered field(s)</p>
-    `;
-    grid.appendChild(a);
-  });
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-async function loadFarms() {
-  const loadingMsg = document.getElementById('loadingMsg');
-  const errorMsg = document.getElementById('errorMsg');
-  loadingMsg.classList.remove('hidden');
-  errorMsg.classList.add('hidden');
-  try {
-    const farms = await apiGet('/farms');
-    renderFarms(farms || []);
-  } catch (err) {
-    errorMsg.textContent = 'Could not load farms. The server may be waking up from sleep (free tier) — try reloading in a moment.';
-    errorMsg.classList.remove('hidden');
-  } finally {
-    loadingMsg.classList.add('hidden');
-  }
-}
-
-document.getElementById('createFarmForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const input = document.getElementById('newFarmName');
-  if (!input.value.trim()) return;
-  try {
-    await apiPost('/farms', { name: input.value.trim() });
-    input.value = '';
-    loadFarms();
-  } catch (err) {
-    const errorMsg = document.getElementById('errorMsg');
-    errorMsg.textContent = err.message;
-    errorMsg.classList.remove('hidden');
-  }
-});
-
-loadFarms();
-</script>
+<body>
+<!--
+  The farm list is now part of the single map Workspace (sidebar), opened
+  directly after sign-in instead of a separate page. This redirect exists
+  only so old bookmarks/links to dashboard.html keep working.
+-->
+<script>window.location.replace('workspace.html');</script>
+<p><a href="workspace.html">Continue to your Workspace</a></p>
 </body>
 </html>

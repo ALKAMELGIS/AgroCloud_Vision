@@ -50,9 +50,9 @@ const submitBtn = document.getElementById('submitBtn');
 const toggleBtn = document.getElementById('toggleMode');
 const errorMsg = document.getElementById('errorMsg');
 
-// Already signed in? Skip straight to the dashboard.
+// Already signed in? Skip straight to the map workspace.
 if (localStorage.getItem('accessToken')) {
-  window.location.href = 'dashboard.html';
+  window.location.href = 'workspace.html';
 }
 
 toggleBtn.addEventListener('click', () => {
@@ -101,7 +101,7 @@ form.addEventListener('submit', async (e) => {
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('user', JSON.stringify(data.user));
-    window.location.href = 'dashboard.html';
+    window.location.href = 'workspace.html';
   } catch (err) {
     errorMsg.textContent = err.message || 'Could not reach the server. It may be waking up from sleep (free tier) — please try again in 30-60 seconds.';
     errorMsg.classList.remove('hidden');
