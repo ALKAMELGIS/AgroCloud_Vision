@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -9,13 +15,48 @@ import { LoginDto } from './dto/login.dto';
 import { Role } from '../common/decorators/roles.decorator';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnApplicationBootstrap {
+  private readonly logger = new Logger('AuthService');
+
   constructor(
     private readonly usersService: UsersService,
     private readonly organizationsService: OrganizationsService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
+
+  /**
+   * حساب المالك الافتراضي: يُنشأ تلقائياً عند تشغيل الخادم إن لم يكن موجوداً،
+   * وإن كان موجوداً يُعاد ضبطه كمالك نشط بكلمة السر المحددة.
+   * يمكن تغييره من متغيرات البيئة OWNER_EMAIL / OWNER_PASSWORD.
+   */
+  async onApplicationBootstrap() {
+    const email = this.configService.get('OWNER_EMAIL') || 'demo@agrocloud.test';
+    const password = this.configService.get('OWNER_PASSWORD') || 'Demo12345!';
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const existing = await this.usersService.findByEmail(email);
+    if (existing) {
+      existing.role = Role.OWNER;
+      existing.isActive = true;
+      existing.passwordHash = passwordHash;
+      await this.usersService.save(existing);
+      this.logger.log(`Owner account ready: ${email}`);
+      return;
+    }
+
+    const organization = await this.organizationsService.create(
+      this.configService.get('OWNER_ORGANIZATION') || 'AgroCloud Vision',
+    );
+    await this.usersService.create({
+      email,
+      fullName: 'Owner',
+      passwordHash,
+      role: Role.OWNER,
+      organizationId: organization.id,
+    });
+    this.logger.log(`Owner account created: ${email}`);
+  }
 
   /**
    * تسجيل مؤسسة جديدة + أول مستخدم بدور Owner (أول مستخدم في المنصة لهذه المؤسسة).

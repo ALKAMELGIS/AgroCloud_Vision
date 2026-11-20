@@ -22,6 +22,10 @@ export class UsersService {
     return this.usersRepo.save(user);
   }
 
+  save(user: User) {
+    return this.usersRepo.save(user);
+  }
+
   findAllByOrganization(organizationId: string) {
     return this.usersRepo.find({ where: { organizationId } });
   }
