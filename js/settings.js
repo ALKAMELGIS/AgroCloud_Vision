@@ -36,8 +36,9 @@
     return (ha * u.k).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + u.short;
   };
 
-  function logout() {
+  async function logout() {
     // only this app's session: the github.io origin is shared with other sites, and preferences stay
+    if (window.SB) { try { await SB.signOut(); } catch { /* ignore */ } }
     ['accessToken', 'refreshToken', 'user'].forEach((k) => { try { localStorage.removeItem(k); } catch { /* ignore */ } });
     window.location.href = 'main.html';
   }

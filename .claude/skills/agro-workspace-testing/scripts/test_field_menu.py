@@ -122,6 +122,7 @@ with sync_playwright() as p:
     pg.keyboard.press('Escape')
 
     menu('Pivot 2 South'); act('archive'); expect(pg.locator('#toast')).to_contain_text('archived', timeout=15000)
+    expect(pg.locator('#deletedList')).to_contain_text('Pivot 2 South', timeout=10000)
     check('archive: off the list, in Archived', not any(f['name'] == 'Pivot 2 South' for f in fields(farm['id'])) and 'Pivot 2 South' in (pg.text_content('#deletedSection') or ''))
 
     menu('Pivot 1'); act('delete'); expect(pg.locator('.fm-dialog')).to_be_visible(); pg.click('.fm-dialog .fm-ok')
