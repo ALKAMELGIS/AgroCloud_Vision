@@ -102,8 +102,10 @@ The hero scene (`#scene1`) and the sign-in art (`#authCanvas`) start on the fiel
 - index layers = Sentinel Hub WMS evalscript (B02 B03 B04 B08 B8A B11 SCL, FLOAT32) on the instance's L2A layer
   (found in GetCapabilities, e.g. `3_NDVI`; a wrong LAYERS name gives HTTP 400), for the latest clear date (< 5 %)
   and a cloudy one (15–75 %), with the system's formulas, SCL masking, P2–P98 contrast and ten classes;
-- both are drawn on the 3D ground with an affine triangle mesh (`drawGround`); the index texture is opaque inside the
-  pivots (a translucent one shows the mesh seams) and smoothed ×4, clipped to the circles;
+- both go into ONE image per step (basemap with the index layer painted in) drawn by ONE mesh (`MESH` 30×20): two
+  meshes bend two images differently under perspective and the colours drift off the exact outlines. Each triangle
+  draws only its own patch of the image (`drawImage` with a source rect): drawing the whole image per triangle ran
+  at 11 fps. The index layer is opaque inside the pivots (a translucent one shows the mesh seams), smoothed ×4;
 - requests are cached three days with the Cache API (`agro-landing-v1`); credit "Imagery © Esri, Maxar · Sentinel-2
   L2A © Copernicus" shows once real data is on;
 - script tags carry `?v=…`: GitHub Pages caches for 10 minutes, and an old motion.js without `AgroMotion.kit` makes
