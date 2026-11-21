@@ -80,15 +80,24 @@
 
   // collapse to an icon rail (remembered per browser)
   const collapseBtn = document.getElementById('navCollapse');
-  function setCollapsed(on) {
+  function setCollapsed(on, remember = true) {
     rail.classList.toggle('collapsed', on);
     collapseBtn.innerHTML = icon(on ? 'panelOpen' : 'panelClose');
     collapseBtn.title = on ? 'Expand sidebar' : 'Collapse sidebar';
-    try { localStorage.setItem('navCollapsed', on ? '1' : '0'); } catch { /* private mode */ }
+    if (remember) try { localStorage.setItem('navCollapsed', on ? '1' : '0'); } catch { /* private mode */ }
     setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); if (window.Imagery && Imagery.invalidate) Imagery.invalidate(); }, 280);
   }
   collapseBtn.addEventListener('click', () => setCollapsed(!rail.classList.contains('collapsed')));
-  try { if (localStorage.getItem('navCollapsed') === '1') setCollapsed(true); } catch { /* ignore */ }
+  // Below 1280 px the full sidebar leaves the map too narrow for its controls, so it
+  // starts as an icon rail there unless the person chose otherwise.
+  const narrow = window.matchMedia('(max-width: 1279px)');
+  let pref = null;
+  try { pref = localStorage.getItem('navCollapsed'); } catch { /* ignore */ }
+  if (pref === '1' || (pref === null && narrow.matches)) setCollapsed(true, false);
+  narrow.addEventListener('change', (e) => {
+    let p = null; try { p = localStorage.getItem('navCollapsed'); } catch { /* ignore */ }
+    if (p === null) setCollapsed(e.matches, false);
+  });
 
   // farm switcher (the component's "workspace switcher")
   const sw = document.getElementById('farmSwitcher');

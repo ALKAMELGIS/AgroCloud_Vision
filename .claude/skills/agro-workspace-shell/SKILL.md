@@ -173,3 +173,14 @@ Anything clickable near the bottom must sit above the dock. The tests caught two
 
 The layout and tools follow the reference product, but name, logo and colours
 are AgroSyntra One's. Do not copy another product's logo, wordmark or icon artwork.
+
+## Lanes on the map (no overlap)
+
+- The map tools column owns the end edge (40 px at 12 px). The imagery dock, legend and timeline
+  stop 64 px short of it; the panel pull tab owns the start edge, so the dock starts at 28 px.
+  Mirrored in Arabic; split and swipe keep the lane on the pane that has the tools.
+- The dock and the time series drawer are size containers (`container-type: inline-size`).
+  Narrow dock (≤ 460 px): the source picker hides (it is also in Settings). Narrow drawer
+  (≤ 820 / 640 px): smaller side column, period strip and chart picker, status hidden.
+- Below 1280 px wide the sidebar starts as the icon rail unless the person chose (stored `navCollapsed`).
+- Check with `test_overlap.py` after any layout change.

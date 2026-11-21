@@ -693,3 +693,46 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
 /* weather in the time series legend */
 .ts-key i.is-wx-line { width: 16px; height: 0; border-top: 2px solid var(--wc); background: none; border-radius: 0; }
 .ts-key i.is-wx-bar { width: 6px; height: 10px; background: var(--wc); border-radius: 1px; }
+
+/* ------------------------------------------------------------ fit on smaller screens
+   The map tools column (40 px at 12 px from the edge) keeps its own lane: the imagery dock,
+   legend and timeline stop 64 px short of that edge, so they never slide under the tools,
+   whatever the map height. The dock measures its own width (container query): on a narrow
+   map the source picker (also in Settings) steps aside before anything else is squeezed. */
+#imageryDock, #imageryDock2 { container-type: inline-size; container-name: dock; }
+#imageryDock { right: 64px; }
+#mapRow.split #imageryDock { right: 12px; }
+#mapRow.split #imageryDock2, #mapRow.swipe #imageryDock2 { right: 64px; }
+[dir="rtl"] #imageryDock { right: 12px; left: 64px; }
+[dir="rtl"] #mapRow.split #imageryDock { left: 64px; }
+[dir="rtl"] #mapRow.split #imageryDock2 { right: 12px; left: 12px; }
+[dir="rtl"] #mapRow.swipe #imageryDock { left: 64px; }
+[dir="rtl"] #mapRow.swipe #imageryDock2 { right: 12px; }
+.img-bar { max-width: 100%; min-width: 0; }
+.img-bar select { min-width: 0; flex: 0 1 auto; text-overflow: ellipsis; }
+.img-bar .img-src { flex-shrink: 4; max-width: 220px; }
+.img-bar .map-btn, .img-bar > span { flex: none; }
+.tl-scroll { scroll-padding-inline: 4px; }
+@container dock (max-width: 460px) {
+  .img-bar .img-src, .img-bar .img-src-sep { display: none; }
+}
+
+/* the time series drawer measures itself too: narrower side column and period strip,
+   the status text goes first */
+.ts-panel { container-type: inline-size; container-name: ts; }
+@container ts (max-width: 820px) {
+  .ts-side { width: 212px; padding-inline: 12px; }
+  .ts-quick { width: 136px; }
+  .ts-status { display: none; }
+  .ts-main { padding-inline: 10px; }
+  .dark-ui .ts-dates .ts-input { padding: 0 2px 0 4px; font-size: 11px; letter-spacing: -.01em; }
+}
+@container ts (max-width: 640px) {
+  .ts-chart-type { width: 76px; }
+  .ts-legend { padding-inline-start: 28px; gap: 10px; }
+}
+/* the panel pull tab (18 px, map start edge) keeps its lane too, and stays centred on the map
+   part when the time series drawer is open */
+#imageryDock { left: 28px; }
+[dir="rtl"] #imageryDock { right: 28px; }
+#mapMain.ts-open .panel-tab { top: calc((100% - 304px) / 2); }

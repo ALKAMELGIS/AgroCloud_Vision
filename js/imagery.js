@@ -544,9 +544,9 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
         <div id="${id('imgLegend')}" class="chip-bar pointer-events-auto hidden items-center gap-3 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
         <div id="${id('imgSrNote')}" class="chip-bar sr-note pointer-events-auto hidden items-center gap-2 rounded-lg px-3 py-2 text-[11px] text-gray-500"></div>
       </div>
-      <div class="chip-bar pointer-events-auto flex h-11 items-center gap-1 rounded-xl px-1.5">
-        <select id="${id('imgSource')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Sentinel-2 source">${Object.entries(PROVIDERS).map(([k, l]) => `<option value="${k}"${k === provider ? ' selected' : ''}>Sentinel-2 · ${l}</option>`).join('')}</select>
-        <span class="h-5 w-px bg-white/10"></span>
+      <div class="img-bar chip-bar pointer-events-auto flex h-11 max-w-full items-center gap-1 rounded-xl px-1.5">
+        <select id="${id('imgSource')}" class="img-src h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] outline-none" title="Sentinel-2 source">${Object.entries(PROVIDERS).map(([k, l]) => `<option value="${k}"${k === provider ? ' selected' : ''}>Sentinel-2 · ${l}</option>`).join('')}</select>
+        <span class="img-src-sep h-5 w-px bg-white/10"></span>
         <select id="${id('imgIndex')}" class="h-8 rounded-lg !border-0 !bg-transparent px-2 text-[13px] font-medium outline-none" title="Layer">
           ${['Vegetation', 'Water', 'Soil', 'Image'].map((g) => `<optgroup label="${g}">${Object.entries(INDICES).filter(([, x]) => x.group === g).map(([k, x]) => `<option value="${k}">${x.label}</option>`).join('')}</optgroup>`).join('')}
         </select>
@@ -559,15 +559,15 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
         <button type="button" id="${id('imgHide')}" class="map-btn !h-8 !w-8 !rounded-lg !shadow-none !bg-transparent" aria-pressed="false" title="Hide imagery">${icon('eye')}</button>
       </div>
       <div class="chip-bar pointer-events-auto flex h-14 w-full items-center gap-1 rounded-xl px-1.5">
-        <div class="relative">
-          <button type="button" id="${id('tlRangeBtn')}" class="map-btn !h-11 !w-11 !rounded-lg !shadow-none !bg-transparent" title="Period">${icon('calendar')}</button>
+        <div class="relative shrink-0">
+          <button type="button" id="${id('tlRangeBtn')}" class="map-btn shrink-0 !h-11 !w-11 !rounded-lg !shadow-none !bg-transparent" title="Period">${icon('calendar')}</button>
           <div id="${id('tlRangeMenu')}" class="chip-bar absolute bottom-12 left-0 hidden w-44 flex-col rounded-xl p-1">
             ${[[30, 'Last 30 days'], [90, 'Last 3 months'], [150, 'Last 5 months'], [365, 'Last 12 months']].map(([d, l]) => `<button type="button" data-days="${d}" class="menu-item">${l}</button>`).join('')}
           </div>
         </div>
-        <button type="button" id="${id('tlPrev')}" class="map-btn !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Earlier">${icon('chevronLeft')}</button>
+        <button type="button" id="${id('tlPrev')}" class="map-btn shrink-0 !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Earlier">${icon('chevronLeft')}</button>
         <div id="${id('tlChips')}" class="tl-scroll flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-smooth"></div>
-        <button type="button" id="${id('tlNext')}" class="map-btn !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Later">${icon('chevronRight')}</button>
+        <button type="button" id="${id('tlNext')}" class="map-btn shrink-0 !h-11 !w-9 !rounded-lg !shadow-none !bg-transparent" title="Later">${icon('chevronRight')}</button>
       </div>`;
     const $ = (n) => document.getElementById(id(n));
     v.$ = $;
@@ -889,6 +889,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (!['off', 'swipe', 'split'].includes(mode)) mode = 'off';
     state_.mode = mode;
     row.classList.toggle('swipe', mode === 'swipe');
+    row.classList.toggle('split', mode === 'split');
     divider.classList.toggle('hidden', mode !== 'swipe');
     if (mode === 'swipe') setSwipe(swipeFrac);
     document.querySelectorAll('#compareMenu [data-compare]').forEach((b) => {
