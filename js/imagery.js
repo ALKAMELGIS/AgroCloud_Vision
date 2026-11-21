@@ -37,6 +37,10 @@
     geotiff: 'https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js',
     proj4: 'https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js',
     keepScl: new Set([4, 5, 6, 7]),
+    // Scene classification calls bright bare soil (desert, fallow pivots) cloud or snow. Those classes are
+    // kept when the pixel is not bright in blue: real cloud is (B02 > 0.18), snow even more so (> 0.3).
+    // 2 (dark area) is the ground too. 0, 1 (no data, saturated) and 3 (cloud shadow) stay masked.
+    sclChecked: { 2: 9, 8: 0.18, 9: 0.18, 10: 0.18, 11: 0.3 },
     anomalyDrop: 0.10,
     anomalyMinHa: 0.1,
     highDrop: -0.10,
@@ -361,6 +365,19 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       const w = Math.ceil((ubox[2] + 20 - gx0) / 10), h = Math.ceil((gy0 - (ubox[1] - 20)) / 10);
       const bands = index.rgb ? { visual: await readBand(scene, field.id, 'visual', ubox) }
         : Object.fromEntries(await Promise.all(index.bands.map(async (b) => [b, await readBand(scene, field.id, b, ubox)])));
+      // classes that need a second look at the blue band (see CONFIG.sclChecked)
+      let needBlue = false;
+      for (let r = 0; r < h && !needBlue; r++) for (let c = 0; c < w; c++) { const si = scl.at(gx0 + (c + 0.5) * 10, gy0 - (r + 0.5) * 10); if (si >= 0 && CONFIG.sclChecked[scl.data[si]] != null) { needBlue = true; break; } }
+      const blue = needBlue ? await readBand(scene, field.id, 'blue', ubox).catch(() => null) : null;
+      const clearAt = (x, y) => {
+        const si = scl.at(x, y); if (si < 0) return false;
+        const cls = scl.data[si];
+        if (CONFIG.keepScl.has(cls)) return true;
+        const lim = CONFIG.sclChecked[cls]; if (lim == null || !blue) return false;
+        const bi = blue.at(x, y); if (bi < 0) return false;
+        const b = blue.data[bi] * blue.sc.scale + blue.sc.offset;
+        return b > 0 && b < lim;
+      };
       const n = w * h;
       const values = new Float32Array(n).fill(NaN);
       const inField = new Uint8Array(n);
@@ -373,8 +390,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
           const x = gx0 + (c + 0.5) * 10;
           if (!polys.some((poly) => pointInRings(x, y, poly))) continue;
           const i = r * w + c; inField[i] = 1; fieldPx++;
-          const si = scl.at(x, y);
-          if (si < 0 || !CONFIG.keepScl.has(scl.data[si])) continue;
+          if (!clearAt(x, y)) continue;
           if (index.rgb) {
             const vi = bands.visual.at(x, y); if (vi < 0) continue;
             const d = bands.visual.data;
@@ -495,7 +511,8 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
         const col = rampAt(DIVERGE, (v + 0.3) / 0.6); out.data.set([col[0], col[1], col[2], 170], i * 4); continue;
       }
       const v = res.values[i];
-      if (Number.isNaN(v)) { out.data.set([120, 126, 135, 150], i * 4); continue; }   // cloud
+      // cloud or shadow: diagonal stripes, so a masked part reads as "covered", not as a colour of the index
+      if (Number.isNaN(v)) { const x = i % res.w, y = (i / res.w) | 0; out.data.set((x + y) % 4 < 2 ? [238, 240, 243, 215] : [124, 130, 140, 215], i * 4); continue; }
       if (res.rgba) { out.data.set(res.rgba.subarray(i * 4, i * 4 + 4), i * 4); continue; }
       if (filt && !filt.classes.has(classOf(edges, v))) { out.data.set([150, 150, 146, 70], i * 4); continue; }
       const col = rampAt(idx.ramp, (v - lo) / (hi - lo || 1));
@@ -658,7 +675,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
          <span class="num font-mono">${lo}</span>
          <span class="cls-bar" role="group" aria-label="Value classes">${segs}</span>
          <span class="num font-mono">${hi}</span>
-         ${sel || '<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm" style="background:rgb(120,126,135)"></span>cloud</span>'}`;
+         ${sel || '<span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm" style="background:repeating-linear-gradient(135deg,#eef0f3 0 2px,#7c828c 2px 4px)"></span>cloud or shadow</span>'}`;
     if (v !== views[0]) { el.querySelectorAll('.cls-seg').forEach((b) => { b.disabled = true; }); return; }
     let dragFrom = null;
     el.querySelectorAll('.cls-seg').forEach((b) => {
@@ -761,6 +778,13 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (!done.length && lastErr) showError(friendly(lastErr));
     clearLayers(v);
     done.forEach((r) => { const l = L.imageOverlay(paint(r, { contrast: v.contrast, filter: state_.filter }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map); v.layers.push(l); v.layerFor.set(r.field.id, l); });
+    // a field mostly under cloud says so on the map, with the share and what to do
+    done.forEach((r) => {
+      if (!(r.cloudPct >= 40) || INDICES[v.indexKey].rgb) return;
+      const c = L.latLngBounds(r.bounds).getCenter();
+      const html = `<div class="cloud-note"><b>${escapeHtml(window.I18n ? I18n.t('Cloud over') : 'Cloud over')} ${r.cloudPct}%</b><span>${escapeHtml(window.I18n ? I18n.t('of the field on this date. Pick a clearer date') : 'of the field on this date. Pick a clearer date')}</span></div>`;
+      v.layers.push(L.marker(c, { pane: 'img', interactive: false, keyboard: false, icon: L.divIcon({ className: 'cloud-note-wrap', html, iconSize: null }) }).addTo(map));
+    });
     sharpen(v);
     renderLegend(v);
     if (v === views[0]) {

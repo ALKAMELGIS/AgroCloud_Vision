@@ -165,8 +165,11 @@
       for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
         const i = r * W + c; if (!inField[i]) continue; fieldPx++;
         const si = scl.at(cx0 + (c + 0.5) * px, cy0 - (r + 0.5) * px);
-        if (si < 0 || !keep.has(scl.data[si])) continue;
+        if (si < 0) continue;
         const B = out[0][i] / 1e4, G = out[1][i] / 1e4, R = out[2][i] / 1e4, N = out[3][i] / 1e4;
+        // as js/imagery.js: cloud/snow classes over ground that is not bright in blue are bare soil, not cloud
+        const cls = scl.data[si], lim = (window.Imagery.config.sclChecked || {})[cls];
+        if (!keep.has(cls) && !(lim != null && B > 0 && B < lim)) continue;
         if (rgba) { const [cr, cg, cb] = toRGB(R, G, B); rgba.set([cr, cg, cb, 255], i * 4); values[i] = 1; validPx++; continue; }
         const v = idx.f({ blue: B, green: G, red: R, nir: N });
         if (!Number.isFinite(v)) continue;
