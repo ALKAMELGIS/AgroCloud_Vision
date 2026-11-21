@@ -68,59 +68,64 @@
         </div>
       </div>
 
-      <figure class="hero-view" id="demo" aria-label="The AgroSyntra One workspace: fields on the map with their vegetation index">
-        <div class="demo-stage" id="demoStage">
-        <div class="app" id="demoPoster">
-          <aside class="app-side">
-            <div class="app-farm"><span class="brand-mark">L</span><div><b translate="no">Liwa North</b><span class="num">6 fields · 468.3 ha</span></div></div>
-            <div class="app-label">Fields</div>
-            <div class="app-row"><span class="name"><i class="dot" style="background:#66bd63"></i><span translate="no">Pivot 1</span></span><small class="num chg chg-up">+0.03</small></div>
-            <div class="app-row is-on"><span class="name"><i class="dot" style="background:#d9ef8b"></i><span translate="no">Pivot 2</span></span><small class="num chg chg-down">−0.11</small></div>
-            <div class="app-row"><span class="name"><i class="dot" style="background:#d9ef8b"></i><span translate="no">Pivot 3</span></span><small class="num chg">0.00</small></div>
-            <div class="app-row"><span class="name"><i class="dot" style="background:#a6d96a"></i><span translate="no">Pivot 4</span></span><small class="num chg chg-up">+0.02</small></div>
-            <div class="app-row"><span class="name"><i class="dot" style="background:#fee08b"></i><span translate="no">Pivot 5</span></span><small class="num chg chg-down">−0.07</small></div>
-            <div class="app-row"><span class="name"><i class="dot" style="background:#a6d96a"></i><span translate="no">Fodder block</span></span><small class="num chg">−0.02</small></div>
-          </aside>
-          <div class="app-map">
-            <svg id="heroMap" aria-hidden="true"></svg>
-            <div class="float f-field">
-              <div class="f-head"><b translate="no">Pivot 2</b><span class="num">79.19 ha</span></div>
-              <div class="row" style="margin-top:8px"><span class="big num">0.58</span><span class="t-meta num">−0.11 since 10 Nov</span></div>
-              <div class="t-meta">NDVI · 15 Nov 2026 · 0% cloud</div>
-              <div class="bars">
-                <div class="bar"><i style="background:#f46d43"></i><s><b style="width:18%;background:#f46d43"></b></s><em class="num">14.2 ha</em></div>
-                <div class="bar"><i style="background:#fee08b"></i><s><b style="width:22%;background:#fee08b"></b></s><em class="num">17.6 ha</em></div>
-                <div class="bar"><i style="background:#a6d96a"></i><s><b style="width:34%;background:#a6d96a"></b></s><em class="num">26.9 ha</em></div>
-                <div class="bar"><i style="background:#1a9850"></i><s><b style="width:26%;background:#1a9850"></b></s><em class="num">20.5 ha</em></div>
-              </div>
+      <figure class="hero-view scene" id="scene1" aria-label="A satellite pass over five pivots: the analysis of the selected field, as in the workspace">
+        <div class="sc-stage">
+          <canvas id="sc1Canvas" role="img" aria-label="Fields seen from a satellite. The pass turns natural colour into index values and masks a cloud"></canvas>
+          <div class="sc-panel">
+            <div class="sc-panel-head">
+              <span class="t-meta">← Fields</span>
+              <b id="sc1Field" translate="no">Pivot 2</b>
+              <span class="t-meta num"><span id="sc1Ha">59.75</span> <span>ha</span> · <span>Center pivot</span></span>
+              <div class="sc-tabs"><span class="is-on">Analytics</span><span>Overview</span><span>Crops</span><span>Activities</span></div>
             </div>
-            <div class="float f-trend">
-              <div class="f-head"><b>NDVI this season</b><span class="num">Jun – Nov</span></div>
-              <svg viewBox="0 0 288 92" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0 22H288M0 46H288M0 70H288" stroke="rgba(22,32,26,.07)"/>
-                <path d="M0 84 C 40 82, 70 70, 100 48 S 160 12, 200 14 S 250 26, 270 40 L 288 46" fill="none" stroke="#1f6b3a" stroke-width="2" stroke-linecap="round"/>
-                <path d="M270 40 L 288 46" stroke="#b4432d" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="288" cy="46" r="3.5" fill="#b4432d"/>
-              </svg>
+            <div class="sc-value">
+              <span class="t-meta num"><span id="sc1Idx">NDVI</span> · <span id="sc1Date">15 Nov 2026</span></span>
+              <div class="sc-value-row"><span class="sc-big num" id="sc1Mean">0.00</span><span class="sc-cloud num"><b><span id="sc1Cloud">0</span>% <span>cloud</span></b><span><span id="sc1Clear">0.00</span> <span>ha clear</span></span></span></div>
+              <span class="t-meta num">P10 <span id="sc1P10">0.00</span> · P90 <span id="sc1P90">0.00</span></span>
             </div>
-            <div class="float f-legend"><span>NDVI</span><span class="num">0</span><span class="ramp"></span><span class="num">1</span></div>
-            <div class="float f-dock">
-              <div class="chip"><b class="num">21 Oct</b><small class="num">S2 · 4%</small></div>
-              <div class="chip"><b class="num">26 Oct</b><small class="num">S2 · 61%</small></div>
-              <div class="chip"><b class="num">31 Oct</b><small class="num">S2 · 0%</small></div>
-              <div class="chip"><b class="num">5 Nov</b><small class="num">S2 · 2%</small></div>
-              <div class="chip"><b class="num">10 Nov</b><small class="num">S2 · 0%</small></div>
-              <div class="chip is-on"><b class="num">15 Nov</b><small class="num">S2 · 0%</small></div>
+            <div class="sc-dist-head"><span>Index values distribution</span><span class="sc-seg"><span class="is-on">ha</span><span>%</span></span></div>
+            <div class="sc-rows" id="sc1Rows"></div>
+            <p class="sc-note" id="sc1Note">Click a range to show it on the map</p>
+          </div>
+          <div class="sc-dock">
+            <div class="sc-legend"><span id="sc1Leg">NDVI</span><span class="num" id="sc1Lo">0</span><span class="sc-legbar" id="sc1Seg"></span><span class="num" id="sc1Hi">1</span><span class="sc-cloudkey"><i></i><span>cloud</span></span></div>
+            <div class="sc-bar">
+              <span class="sc-src">Sentinel-2 · Sentinel Hub</span><span class="sc-sep"></span>
+              <label class="sr-only" for="sc1Index">Layer</label>
+              <select id="sc1Index"><option value="natural">Natural colour</option><option value="ndvi">NDVI</option><option value="ndmi">NDMI</option><option value="ndwi">NDWI</option><option value="bsi">BSI</option></select>
+              <span class="sc-src num">10 m</span><span class="sc-sep"></span>
+              <button type="button" class="sc-icon" id="sc1Contrast" aria-pressed="true" aria-label="Contrast: stretch colours within each field" title="Contrast: stretch colours within each field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
             </div>
+            <div class="sc-dates" id="sc1Dates"></div>
           </div>
         </div>
-        </div>
-        <figcaption class="demo-bar">
-          <span class="demo-live" id="demoLive"><i></i><span id="demoStatus">Live demo loads as you scroll</span></span>
-          <span class="demo-step" id="demoStep" aria-live="polite"></span>
-          <a class="link demo-open" href="workspace.html?demo" target="_blank" rel="noopener">Open the full demo</a>
+        <figcaption class="sc-steps">
+          <div class="sc-steplist" id="sc1Steps" role="group" aria-label="The pass, step by step"></div>
+          <button type="button" class="btn btn-quiet btn-sm" id="sc1Play">Pause</button>
         </figcaption>
       </figure>
+    </div>
+  </section>
+
+  <!-- 1b · from a pixel to the season (the workspace's own analysis, in motion) -->
+  <section class="section section-alt" id="analysis">
+    <div class="wrap scene2">
+      <div class="sc2-stage">
+        <canvas id="sc2Canvas" role="img" aria-label="One pivot: its pixels sort into value classes, then the season rises as a 3D skyline and wraps into a ring"></canvas>
+        <div class="sc2-top">
+          <span class="t-meta num" id="sc2Status"></span>
+          <span class="sc2-modes" id="sc2Modes" role="group" aria-label="View"></span>
+          <span class="sc2-period"><span>3M</span><span>6M</span><span class="is-on">1Y</span><span>2Y</span></span>
+        </div>
+        <div class="sc2-legend"><span class="sc2-key"><i></i>NDVI</span><span>contrast</span><span class="num" id="sc2Lo"></span><i class="sc2-ramp"></i><span class="num" id="sc2Hi"></span><span class="sc2-est"><i></i><span>Estimated</span></span></div>
+        <div class="sc2-stats" id="sc2Stats"></div>
+      </div>
+      <div class="sc2-copy">
+        <p class="eyebrow">From one image to the whole season</p>
+        <h2 class="t-h2">From a pixel to a number you can act on</h2>
+        <div class="sc2-acts" id="sc2Acts"></div>
+        <p class="t-meta sc2-foot">The steps and numbers are the workspace's own: cloud masking from the scene classification, contrast from the field's P2–P98, ten classes of the index range in hectares, one value per clear date and the days between them estimated. The scene uses a field model; the live demo below runs the same steps on real images.</p>
+      </div>
     </div>
   </section>
 
@@ -275,6 +280,25 @@
     </div>
   </section>
 
+  <!-- 4b · the real workspace, live -->
+  <section class="section" id="live">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Try it</p>
+        <h2 class="t-h2">The real workspace, on real satellite images</h2>
+        <p class="t-body">This is the product itself, reading the latest Sentinel-2 image of pivots in the Texas High Plains in your browser. It tours the tools on its own; touch it to take over.</p>
+      </div>
+      <figure class="hero-view" id="demo">
+        <div class="demo-stage" id="demoStage"><div class="demo-poster" id="demoPoster"><span>Live demo loads as you scroll</span></div></div>
+        <figcaption class="demo-bar">
+          <span class="demo-live" id="demoLive"><i></i><span id="demoStatus">Live demo loads as you scroll</span></span>
+          <span class="demo-step" id="demoStep" aria-live="polite"></span>
+          <a class="link demo-open" href="workspace.html?demo" target="_blank" rel="noopener">Open the full demo</a>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
   <!-- 5 · start free -->
   <section class="section-tight">
     <div class="wrap">
@@ -373,6 +397,8 @@
   </div>
 </footer>
 
+<script src="landing/motion/motion.js"></script>
 <script src="landing/landing.js"></script>
+<script src="landing/scenes.js"></script>
 </body>
 </html>

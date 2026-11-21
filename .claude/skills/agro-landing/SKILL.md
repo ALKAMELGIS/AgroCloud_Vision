@@ -17,9 +17,9 @@ description: The public pages of AgroSyntra One — the landing page (index.html
 
 `js/i18n.js` must load first, then `landing/ar.js`, in `<head>`.
 
-## Live demo in the hero (the real system, real Sentinel-2)
+## Live demo (section `#live`, after the scenes: the real system, real Sentinel-2)
 
-- The hero's product view is the real workspace: `workspace.html?demo&tour` in an iframe (`#demoStage`), loaded when
+- The live section's product view is the real workspace: `workspace.html?demo&tour` in an iframe (`#demoStage`), loaded when
   the hero comes near the screen. The drawn still (`#demoPoster`) holds the place until the demo posts `ready`, then
   the frame fades in. Wide screens: the workspace renders at 1440 px and is scaled to fit; under 760 px it runs its
   own compact layout. The caption bar (`#demoStep`) shows each tour step (translated by `I18n.t`).
@@ -33,7 +33,8 @@ description: The public pages of AgroSyntra One — the landing page (index.html
 
 ## Section order (follows EOS Crop Monitoring's product page)
 
-1. Hero: one-line promise, Start free + Sign in, then a still of the workspace (field list, pixel fields, field card with value classes, season curve, legend, date chips). This is the one colourful moment; everything else stays quiet.
+1. Hero: one-line promise, Start free + Sign in, then motion scene 1 (`#scene1`): the satellite pass with the workspace's Analytics panel, legend, dock, dates and six steps. This is the one colourful moment; everything else stays quiet.
+   Then `#analysis` (motion scene 2: pixel → value classes → 3D skyline → 3D ring, Average/Peak/Lowest/Latest) and `#live` (the live demo).
 2. Five ways it helps (EOS "Ways to make your farm work efficiently"): crop analytics, remote crop health, field risks, input savings, field reports.
 3. Six steps (EOS "Simplify farming in 6 steps"): add fields, get imagery, read the trend, check risks, take action, share.
 4. Tools (EOS "Top tools"): ten tabs, each with text, three points and a drawn picture: indices, time series and heatmap, field risks, VRA, soil sampling, activity log, scout tasks, weather, reports, team and roles.
@@ -72,8 +73,13 @@ no page errors and no sideways scroll at 1440 and 390 in both languages; ten tab
 
 ## Motion scenes (design canvas "AgroSyntra One — Motion hero")
 
-`landing/motion/motion.js` is the engine behind the two canvas boards (satellite pass; pixel → classes →
-3D skyline → 3D ring). It is not loaded by the site yet. Its analysis must stay the system's own:
+`landing/motion/motion.js` is the engine behind both the canvas boards and the landing scenes (satellite pass;
+pixel → classes → 3D skyline → 3D ring). `landing/scenes.js` drives it on the page: `AgroMotion.hero(canvas, onState)`
+fills `#sc1*` (panel rows click → `toggleClass`, index select, contrast, dates, steps, Play/Pause) and
+`AgroMotion.stats(canvas, onState)` fills `#sc2*` (acts and mode buttons hold a step; click again to play). Each starts
+when it nears the screen. Phones (≤700 px) hide the field panel and the period chips; the status line takes its own row.
+Class stacks are 4×4 cubes a layer rising upward, so their height is the hectares; keep the edge labels in front and the
+ha labels on top, or they collide with the stacks. Keep `motion.js` identical in the canvas project and the site. Its analysis must stay the system's own:
 - reflectances per pixel (B02 B03 B04 B05 B08 B8A B11) and an SCL class; NDVI/NDMI/NDWI/BSI with the formulas,
   ranges and ramps of `js/imagery.js` (copy them, never retune by eye);
 - SCL 3/8/9/10 masked and painted rgba(120,126,135,.59); cloud % and clear hectares per field;

@@ -20,6 +20,28 @@ window.I18n && I18n.add({
   'Jun': 'يونيو', 'Jul': 'يوليو', 'Aug': 'أغسطس', 'Sep': 'سبتمبر', 'Oct': 'أكتوبر', 'Nov': 'نوفمبر',
   'NDVI this season': 'NDVI هذا الموسم', 'Jun – Nov': 'يونيو – نوفمبر',
 
+  // motion scenes (landing/scenes.js)
+  'A satellite pass over five pivots: the analysis of the selected field, as in the workspace': 'مرور قمر صناعي فوق خمسة محاور: تحليل الحقل المختار كما في مساحة العمل',
+  'Fields seen from a satellite. The pass turns natural colour into index values and masks a cloud': 'حقول من القمر الصناعي: المرور يحوّل الألوان الطبيعية إلى قيم مؤشرات ويحجب غيمة',
+  '← Fields': 'الحقول →', 'Center pivot': 'محور ري', 'Analytics': 'التحليلات', 'Overview': 'نظرة عامة', 'Crops': 'المحاصيل', 'Activities': 'الأنشطة',
+  'cloud': 'سحب', 'ha clear': 'هكتار صافية', 'ha': 'هكتار', 'Index values distribution': 'توزيع قيم المؤشر',
+  'Click a range to show it on the map': 'اضغط على مدى لعرضه على الخريطة', 'Selected on the map': 'المحدد على الخريطة',
+  'Layer': 'الطبقة', 'Contrast: stretch colours within each field': 'التباين: توزيع الألوان داخل كل حقل', 'contrast': 'تباين',
+  '10 m': '10 م', 'Pause': 'إيقاف مؤقت', 'Play': 'تشغيل', 'The pass, step by step': 'المرور خطوة بخطوة',
+  'NDVI · vegetation': 'NDVI · الغطاء النباتي', 'NDMI · water content': 'NDMI · محتوى الماء', 'NDWI · surface water': 'NDWI · المياه السطحية', 'BSI · bare soil': 'BSI · التربة المكشوفة',
+  'One pivot: its pixels sort into value classes, then the season rises as a 3D skyline and wraps into a ring': 'محور واحد: تترتب بكسلاته في فئات القيم، ثم يرتفع الموسم أعمدة ثلاثية الأبعاد ويلتف في حلقة',
+  'View': 'العرض', 'Estimated': 'تقديري', 'clear dates': 'تواريخ صافية', 'Average': 'المتوسط', 'Peak': 'الذروة', 'Lowest': 'الأدنى', 'Latest': 'الأحدث',
+  'Pixels': 'البكسلات', 'Value classes': 'فئات القيم', '3D skyline': 'أعمدة ثلاثية الأبعاد', '3D ring': 'حلقة ثلاثية الأبعاد',
+  'Pivot 2 on the clear date: every 10 m pixel inside the boundary, coloured with contrast from the field’s own P2 to P98.': 'المحور 2 في التاريخ الصافي: كل بكسل 10 م داخل الحدود، ملوّن بتباين من P2 إلى P98 للحقل نفسه.',
+  'The pixels sort into the ten classes of the NDVI range. Each stack is hectares, and together they make the field.': 'تترتب البكسلات في الفئات العشر لنطاق NDVI. كل كومة مساحتها بالهكتار، ومجموعها مساحة الحقل.',
+  'The whole year, a column per day: week by week along time, weekday by weekday across. Muted days are estimated between clear images.': 'السنة كاملة، عمود لكل يوم: أسبوعاً بأسبوع على طول الزمن، ويوماً بيوم عرضاً. الأيام الباهتة مقدّرة بين الصور الصافية.',
+  'The same days wrapped around the pivot, January at the top, so the season reads like the field itself.': 'الأيام نفسها ملفوفة حول المحور، ويناير في الأعلى، فيُقرأ الموسم كأنه الحقل نفسه.',
+  'From one image to the whole season': 'من صورة واحدة إلى الموسم كله', 'From a pixel to a number you can act on': 'من بكسل إلى رقم تتصرف بناءً عليه',
+  "The steps and numbers are the workspace's own: cloud masking from the scene classification, contrast from the field's P2–P98, ten classes of the index range in hectares, one value per clear date and the days between them estimated. The scene uses a field model; the live demo below runs the same steps on real images.":
+    'الخطوات والأرقام من مساحة العمل نفسها: حجب السحب من تصنيف المشهد، والتباين من P2 إلى P98 للحقل، وعشر فئات لنطاق المؤشر بالهكتار، وقيمة لكل تاريخ صافٍ مع تقدير الأيام بينها. المشهد يستخدم نموذج حقول، والعرض الحي أدناه يطبّق الخطوات نفسها على صور حقيقية.',
+  'Try it': 'جرّبه', 'The real workspace, on real satellite images': 'مساحة العمل الحقيقية على صور أقمار صناعية حقيقية',
+  'This is the product itself, reading the latest Sentinel-2 image of pivots in the Texas High Plains in your browser. It tours the tools on its own; touch it to take over.': 'هذا هو المنتج نفسه، يقرأ في متصفحك آخر صورة Sentinel-2 لمحاور ري في سهول تكساس العليا. يتجول بين الأدوات وحده، والمسه لتتولى القيادة.',
+
   // live demo
   'Live demo loads as you scroll': 'العرض الحي يُحمّل مع التمرير', 'Open the full demo': 'افتح العرض الكامل',
   'Loading real Sentinel-2 data': 'جارٍ تحميل بيانات Sentinel-2 حقيقية',

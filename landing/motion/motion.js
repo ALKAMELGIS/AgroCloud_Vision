@@ -80,13 +80,13 @@
     };
   }
   function quad(ctx, a, b, c, d) { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); }
-  function box(ctx, cam, x, z, s, h, rgb, alpha) {
-    const hs = s / 2;
-    if (h > 0.003) {
+  function box(ctx, cam, x, z, s, h, rgb, alpha, y0 = 0) {
+    const hs = s / 2; h += y0;
+    if (h - y0 > 0.003) {
       for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         if (!cam.faces(nx, nz)) continue;
         const a = nx ? [x + nx * hs, z - hs] : [x - hs, z + nz * hs], b = nx ? [x + nx * hs, z + hs] : [x + hs, z + nz * hs];
-        ctx.beginPath(); quad(ctx, cam.p(a[0], 0, a[1]), cam.p(b[0], 0, b[1]), cam.p(b[0], h, b[1]), cam.p(a[0], h, a[1]));
+        ctx.beginPath(); quad(ctx, cam.p(a[0], y0, a[1]), cam.p(b[0], y0, b[1]), cam.p(b[0], h, b[1]), cam.p(a[0], h, a[1]));
         ctx.fillStyle = css(rgb, nx ? 0.74 : 0.86, alpha); ctx.fill();
       }
     }
@@ -322,7 +322,8 @@
     // classes: ten stacks, one per tenth of the NDVI range
     const byC = Array.from({ length: 10 }, () => []);
     field.px.forEach((p) => byC[p.c].push(p));
-    byC.forEach((list, k) => list.forEach((p, j) => { p.hx = -1.08 + k * 0.24 + ((j % 3) - 1) * 0.062; p.hz = 0.3 - Math.floor(j / 3) * 0.062; p.hy = 0.04; }));
+    // four by four cubes a layer, layers rising, so each stack's height is its hectares
+    byC.forEach((list, k) => list.forEach((p, j) => { p.hx = -1.08 + k * 0.24 + ((j % 4) - 1.5) * 0.054; p.hz = 0.08 - (Math.floor(j / 4) % 4) * 0.054; p.hy = Math.floor(j / 16) * 0.046; }));
     // skyline and ring: one column per day
     const cs = 2.2 / S.weeks;
     S.cells.forEach((c) => {
@@ -345,11 +346,11 @@
       if (act <= 1 || (act === 2 && k < 1)) {
         const gone = act === 2 ? k : 0;
         field.px.forEach((p) => {
-          let x, z, y, s = PX;
+          let x, z, y, s = PX, y0 = 0;
           if (act === 0) { x = p.x; z = p.z; y = 0; }
-          else if (act === 1) { const kk = ease(clamp((local * 1.8 - p.c * 0.06) / 0.6, 0, 1)); x = p.x + (p.hx - p.x) * kk; z = p.z + (p.hz - p.z) * kk; y = p.hy * kk; s = PX + (0.056 - PX) * kk; }
-          else { x = p.hx; z = p.hz; y = p.hy * (1 - gone); s = 0.056 * (1 - gone); }
-          if (s > 0.004) items.push([cam.depth(x, 0, z), x, z, s * 0.92, y, act === 0 ? p.rgb : rampAt(RDYLGN, (p.c + 0.5) / 10)]);
+          else if (act === 1) { const kk = ease(clamp((local * 1.8 - p.c * 0.06) / 0.6, 0, 1)); x = p.x + (p.hx - p.x) * kk; z = p.z + (p.hz - p.z) * kk; y0 = p.hy * kk; y = 0.04 * kk; s = PX + (0.052 - PX) * kk; }
+          else { x = p.hx; z = p.hz; y0 = p.hy * (1 - gone); y = 0.04 * (1 - gone); s = 0.052 * (1 - gone); }
+          if (s > 0.004) items.push([cam.depth(x, 0, z), x, z, s * 0.92, y, act === 0 ? p.rgb : rampAt(RDYLGN, (p.c + 0.5) / 10), y0]);
         });
       }
       // days: rise as a skyline along time (act 2), wrap into the pivot ring (act 3), sink back (end of act 3)
@@ -361,11 +362,11 @@
           items.push([cam.depth(x, 0, z), x, z, cs * 0.86, h, c.rgb]);
         });
       }
-      items.sort((p, q) => q[0] - p[0]).forEach(([, x, z, s, h, rgb]) => box(ctx, cam, x, z, s, h, rgb));
+      items.sort((p, q) => q[0] - p[0] || (p[6] || 0) - (q[6] || 0)).forEach(([, x, z, s, h, rgb, y0]) => box(ctx, cam, x, z, s, h, rgb, undefined, y0 || 0));
       ctx.font = `${11 * st.dpr}px "IBM Plex Sans", sans-serif`; ctx.textAlign = 'center';
       if (act === 1 && local > 0.45) {
         ctx.globalAlpha = clamp((local - 0.45) / 0.2, 0, 1);
-        for (let c = 0; c < 10; c++) { const q = cam.p(-1.08 + c * 0.24, 0, 0.47); ctx.fillStyle = '#7a7f78'; ctx.fillText(a.edges[c].toFixed(1), q[0], q[1] + 14 * st.dpr); if (a.classes[c] > 0.005) { ctx.fillStyle = '#16201a'; ctx.fillText(a.classes[c].toFixed(2) + ' ha', q[0], q[1] + 30 * st.dpr); } }
+        for (let c = 0; c < 10; c++) { const x = -1.08 + c * 0.24, q = cam.p(x, 0, -0.2); ctx.fillStyle = '#7a7f78'; ctx.fillText(a.edges[c].toFixed(1), q[0], q[1] + 14 * st.dpr); if (a.classes[c] > 0.005) { const top = cam.p(x, (Math.ceil(byC[c].length / 16)) * 0.046 + 0.05, -0.001); ctx.fillStyle = '#16201a'; ctx.fillText(a.classes[c].toFixed(2) + ' ha', top[0], top[1] - 6 * st.dpr); } }
         ctx.globalAlpha = 1;
       }
       if (act >= 2 && local > 0.35) {

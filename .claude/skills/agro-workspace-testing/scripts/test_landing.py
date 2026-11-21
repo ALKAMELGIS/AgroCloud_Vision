@@ -12,7 +12,7 @@ def check(label, cond, extra=''):
     global ok; ok &= bool(cond); print(('PASS ' if cond else 'FAIL ') + label, str(extra)[:300], flush=True)
 
 # Latin words that stay Latin in Arabic (index names, formats, products, units)
-KEEP = set('NDVI SAVI EVI GNDVI NDRE MSAVI ReCI NDMI NDWI BSI SI VMI S2 CSV PDF A4 ISO-XML GPX KML KMZ GeoJSON Shapefile GeoPackage File Geodatabase John Deere Trimble Sentinel-2 Sentinel L2A 2A Open-Meteo PostGIS WGS84 AgroSyntra One Pivot Copernicus ESA kg/ha L 3D English'.split())
+KEEP = set('NDVI SAVI EVI GNDVI NDRE MSAVI ReCI NDMI NDWI BSI SI VMI S2 CSV PDF A4 ISO-XML GPX KML KMZ GeoJSON Shapefile GeoPackage File Geodatabase John Deere Trimble Sentinel-2 Sentinel L2A 2A Open-Meteo PostGIS WGS84 AgroSyntra One Pivot Copernicus ESA kg/ha L 3D English P10 P90 P2 P98 Hub'.split())
 LATIN = r"""(() => { const out = new Set(); const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   while (w.nextNode()) { const n = w.currentNode, t = n.nodeValue.trim(); if (t && /[A-Za-z]/.test(t) && !n.parentElement.closest('script,style,[translate="no"]')) out.add(t); }
   document.querySelectorAll('[placeholder],[aria-label]').forEach((e) => ['placeholder', 'aria-label'].forEach((a) => { const v = e.getAttribute(a); if (v && /[A-Za-z]/.test(v) && !e.closest('[translate="no"]')) out.add(v); }));
@@ -28,7 +28,8 @@ with sync_playwright() as p:
             pg.goto(BASE + 'index.html'); pg.wait_for_timeout(1200)
             check(f'{lang} {w}: landing has no page errors', not errs, errs)
             check(f'{lang} {w}: no sideways scroll', pg.evaluate('document.documentElement.scrollWidth') <= w)
-            check(f'{lang} {w}: hero map drawn', pg.locator('#heroMap rect').count() > 500)
+            pg.evaluate("document.getElementById('analysis').scrollIntoView()"); pg.wait_for_timeout(600); pg.evaluate('scrollTo(0, 0)'); pg.wait_for_timeout(300)
+            check(f'{lang} {w}: scenes running', pg.locator('#sc1Steps .sc-step').count() == 6 and pg.locator('#sc2Stats .sc2-stat').count() == 4 and pg.locator('#sc1Rows .sc-row').count() == 10)
             if w == 1440:
                 tabs = pg.locator('.tool')
                 check(f'{lang}: ten tools', tabs.count() == 10)
