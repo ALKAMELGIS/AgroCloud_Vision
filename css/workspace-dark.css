@@ -812,11 +812,3 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
   #mapTools .map-group { display: none; }
 }
 @media (max-width: 899px) and (prefers-reduced-motion: reduce) { .nav-rail, #sidePanel { transition: none; } }
-
-/* a field mostly under cloud on the chosen date: say so on the map */
-.cloud-note-wrap { background: none; border: 0; }
-.cloud-note { transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 1px; width: max-content; max-width: 220px;
-  padding: 6px 10px; border-radius: 8px; background: #111412; color: #fff; font-size: 12px; line-height: 1.35; text-align: center; pointer-events: none;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / .08), 0 6px 16px rgb(0 0 0 / .3); }
-.cloud-note b { font-weight: 600; }
-.cloud-note span { color: rgb(255 255 255 / .78); white-space: normal; }

@@ -795,13 +795,6 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (!done.length && lastErr) showError(friendly(lastErr));
     clearLayers(v);
     done.forEach((r) => { const l = L.imageOverlay(paint(r, { contrast: v.contrast, filter: state_.filter }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map); v.layers.push(l); v.layerFor.set(r.field.id, l); });
-    // a field mostly under cloud says so on the map, with the share and what to do
-    done.forEach((r) => {
-      if (!(r.cloudPct >= 40) || INDICES[v.indexKey].rgb) return;
-      const c = L.latLngBounds(r.bounds).getCenter();
-      const html = `<div class="cloud-note"><b>${escapeHtml(window.I18n ? I18n.t('Cloud over') : 'Cloud over')} ${r.cloudPct}%</b><span>${escapeHtml(window.I18n ? I18n.t('of the field on this date. Pick a clearer date') : 'of the field on this date. Pick a clearer date')}</span></div>`;
-      v.layers.push(L.marker(c, { pane: 'img', interactive: false, keyboard: false, icon: L.divIcon({ className: 'cloud-note-wrap', html, iconSize: null }) }).addTo(map));
-    });
     sharpen(v);
     renderLegend(v);
     if (v === views[0]) {

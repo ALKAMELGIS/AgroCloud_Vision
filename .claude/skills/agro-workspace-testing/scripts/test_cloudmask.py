@@ -31,7 +31,7 @@ with sync_playwright() as p:
     r = pg.evaluate("[...Imagery.views[0].results.values()].map(r => r.cloudPct)")
     check('dark ground called cloud is kept, bright cloud masked (about half)', all(25 <= c <= 75 for c in r), r)
     pg.locator('#fieldsList .field-card').first.click(); pg.wait_for_timeout(1500)
-    check('a field mostly under cloud does not get a note', pg.locator('.cloud-note').count() == 0 or all(c >= 40 for c in r), pg.locator('.cloud-note').count())
+    check('no text box over the field', pg.locator('.cloud-note').count() == 0, pg.locator('.cloud-note').count())
     check('legend names the masked part', 'cloud or shadow' in pg.inner_text('#imgLegend'), pg.inner_text('#imgLegend'))
     pg.screenshot(path=S + 'shots/cloudmask.png')
     check('no page errors', not errors, errors)
