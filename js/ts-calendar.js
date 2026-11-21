@@ -36,12 +36,16 @@
   const esc = (s) => (window.escapeHtml ? escapeHtml(s) : String(s));
   const f2 = (v) => v.toFixed(2);
 
-  let heatKey = null;
+  let heatKey = null, lastMapKey = null;
+  const mapView = () => window.Imagery && Imagery.views && Imagery.views[0];
 
   /** Day cells for one layer, with interpolation between clear dates and summary stats. */
   function build(ctx) {
     themeColors();
     const { ts, keys, colors, t0, DAY } = ctx;
+    // follow the map's layer: when the index on the map changes and it is plotted here, show it
+    const mk = mapView() && mapView().indexKey;
+    if (mk !== lastMapKey) { lastMapKey = mk; if (keys.includes(mk)) heatKey = mk; }
     if (!keys.includes(heatKey)) heatKey = keys[0];
     const k = heatKey;
     const meas = ts.points.filter((p) => p.v[k]).map((p) => ({ t: p.t, v: p.v[k].mean, p }));
@@ -61,16 +65,19 @@
     }
     const vals = cells.filter((c) => c.v != null).map((c) => c.v);
     const lo = vals.length ? Math.min(...vals) : 0, hi = vals.length ? Math.max(...vals) : 1;
-    const c0 = hex(colors[k]);
-    // dark surface → the layer's colour → a lighter tint of it for the top level
-    // the top level moves away from the ground: lighter on dark, deeper on light
-    const light = window.Theme && Theme.current === 'light';
-    const palette = [mix(BASE, c0, 0.3), mix(BASE, c0, 0.52), mix(BASE, c0, 0.76), c0, light ? mix(c0, [24, 28, 22], 0.3) : mix(c0, [255, 255, 255], 0.32)];
+    // colours: the index's own ramp, exactly as on the map. With the map's contrast on, the ramp
+    // spans this period's lowest to highest value; otherwise the index's fixed range.
+    const I = window.Imagery, idx = I.indices[k];
+    const contrast = !!(mapView() && mapView().contrast);
+    const [r0, r1] = contrast && hi > lo ? [lo, hi] : idx.range || [0, 1];
+    const colorOf = (v) => I.rampAt(idx.ramp, Math.max(0, Math.min(1, (v - r0) / (r1 - r0 || 1))));
+    const curScene = I.state && I.state.sceneId;
     cells.forEach((c) => {
-      if (c.v == null) { c.lvl = -1; c.rgb = BASE; c.n = 0; return; }
-      c.n = hi > lo ? (c.v - lo) / (hi - lo) : 0.5;
-      c.lvl = Math.min(4, Math.floor(c.n * 5));
-      c.rgb = c.est ? mix(palette[c.lvl], BASE, 0.42) : palette[c.lvl];
+      if (c.v == null) { c.rgb = BASE; c.n = 0; return; }
+      c.n = hi > lo ? (c.v - lo) / (hi - lo) : 0.5;     // column height in 3D: relative to the period
+      const col = colorOf(c.v);
+      c.rgb = c.est ? mix(col, BASE, 0.45) : col;
+      c.cur = !!(c.m && c.m.p.sceneId === curScene);
     });
     const ms = meas.slice();
     const stats = ms.length ? {
@@ -80,7 +87,7 @@
       last: ms[ms.length - 1], prev: ms[ms.length - 2] || null, n: ms.length,
     } : null;
     const weeks = cells.length ? cells[cells.length - 1].col + 1 : 0;
-    return { k, label: window.Imagery.indices[k].label, color: colors[k], cells, lo, hi, palette, stats, weeks, start };
+    return { k, label: idx.label, color: colors[k], cells, lo, hi, r0, r1, contrast, ramp: idx.ramp, stats, weeks, start };
   }
 
   function legend(ctx, d) {
@@ -89,9 +96,16 @@
       ? `<span class="tsc-chips" role="group" aria-label="Layer">${keys.map((k) => `<button type="button" data-hk="${k}" aria-pressed="${k === d.k}"><i style="background:${colors[k]}"></i>${window.Imagery.indices[k].label}</button>`).join('')}</span>`
       : `<span class="ts-key"><i style="background:${d.color}"></i>${d.label}</span>`;
     legendEl.innerHTML = `${chips}
-      <span class="tsc-scale"><span class="num">${d.stats ? f2(d.lo) : ''}</span>${d.palette.map((c) => `<i style="background:${rgb(c)}"></i>`).join('')}<span class="num">${d.stats ? f2(d.hi) : ''}</span></span>
-      <span class="tsc-scale"><i style="background:${rgb(mix(d.palette[3], BASE, 0.42))}"></i>Estimated</span>`;
-    legendEl.querySelectorAll('[data-hk]').forEach((b) => b.addEventListener('click', () => { heatKey = b.dataset.hk; ctx.ts.sweepAt = performance.now(); window.TimeSeries.redraw(); }));
+      <span class="tsc-scale">${d.contrast ? '<span>contrast</span>' : ''}<span class="num">${f2(d.r0)}</span><i class="tsc-ramp" style="background:${window.Imagery.gradient(d.ramp)}"></i><span class="num">${f2(d.r1)}</span></span>
+      <span class="tsc-scale"><i style="background:${rgb(mix(window.Imagery.rampAt(d.ramp, 0.75), BASE, 0.45))}"></i>Estimated</span>
+      <span class="tsc-scale"><i class="tsc-cur"></i>Date on the map</span>`;
+    // picking a layer here also switches the map to it
+    legendEl.querySelectorAll('[data-hk]').forEach((b) => b.addEventListener('click', () => {
+      heatKey = b.dataset.hk; lastMapKey = heatKey; ctx.ts.sweepAt = performance.now();
+      const sel = document.getElementById('imgIndex');
+      if (sel && sel.value !== heatKey) { sel.value = heatKey; sel.dispatchEvent(new Event('change')); }
+      window.TimeSeries.redraw();
+    }));
   }
 
   function tipHtml(c, d, ctx) {
@@ -140,7 +154,7 @@
       const animate = ctx.sinceSweep < 900 && !ctx.loading && !reduce(), off = Math.round(ctx.sinceSweep);
       const months = []; let lastM = -1;
       d.cells.forEach((c) => { const m = new Date(c.t).getUTCMonth(); if (m !== lastM && (c.row === 0 || c === d.cells[0])) { lastM = m; if (!months.length || c.col - months[months.length - 1][0] >= 3) months.push([c.col, c.t]); } });
-      const rects = d.cells.map((c, i) => `<rect x="${(gx + c.col * cs).toFixed(1)}" y="${top + c.row * cs}" width="${sz}" height="${sz}" rx="${r}" fill="${rgb(c.rgb)}" data-i="${i}" class="tsc-cell${c.m ? ' is-clear' : ''}${animate ? ' is-enter' : ''}"${animate ? ` style="animation-delay:${c.col * 9 + c.row * 14 - off}ms"` : ''}/>`).join('');
+      const rects = d.cells.map((c, i) => `<rect x="${(gx + c.col * cs).toFixed(1)}" y="${top + c.row * cs}" width="${sz}" height="${sz}" rx="${r}" fill="${rgb(c.rgb)}" data-i="${i}" class="tsc-cell${c.m ? ' is-clear' : ''}${c.cur ? ' is-cur' : ''}${animate ? ' is-enter' : ''}"${animate ? ` style="animation-delay:${c.col * 9 + c.row * 14 - off}ms"` : ''}/>`).join('');
       el.innerHTML = `
         <svg class="tsc-heat" width="${box.width}" height="${top + 7 * cs}" style="width:${box.width}px;height:${top + 7 * cs}px" aria-label="${d.label} by day">
           ${months.map(([col, t]) => `<text x="${(gx + col * cs).toFixed(1)}" y="10" class="ts-axis">${new Date(t).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })}</text>`).join('')}
@@ -245,7 +259,8 @@
         }
         g.fillStyle = rgb(c.v == null ? BASE : col);
         g.beginPath(); top.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); g.fill();
-        if (z > 0.01) { g.strokeStyle = `rgb(${INK} / .08)`; g.lineWidth = 0.6; g.stroke(); }
+        if (c.cur) { g.strokeStyle = `rgb(${INK} / .95)`; g.lineWidth = 1.6; g.stroke(); }
+        else if (z > 0.01) { g.strokeStyle = `rgb(${INK} / .08)`; g.lineWidth = 0.6; g.stroke(); }
         shapes.push(top);
         this.polys.push({ c, shapes });
       }

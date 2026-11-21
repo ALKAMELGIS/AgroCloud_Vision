@@ -159,6 +159,7 @@
     'High salinity signal': 'مؤشر ملوحة مرتفع', 'Moderate salinity signal': 'مؤشر ملوحة متوسط', 'Low salinity signal': 'مؤشر ملوحة منخفض',
     'This index needs red-edge or SWIR bands, which cannot be sharpened': 'هذا المؤشر يحتاج نطاقات الحافة الحمراء أو SWIR، ولا يمكن تحسين دقتها',
     'Sharpening works with indices from blue, green, red and NIR': 'تحسين الدقة يعمل مع المؤشرات المبنية على الأزرق والأخضر والأحمر وNIR',
+    'Date on the map': 'التاريخ المعروض على الخريطة', 'contrast': 'تباين',
     'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
     'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
     'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',
