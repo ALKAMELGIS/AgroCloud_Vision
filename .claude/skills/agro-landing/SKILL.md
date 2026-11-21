@@ -88,3 +88,22 @@ ha labels on top, or they collide with the stacks. Keep `motion.js` identical in
   the empty-day colour, colours from the period's low to high, Average/Peak/Lowest/Latest.
 The canvas cannot reach Sentinel-2, so the reflectances come from a field model; say so wherever it is shown.
 The live, real-data version is the hero demo (`workspace.html?demo&tour`).
+
+## Real imagery in the scenes (`landing/motion/real.js`)
+
+The hero scene (`#scene1`) and the sign-in art (`#authCanvas`) start on the field model, then `liveScene()` in
+`scenes.js` swaps to `AgroReal.hero()` when `AgroReal.load()` resolves (25 s limit; on failure the model stays):
+- ground = Esri World Imagery z16 tiles stitched for the demo AOI (Texas High Plains, −102.322, 34.116; 3.4 × 2.3 km);
+- fields = centre pivots found in the clear Sentinel-2 NDVI (radius 240–580 m, inside ≠ rim; demo cache as fallback);
+  the open field is the most varied among the large ones;
+- index layers = Sentinel Hub WMS evalscript (B02 B03 B04 B08 B8A B11 SCL, FLOAT32) on the instance's L2A layer
+  (found in GetCapabilities, e.g. `3_NDVI`; a wrong LAYERS name gives HTTP 400), for the latest clear date (< 5 %)
+  and a cloudy one (15–75 %), with the system's formulas, SCL masking, P2–P98 contrast and ten classes;
+- both are drawn on the 3D ground with an affine triangle mesh (`drawGround`); the index texture is opaque inside the
+  pivots (a translucent one shows the mesh seams) and smoothed ×4, clipped to the circles;
+- requests are cached three days with the Cache API (`agro-landing-v1`); credit "Imagery © Esri, Maxar · Sentinel-2
+  L2A © Copernicus" shows once real data is on;
+- script tags carry `?v=…`: GitHub Pages caches for 10 minutes, and an old motion.js without `AgroMotion.kit` makes
+  real.js do nothing. Bump the version with every change to landing scripts.
+Tests mock Esri tiles (plain PNG) and the 7-band evalscript (cdn_routes.py); check the real result in the browser pane.
+
