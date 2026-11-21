@@ -88,6 +88,8 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 - Map → chart: changing the map index switches a single plotted layer to it (adds it when several are plotted). Chart → map: clicking a legend key sets the map index. The map's class filter fades points/bars outside the chosen classes.
 - Points on Line/Area: radius 2.2, stroke 1.25 (owner asked for smaller); fixed size, no hover growth or transitions (hover only fills the point). Points chart (scatter) keeps 3.5.
 
+**Zoom strip** is thin and quiet: 16 px track (`rgb(ink/.035)` + hairline), the series traced as a 1 px `--t-3` line (style attribute, not `stroke=var()`), the window a soft lens (ink 5 % fill, 32 % hairline), grips 4×12 px with a larger invisible hit area. Do not bring back the tall green strip.
+
 **Layout.** Side column 236 px, no scroll (`overflow: hidden`): dates sit side by side. The legend has its own row under the controls (never next to them: at 1366 px it was squeezed and spilled over the chart). Year ranges in the legend are `dir="ltr"`. Check with `probe_side.py` (en + ar at 1366×650).
 
 ## Sharpening / super-resolution (`js/superres.js`)

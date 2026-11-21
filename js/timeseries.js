@@ -644,7 +644,7 @@
   function drawMini() {
     const svg = $('tsMini');
     const box = $('tsBrush').getBoundingClientRect();
-    const W = Math.max(200, box.width - 40), H = 28;
+    const W = Math.max(200, box.width - 40), H = 16;
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.style.width = W + 'px';
     const a = t0(ts.from), b = t0(ts.to);
@@ -654,7 +654,7 @@
     const X = (t) => ((t - a) / (b - a || 1)) * W;
     const Y = (v) => 3 + (1 - (v - y0) / (y1 - y0)) * (H - 6);
     const data = ts.points.filter((p) => p.v[k]);
-    svg.innerHTML = data.length > 1 ? `<path d="${smoothPath(data.map((p) => [X(p.t), Y(p.v[k].mean)]))}" fill="none" stroke="${colorOf(k)}" stroke-width="1.25" opacity=".7"/>` : '';
+    svg.innerHTML = data.length > 1 ? `<path d="${smoothPath(data.map((p) => [X(p.t), Y(p.v[k].mean)]))}" fill="none" style="stroke:var(--t-3)" stroke-width="1" opacity=".9"/>` : '';
     const [va, vb] = viewRange();
     const win = $('tsWindow');
     win.style.left = (X(va) / W) * 100 * (W / box.width) + '%';

@@ -450,13 +450,17 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
 .ts-tip-k { display: inline-flex; align-items: center; gap: 6px; }
 .ts-tip-k i { width: 8px; height: 8px; border-radius: 2px; }
 .ts-tip-hint { margin-top: 6px; font-size: 11px; color: var(--t-3); }
-.ts-brush { position: relative; height: 36px; margin-top: 4px; display: flex; align-items: center; direction: ltr; }
-.ts-brush svg { height: 28px; border-radius: 6px; background: var(--g-900); box-shadow: inset 0 0 0 1px var(--line); }
-.ts-window { position: absolute; top: 4px; height: 28px; border-radius: 6px; background: rgb(var(--accent-rgb) / .08);
-  box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / .45); cursor: grab; touch-action: none; }
+.ts-brush { position: relative; height: 22px; margin-top: 6px; display: flex; align-items: center; direction: ltr; }
+/* a quiet, thin overview: hairline track, grey trace, the window as a soft lens with slim grips */
+.ts-brush svg { height: 16px; border-radius: 4px; background: rgb(var(--ink) / .035); box-shadow: inset 0 0 0 1px var(--line); }
+.ts-window { position: absolute; top: 3px; height: 16px; border-radius: 4px; background: rgb(var(--ink) / .05);
+  box-shadow: inset 0 0 0 1px rgb(var(--ink) / .32), 0 1px 2px rgb(0 0 0 / calc(.12 * var(--sh))); cursor: grab; touch-action: none; transition: box-shadow .15s; }
+.ts-window:hover { box-shadow: inset 0 0 0 1px rgb(var(--ink) / .5), 0 1px 3px rgb(0 0 0 / calc(.16 * var(--sh))); }
 .ts-window:active { cursor: grabbing; }
-.ts-handle { position: absolute; top: 4px; width: 6px; height: 20px; border-radius: 3px; background: var(--t-1); cursor: ew-resize; }
-.ts-handle[data-h="a"] { left: -3px; } .ts-handle[data-h="b"] { right: -3px; }
+.ts-handle { position: absolute; top: 2px; width: 4px; height: 12px; border-radius: 2px; background: var(--t-2); box-shadow: 0 0 0 2px var(--g-850); cursor: ew-resize; }
+.ts-handle::before { content: ""; position: absolute; inset: -6px -8px; }   /* bigger grab area than it looks */
+.ts-handle[data-h="a"] { left: -2px; } .ts-handle[data-h="b"] { right: -2px; }
+.ts-handle:hover { background: var(--t-1); }
 .ts-reset { margin-left: auto; }
 [dir="rtl"] .ts-side { direction: rtl; }
 
