@@ -86,7 +86,7 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 
 **Coloured by the map's ramp, linked to the map.** With one plotted layer, it is coloured by value with its own ramp: the line stroke is a horizontal `linearGradient` (`#tsRamp-<k>`, userSpaceOnUse, one stop per date at its x), points/bars/whiskers take their value's colour; band and area turn neutral grey so only the data carries colour. Ramp range follows the map's contrast (period min–max) or the index range. Other plotted layers keep their identity colour. "Change" chart keeps identity colours.
 - Map → chart: changing the map index switches a single plotted layer to it (adds it when several are plotted). Chart → map: clicking a legend key sets the map index. The map's class filter fades points/bars outside the chosen classes.
-- Points have a fixed radius (no hover growth, no transitions).
+- Points on Line/Area: radius 2.2, stroke 1.25 (owner asked for smaller); fixed size, no hover growth or transitions (hover only fills the point). Points chart (scatter) keeps 3.5.
 
 **Layout.** Side column 236 px, no scroll (`overflow: hidden`): dates sit side by side. The legend has its own row under the controls (never next to them: at 1366 px it was squeezed and spilled over the chart). Year ranges in the legend are `dir="ltr"`. Check with `probe_side.py` (en + ar at 1366×650).
 

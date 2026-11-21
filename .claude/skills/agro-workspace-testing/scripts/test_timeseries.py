@@ -59,7 +59,7 @@ with sync_playwright() as p:
     check('line and points coloured by value with the map ramp', stops == exp and dots == exp, (stops, dots, exp))
     r0 = pg.evaluate("document.querySelector('#tsSvg .ts-dot').getAttribute('r')")
     d0 = pg.locator('#tsSvg .ts-dot').first.bounding_box(); pg.mouse.move(d0['x'] + 3, d0['y'] + 3); pg.wait_for_timeout(200)
-    check('points do not grow on hover', pg.evaluate("[...document.querySelectorAll('#tsSvg .ts-dot')].every((d) => d.getAttribute('r') === '3')"), r0)
+    check('points do not grow on hover', pg.evaluate("[...document.querySelectorAll('#tsSvg .ts-dot')].every((d) => d.getAttribute('r') === '2.2')"), r0)
     pg.mouse.move(5, 5)
     # map index leads the chart
     pg.select_option('#imgIndex', 'savi'); expect(pg.locator('#tsLegend')).to_contain_text('SAVI', timeout=30000); pg.wait_for_timeout(800)

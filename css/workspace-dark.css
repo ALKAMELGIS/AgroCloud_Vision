@@ -431,7 +431,8 @@ body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, syst
 .ts-vgrid { stroke-dasharray: 2 4; }
 .ts-axis { font-size: 10px; fill: var(--t-3); font-variant-numeric: tabular-nums; }
 .ts-cross { stroke: rgb(var(--ink) / .35); stroke-dasharray: 3 3; }
-.ts-dot { --c: #7cc46a; fill: var(--g-1000); stroke: var(--c); stroke-width: 1.5; cursor: pointer; }
+.ts-dot { --c: #7cc46a; fill: var(--g-1000); stroke: var(--c); stroke-width: 1.25; cursor: pointer; }
+.ts-dot.is-solid { stroke-width: 1; }
 .ts-dot.is-solid { fill: var(--c); stroke: var(--g-1000); stroke-width: 1; }
 .ts-dot.is-hover { fill: var(--c); stroke: var(--g-1000); stroke-width: 2; }
 .ts-dot.is-current { fill: var(--c); }
@@ -594,7 +595,7 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
 
 /* time series coloured by the map's ramp */
 .ts-dot.is-faded, .ts-dot.is-solid.is-faded { opacity: .18; }
-.ts-dot.is-hover { stroke-width: 2.5; }
+.ts-dot.is-hover { stroke-width: 2; fill: var(--c); }
 .ts-key[data-k] { cursor: pointer; border-radius: 4px; }
 .ts-key[data-k]:hover { color: var(--t-1); }
 .ts-key i.is-ramp { width: 22px; height: 6px; border-radius: 3px; }

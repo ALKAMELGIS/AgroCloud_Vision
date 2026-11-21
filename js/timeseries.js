@@ -537,7 +537,7 @@
         if (line) front += `<path d="${line}" pathLength="1" fill="none" stroke="${stroke}" stroke-width="${rampOn ? 2.4 : 2}" stroke-linejoin="round" stroke-linecap="round" class="ts-line${sweep ? ' is-enter' : ''}" style="animation-delay:${ki * 60 - off}ms" data-k="${k}"/>`;
         // several layers over many dates: points only on the hovered date, so the lines stay readable
         const showDots = single || vis.length <= 40;
-        front += vis.filter((d) => showDots || d.p === hov).map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="3" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        front += vis.filter((d) => showDots || d.p === hov).map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="2.2" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else if (ts.chart === 'scatter') {
         front += vis.map((d) => `<line x1="${X(d.p.t).toFixed(1)}" x2="${X(d.p.t).toFixed(1)}" y1="${Y(d.lo).toFixed(1)}" y2="${Y(d.hi).toFixed(1)}" stroke="${colOf(d.val)}" stroke-width="1.5" opacity="${faded(d.val) ? 0.1 : 0.35}" class="ts-whisker"/>`).join('');
         front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="3.5" class="ts-dot is-solid${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
