@@ -1,5 +1,5 @@
 /*
- * AgroCloud Vision — satellite imagery engine and map timeline
+ * AgroOne Vision — satellite imagery engine and map timeline
  *
  * Sentinel-2 L2A from one of two sources, both read in the browser with geotiff.js:
  * - Sentinel Hub (default): configuration instance below. Dates come from WFS

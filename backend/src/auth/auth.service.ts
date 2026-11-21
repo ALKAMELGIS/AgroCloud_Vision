@@ -35,6 +35,9 @@ export class AuthService implements OnApplicationBootstrap {
     const password = this.configService.get('OWNER_PASSWORD') || 'Demo12345!';
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // The product was renamed from AgroCloud to AgroOne
+    await this.organizationsService.renameLegacy('AgroCloud Vision', 'AgroOne Vision');
+
     const existing = await this.usersService.findByEmail(email);
     if (existing) {
       existing.role = Role.OWNER;
@@ -46,7 +49,7 @@ export class AuthService implements OnApplicationBootstrap {
     }
 
     const organization = await this.organizationsService.create(
-      this.configService.get('OWNER_ORGANIZATION') || 'AgroCloud Vision',
+      this.configService.get('OWNER_ORGANIZATION') || 'AgroOne Vision',
     );
     await this.usersService.create({
       email,

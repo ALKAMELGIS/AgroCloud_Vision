@@ -1,5 +1,5 @@
 /*
- * AgroCloud Vision — workspace shell
+ * AgroOne Vision — workspace shell
  *
  * Navigation rail (Monitoring: Fields, Leaderboard, Reports · Weather:
  * Analytics, Forecast · Field activity log · VRA maps: Sowing, Vegetation,

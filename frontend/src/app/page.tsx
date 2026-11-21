@@ -9,7 +9,7 @@ export default function LandingPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white font-bold">
             A
           </div>
-          <span className="text-lg font-bold text-brand-900">AgroCloud Vision</span>
+          <span className="text-lg font-bold text-brand-900">AgroOne Vision</span>
         </div>
         <nav className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-brand-700">
@@ -86,7 +86,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t py-8 text-center text-xs text-gray-400">
-        © {new Date().getFullYear()} AgroCloud Vision
+        © {new Date().getFullYear()} AgroOne Vision
       </footer>
     </main>
   );

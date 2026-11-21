@@ -1,6 +1,6 @@
 ---
 name: agro-field-operations
-description: The AgroCloud Vision field record after a boundary exists — field edit/move/delete (PATCH/DELETE /fields/:id), crops and growth stages (/crops), the activity log with product/rate/unit (/activities, by field and by farm), the field panel UI (js/field-panel.js) and the farm Activity log calendar (js/activity-log.js), plus organization isolation. For saving, validating, overlaps, history or deleting/restoring fields use agro-field-registration. Use it for anything about crops, seasons, operations, fertilizer/spraying/irrigation records, scouting visits, reports/CSV of operations, roles on these endpoints, or a "field panel" change.
+description: The AgroOne Vision field record after a boundary exists — field edit/move/delete (PATCH/DELETE /fields/:id), crops and growth stages (/crops), the activity log with product/rate/unit (/activities, by field and by farm), the field panel UI (js/field-panel.js) and the farm Activity log calendar (js/activity-log.js), plus organization isolation. For saving, validating, overlaps, history or deleting/restoring fields use agro-field-registration. Use it for anything about crops, seasons, operations, fertilizer/spraying/irrigation records, scouting visits, reports/CSV of operations, roles on these endpoints, or a "field panel" change.
 ---
 
 # Field operations

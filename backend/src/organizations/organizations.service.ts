@@ -15,6 +15,11 @@ export class OrganizationsService {
     return this.orgRepo.save(org);
   }
 
+  /** One-time brand rename: organisations still named after the old brand. */
+  renameLegacy(from: string, to: string) {
+    return this.orgRepo.update({ name: from }, { name: to });
+  }
+
   findById(id: string) {
     return this.orgRepo.findOne({ where: { id } });
   }

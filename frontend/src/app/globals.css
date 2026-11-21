@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
-  متغيرات نظام shadcn/ui — مُعدَّة بهوية AgroCloud Vision (أخضر/داكن).
+  متغيرات نظام shadcn/ui — مُعدَّة بهوية AgroOne Vision (أخضر/داكن).
   تُستخدم من مكوّنات /components/ui (مثل dashboard-sidebar.tsx) عبر فئات
   Tailwind القياسية: bg-card, bg-primary, text-muted-foreground, border-border ...
 */

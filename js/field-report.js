@@ -1,5 +1,5 @@
 /*
- * AgroCloud Vision — two-page field report (A4), from the Reports module.
+ * AgroOne Vision — two-page field report (A4), from the Reports module.
  *
  * Page 1, condition on the image date: field facts and areas, NDVI map over satellite,
  * three management zones (below 90 %, 90–110 %, above 110 % of the field's mean NDVI) with area and share, index
@@ -288,7 +288,7 @@
     const typeLabel = Object.fromEntries((window.ActivityTypes || []).map(([v, l]) => [v, l]));
     const header = (page) => `
       <header class="hd">
-        <div class="brand"><span class="mark">A</span>AgroCloud Vision</div>
+        <div class="brand"><span class="mark">A</span>AgroOne Vision</div>
         <div class="hd-meta">Field report · ${esc(field.name)} · page ${page} of 2</div>
       </header>`;
     const footer = `<footer class="ft"><span>Sentinel-2 L2A, 10 m pixels, clouds masked with the scene classification band. Zones: below 90 %, 90–110 % and above 110 % of the field's mean NDVI. Areas from the stored boundary.</span><span>Generated ${day(+now)}</span></footer>`;

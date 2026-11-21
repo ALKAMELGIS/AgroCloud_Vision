@@ -1,5 +1,5 @@
 /*
- * AgroCloud Vision — analytics views
+ * AgroOne Vision — analytics views
  *
  * FieldAnalytics (Analytics tab of the field panel): index statistics for the
  *   timeline date, value classes in ha or %, compare with an earlier date

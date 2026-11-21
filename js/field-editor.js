@@ -1,5 +1,5 @@
 /*
- * AgroCloud Vision — field registration and field history
+ * AgroOne Vision — field registration and field history
  *
  * New field (OneSoil-style): after drawing, the shape stays on the map with draggable
  * corners and a "New field" card opens beside the map (not a modal), so the boundary

@@ -1,5 +1,5 @@
 /*
- * AgroCloud Vision — VRA maps and soil sampling
+ * AgroOne Vision — VRA maps and soil sampling
  *
  * Zones engine shared by Sowing, Vegetation, P&K, Map builder and Soil sampling:
  *  - source grid: one index on one date (Vegetation), the mean of each date's
@@ -315,7 +315,7 @@
       return `<TZN A="${zp.zone}" B="Zone ${zp.zone}"><PDV A="${ddiHex}" B="${Math.round(z.rate * scale)}" C="PDT1"/>${zp.polygons.map((poly) => `<PLN A="2">${poly.map((r, i) => lsg(r, i ? 2 : 1)).join('')}</PLN>`).join('')}</TZN>`;
     }).join('');
     return `<?xml version="1.0" encoding="UTF-8"?>
-<ISO11783_TaskData VersionMajor="3" VersionMinor="3" ManagementSoftwareManufacturer="AgroCloud Vision" ManagementSoftwareVersion="1.0" DataTransferOrigin="1">
+<ISO11783_TaskData VersionMajor="3" VersionMinor="3" ManagementSoftwareManufacturer="AgroOne Vision" ManagementSoftwareVersion="1.0" DataTransferOrigin="1">
 <CTR A="CTR1" B="${xml(state.farms.find((f) => f.id === state.selectedFarmId)?.name || 'Customer')}"/>
 <FRM A="FRM1" B="${xml(state.farms.find((f) => f.id === state.selectedFarmId)?.name || 'Farm')}" I="CTR1"/>
 <PDT A="PDT1" B="${xml(rx.product)}"/>
@@ -670,7 +670,7 @@
       const base = safe(`soil_sampling_${field ? field.name : 'field'}`);
       const f = b.dataset.sx;
       if (f === 'csv') return window.downloadCsv(base + '.csv', [['id', 'lat', 'lng', 'zone', 'cell']].concat(pts.map((p) => [p.id, p.lat, p.lng, p.zone || '', p.cell || ''])));
-      if (f === 'gpx') return download(base + '.gpx', new Blob([`<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="AgroCloud Vision" xmlns="http://www.topografix.com/GPX/1/1">${pts.map((p) => `<wpt lat="${p.lat}" lon="${p.lng}"><name>${p.id}</name>${p.zone ? `<desc>Zone ${p.zone}</desc>` : ''}</wpt>`).join('')}</gpx>`], { type: 'application/gpx+xml' }));
+      if (f === 'gpx') return download(base + '.gpx', new Blob([`<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="AgroOne Vision" xmlns="http://www.topografix.com/GPX/1/1">${pts.map((p) => `<wpt lat="${p.lat}" lon="${p.lng}"><name>${p.id}</name>${p.zone ? `<desc>Zone ${p.zone}</desc>` : ''}</wpt>`).join('')}</gpx>`], { type: 'application/gpx+xml' }));
       if (f === 'kml') return download(base + '.kml', new Blob([`<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>${pts.map((p) => `<Placemark><name>${p.id}</name>${p.zone ? `<description>Zone ${p.zone}</description>` : ''}<Point><coordinates>${p.lng},${p.lat}</coordinates></Point></Placemark>`).join('')}</Document></kml>`], { type: 'application/vnd.google-earth.kml+xml' }));
       if (f === 'shp') {
         const parts = writeShapefile(pts.map((p) => ({ type: 'point', xy: [p.lng, p.lat] })), pts.map((p) => ({ ID: p.id, ZONE: p.zone || 0, CELL: p.cell || '' })), [['ID', 'C', 8], ['ZONE', 'N', 4, 0], ['CELL', 'C', 10]]);

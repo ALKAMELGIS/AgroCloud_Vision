@@ -1,6 +1,6 @@
 ---
 name: agro-field-report
-description: How AgroCloud Vision builds the two-page A4 field report (js/field-report.js, opened from Reports) — NDVI and management-zone maps over satellite, zone and class areas that add up to the field, field facts, season curve, indices, change and scouting points, weather, operations and rule-based agronomist notes. Use it whenever someone asks for a report, PDF, printout, field summary, zone areas, agronomic recommendations, or wants the report changed, translated or extended (more pages, farm report, crop-specific rules).
+description: How AgroOne Vision builds the two-page A4 field report (js/field-report.js, opened from Reports) — NDVI and management-zone maps over satellite, zone and class areas that add up to the field, field facts, season curve, indices, change and scouting points, weather, operations and rule-based agronomist notes. Use it whenever someone asks for a report, PDF, printout, field summary, zone areas, agronomic recommendations, or wants the report changed, translated or extended (more pages, farm report, crop-specific rules).
 ---
 
 # Field report (A4, 2 pages)

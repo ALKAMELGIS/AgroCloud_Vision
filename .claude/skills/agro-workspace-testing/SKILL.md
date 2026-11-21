@@ -1,6 +1,6 @@
 ---
 name: agro-workspace-testing
-description: How to run and test the AgroCloud Vision static workspace (workspace.html, main.html, index.html on GitHub Pages) end to end in headless Chrome against a local NestJS + PostGIS backend, with the CDN libraries, Tailwind and Sentinel-2 imagery served locally. Use it before shipping any change to the workspace pages or js/*.js, when a change "works on my machine" but needs proof, or when the sandbox cannot reach the CDN, Render or satellite hosts.
+description: How to run and test the AgroOne Vision static workspace (workspace.html, main.html, index.html on GitHub Pages) end to end in headless Chrome against a local NestJS + PostGIS backend, with the CDN libraries, Tailwind and Sentinel-2 imagery served locally. Use it before shipping any change to the workspace pages or js/*.js, when a change "works on my machine" but needs proof, or when the sandbox cannot reach the CDN, Render or satellite hosts.
 ---
 
 # Testing the workspace end to end

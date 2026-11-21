@@ -1,7 +1,7 @@
 {
-  "name": "agrocloud-vision-backend",
+  "name": "agroone-vision-backend",
   "version": "0.1.0",
-  "description": "AgroCloud Vision - Core Backend (Auth/RBAC, Farms, Fields, Crops, Activities, Weather)",
+  "description": "AgroOne Vision - Core Backend (Auth/RBAC, Farms, Fields, Crops, Activities, Weather)",
   "private": true,
   "scripts": {
     "build": "nest build",
