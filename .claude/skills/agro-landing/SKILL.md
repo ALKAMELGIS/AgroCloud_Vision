@@ -69,3 +69,16 @@ EOS sections left out on purpose: case studies, testimonials and partner logos. 
 
 `python3 .claude/skills/agro-workspace-testing/scripts/test_landing.py` (setup as in the agro-workspace-testing skill):
 no page errors and no sideways scroll at 1440 and 390 in both languages; ten tabs each show their own panel and art; no untranslated string in Arabic on either page; Start free → register → workspace; sign in → workspace; a wrong password shows a readable error.
+
+## Motion scenes (design canvas "AgroSyntra One — Motion hero")
+
+`landing/motion/motion.js` is the engine behind the two canvas boards (satellite pass; pixel → classes →
+3D skyline → 3D ring). It is not loaded by the site yet. Its analysis must stay the system's own:
+- reflectances per pixel (B02 B03 B04 B05 B08 B8A B11) and an SCL class; NDVI/NDMI/NDWI/BSI with the formulas,
+  ranges and ramps of `js/imagery.js` (copy them, never retune by eye);
+- SCL 3/8/9/10 masked and painted rgba(120,126,135,.59); cloud % and clear hectares per field;
+- contrast = the field's P2–P98; ten classes = tenths of the index range, in hectares; P10/P90;
+- season as `js/ts-calendar.js` builds it: a value per clear date, days between interpolated and mixed 45 % with
+  the empty-day colour, colours from the period's low to high, Average/Peak/Lowest/Latest.
+The canvas cannot reach Sentinel-2, so the reflectances come from a field model; say so wherever it is shown.
+The live, real-data version is the hero demo (`workspace.html?demo&tour`).
