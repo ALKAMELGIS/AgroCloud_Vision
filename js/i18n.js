@@ -160,6 +160,8 @@
     'This index needs red-edge or SWIR bands, which cannot be sharpened': 'هذا المؤشر يحتاج نطاقات الحافة الحمراء أو SWIR، ولا يمكن تحسين دقتها',
     'Sharpening works with indices from blue, green, red and NIR': 'تحسين الدقة يعمل مع المؤشرات المبنية على الأزرق والأخضر والأحمر وNIR',
     'Date on the map': 'التاريخ المعروض على الخريطة', 'contrast': 'تباين',
+    'Selected on the map': 'المحدد على الخريطة', 'Show all': 'عرض الكل', 'Show all values': 'عرض كل القيم', 'Click a range to show it on the map': 'اضغط على مدى لعرضه على الخريطة', 'Show on the map': 'عرض على الخريطة', 'Value classes': 'فئات القيم',
+    'All fields of the farm on this date': 'كل حقول المزرعة في هذا التاريخ',
     'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
     'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
     'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',
@@ -176,6 +178,7 @@
   /** Patterns for strings built from numbers; each returns Arabic or undefined. */
   const RULES = [
     [/^(\d+) fields?$/, (m) => `${m[1]} ${+m[1] === 1 ? 'حقل' : 'حقول'}`],
+    [/^([\d.]+) ha · (\d+)% of the farm$/, (m) => `${m[1]} هكتار · ${m[2]}% من المزرعة`],
     [/^Loading model (\d+)%$/, (m) => `تحميل النموذج ${m[1]}%`],
     [/^Sharpening, (\d+) fields left$/, (m) => `جارٍ تحسين الدقة، متبقٍ ${m[1]} حقول`],
     [/^Could not download the sharpening model \((\d+)\)$/, (m) => `تعذّر تحميل نموذج تحسين الدقة (${m[1]})`],

@@ -637,6 +637,7 @@
   window.addEventListener('resize', schedule);
   document.addEventListener('workspace:fields', () => { if (ts.open) { const before = ts.fieldId; fillFields(); if (ts.fieldId !== before) load(); } });
   document.addEventListener('imagery:change', schedule);
+  document.addEventListener('imagery:filter', schedule);
   document.addEventListener('theme:change', (e) => { Object.assign(COLORS, PALETTES[e.detail] || PALETTES.dark); fillIndices(); setTimeout(schedule, 30); });
   // opening a field in the panel shows that field here too
   const prevOpen = window.openFieldPanel;

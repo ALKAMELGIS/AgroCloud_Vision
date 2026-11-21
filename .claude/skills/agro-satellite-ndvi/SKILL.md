@@ -121,6 +121,16 @@ Dock control `#imgRes`: 10 m (original) / 5 m / 2.5 m. Choice kept in `localStor
 
 Hover readings and report readings exist for every index. Sharpening supports indices built only from blue, green, red, NIR (NDVI, MSAVI, SAVI, EVI, GNDVI, NDWI, SI, natural colour); red-edge/SWIR ones disable the control. New ramps must stay earth/water/plant colours, never violet or neon. Test: `agro-workspace-testing/scripts/test_indices.py` (mock blue = green = red, so NDWI = −GNDVI and SAVI < NDVI are known answers).
 
+## Value classes linked across the screen (class filter)
+
+One set of 10 value classes per index (`Imagery.edgesFor(k)`; NDVI 0.1 steps, others the range split in 10; `classOf(edges, v)`), used by the map legend, the field statistics (Analytics tab), the heatmap/3D and the report.
+- **Map legend** is a 10-segment bar (`.cls-seg`, class colour = ramp at the class middle on the fixed range). Click = show only that class; shift-click or drag = a range; × or clicking the only selected class clears. Selected range and its area/% of the farm (all fields on this date) show in the legend.
+- `Imagery.setClassFilter(classes | null, indexKey)` sets `Imagery.filter = { indexKey, classes:Set }`, repaints every layer with `layer.setUrl(paint(r, { contrast, filter }))` (no re-analysis), re-renders legends and emits `imagery:filter`. While a filter is on, the chosen pixels use the **fixed** range colours (so they match the legend), others are faint grey; contrast is ignored.
+- **Field statistics**: rows are buttons (`[data-cls]`), highlighted/faded with the filter, plus "Selected on the map: ha · %" for the open field. A row click sets the filter (shift extends).
+- **Heatmap/3D**: days whose field mean is outside the classes fade.
+- Changing the index clears the filter (classes differ per index).
+- Test: `agro-workspace-testing/scripts/test_classfilter.py` (pixel-level check: only in-class pixels keep their colour).
+
 ## Sources
 
 | Source | Dates | Pixels |

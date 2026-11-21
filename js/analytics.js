@@ -63,9 +63,14 @@
     }).catch((err) => { el.innerHTML = errBox(img.friendly(err)); });
   }
 
+  let last = null;   // redrawn when the class filter changes on the map
+  document.addEventListener('imagery:filter', () => { if (last && last.el.isConnected) draw(last.el, last.field, last.r); });
   function draw(el, field, r) {
+    last = { el, field, r };
     const img = I(); const idx = img.indices[r.indexKey];
     const total = r.classes.reduce((a, b) => a + b, 0) || 1;
+    const flt = img.filter && img.filter.indexKey === r.indexKey ? img.filter.classes : null;
+    const selHa = flt ? [...flt].reduce((s, k) => s + (r.classes[k] || 0), 0) : 0;
     const lo = idx.range[0], hi = idx.range[1];
     el.innerHTML = `
       <div class="space-y-5">
@@ -88,17 +93,26 @@
               const a = r.edges[k], b = Math.min(r.edges[k + 1], hi);
               const col = img.css(img.rampAt(idx.ramp, ((a + b) / 2 - lo) / (hi - lo)));
               const pct = (100 * v) / total;
-              return `<div class="flex items-center gap-2 text-[12px]">
+              return `<button type="button" data-cls="${k}" aria-pressed="${!!(flt && flt.has(k))}" class="fa-cls flex items-center gap-2 text-[12px]${flt ? (flt.has(k) ? ' is-on' : ' is-off') : ''}" title="Show on the map">
                 <span class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:${col}"></span>
                 <span dir="ltr" class="num w-[84px] shrink-0 whitespace-nowrap text-start font-mono text-gray-500">${a.toFixed(idx.range[1] > 2 ? 1 : 2)}–${b.toFixed(idx.range[1] > 2 ? 1 : 2)}</span>
                 <span class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100"><span class="block h-full rounded-full" style="width:${pct}%;background:${col}"></span></span>
                 <span class="num w-16 shrink-0 text-right font-mono text-gray-500">${fa.unit === 'ha' ? formatHa(v) : pct.toFixed(1) + ' %'}</span>
-              </div>`;
+              </button>`;
             }).join('')}
           </div>
+          ${flt ? `<div class="mt-3 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-[12px]"><span class="text-gray-500">Selected on the map</span><span class="num font-mono text-gray-900">${formatHa(selHa)} · ${((100 * selHa) / total).toFixed(1)} %</span><button type="button" data-cls-clear class="text-gray-500 hover:text-gray-900">Show all</button></div>` : '<div class="mt-2 text-[11px] text-gray-500">Click a range to show it on the map</div>'}
         </div>
       </div>`;
     el.querySelectorAll('[data-unit]').forEach((b) => b.addEventListener('click', () => { fa.unit = b.dataset.unit; draw(el, field, r); }));
+    // a row selects that value range on the map (shift-click extends it)
+    el.querySelectorAll('[data-cls]').forEach((b) => b.addEventListener('click', (e) => {
+      const k = +b.dataset.cls, cur = flt ? [...flt] : [];
+      if (img.state.indexKey !== r.indexKey) return;
+      if (e.shiftKey && cur.length) { const a = Math.min(...cur, k), z = Math.max(...cur, k); img.setClassFilter(Array.from({ length: z - a + 1 }, (_, i) => a + i), r.indexKey); return; }
+      img.setClassFilter(cur.length === 1 && cur[0] === k ? null : [k], r.indexKey);
+    }));
+    const clr = el.querySelector('[data-cls-clear]'); if (clr) clr.addEventListener('click', () => img.setClassFilter(null));
     img.clearDelta();
   }
 

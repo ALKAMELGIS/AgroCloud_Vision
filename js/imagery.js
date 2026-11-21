@@ -331,6 +331,17 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
 
   const resultCache = new Map();
   const CLASS_EDGES = { ndvi: [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.01] };
+  /** The 10 value classes of an index: shared by the map legend, the statistics panel, the heatmap and the report. */
+  function edgesFor(indexKey) {
+    const [lo, hi] = (INDICES[indexKey] && INDICES[indexKey].range) || [0, 1];
+    return CLASS_EDGES[indexKey] || Array.from({ length: 11 }, (_, k) => lo + ((hi - lo) * k) / 10).map((e, k, a) => (k === a.length - 1 ? e + 1e-6 : e));
+  }
+  function classOf(edges, v) {
+    if (!Number.isFinite(v)) return -1;
+    if (v < edges[1]) return 0;
+    for (let k = 1; k < edges.length - 1; k++) if (v < edges[k + 1]) return k;
+    return edges.length - 2;
+  }
 
   /** field: { id, geometry }. Returns index values on a 10 m grid inside the field. */
   async function analyse(field, scene, indexKey) {
@@ -393,7 +404,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       const q = (pp) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(pp * sorted.length))] : NaN);
       const mean = sorted.length ? sorted.reduce((s, v) => s + v, 0) / sorted.length : NaN;
       const [lo, hi] = index.range || [0, 1];
-      const edges = CLASS_EDGES[indexKey] || Array.from({ length: 11 }, (_, k) => lo + ((hi - lo) * k) / 10).map((e, k, a) => (k === a.length - 1 ? e + 1e-6 : e));
+      const edges = edgesFor(indexKey); void lo; void hi;
       const classes = edges.slice(0, -1).map((e, k) => sorted.filter((v) => (k === 0 ? v < edges[1] : v >= e && v < edges[k + 1]) || (k === edges.length - 2 && v >= edges[k])).length * pxHa);
       const fromUtm = proj4(utmDef(code), 'EPSG:4326');
       const sw = fromUtm.forward([gx0, gy0 - h * 10]), ne = fromUtm.forward([gx0 + w * 10, gy0]);
@@ -471,7 +482,10 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     const c = document.createElement('canvas'); c.width = res.w; c.height = res.h;
     const ctx = c.getContext('2d'); const out = ctx.createImageData(res.w, res.h);
     const idx = INDICES[res.indexKey];
-    const [lo, hi] = contrast && Number.isFinite(res.p02) ? [res.p02, res.p98] : idx.range || [0, 1];
+    // a class filter shows the chosen classes in the legend's fixed colours and greys the rest
+    const filt = opts.filter && opts.filter.indexKey === res.indexKey && opts.filter.classes.size ? opts.filter : null;
+    const edges = filt ? edgesFor(res.indexKey) : null;
+    const [lo, hi] = contrast && !filt && Number.isFinite(res.p02) ? [res.p02, res.p98] : idx.range || [0, 1];
     for (let i = 0; i < res.w * res.h; i++) {
       if (!res.inField[i]) continue;
       if (delta) {
@@ -483,6 +497,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       const v = res.values[i];
       if (Number.isNaN(v)) { out.data.set([120, 126, 135, 150], i * 4); continue; }   // cloud
       if (res.rgba) { out.data.set(res.rgba.subarray(i * 4, i * 4 + 4), i * 4); continue; }
+      if (filt && !filt.classes.has(classOf(edges, v))) { out.data.set([150, 150, 146, 70], i * 4); continue; }
       const col = rampAt(idx.ramp, (v - lo) / (hi - lo || 1));
       out.data.set([col[0], col[1], col[2], 240], i * 4);
     }
@@ -494,7 +509,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
 
   const state_ = {
     scenes: [], farmKey: null, lookback: CONFIG.lookbackDays, showCloudy: false,
-    results: new Map(), risks: new Map(), split: false, mode: 'off', token: 0,
+    results: new Map(), risks: new Map(), split: false, mode: 'off', token: 0, filter: null,
   };
   const emit = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail }));
   const fmtChip = (d) => { const t = new Date(d + 'T00:00:00Z'); return `${t.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' })}'${String(t.getUTCFullYear()).slice(2)}`; };
@@ -562,7 +577,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     document.addEventListener('click', () => { $('tlRangeMenu').classList.add('hidden'); $('tlRangeMenu').classList.remove('flex'); });
     $('tlRangeMenu').querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => { state_.lookback = +b.dataset.days; loadFarm(true); }));
     $('imgSource').addEventListener('change', (e) => setProvider(e.target.value));
-    $('imgIndex').addEventListener('change', (e) => { v.indexKey = e.target.value; refresh(v); });
+    $('imgIndex').addEventListener('change', (e) => { v.indexKey = e.target.value; if (v === views[0] && state_.filter) setClassFilter(null); refresh(v); });
     $('imgRes').value = v.res;
     $('imgRes').addEventListener('change', (e) => { v.res = e.target.value; try { localStorage.setItem('imgRes', v.res); } catch { /* ignore */ } refresh(v); });
     $('imgContrast').addEventListener('click', () => {
@@ -624,13 +639,54 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (idx.rgb) { el.classList.add('hidden'); el.classList.remove('flex'); return; }
     el.classList.remove('hidden'); el.classList.add('flex');
     const [lo, hi] = idx.range;
-    el.innerHTML = idx.composite
-      ? `<span class="text-gray-400">${idx.label}</span><span>R = MSAVI · G = NDRE · B = NDVI</span>`
-      : `<span class="text-gray-400">${idx.label}${v.contrast ? ' · contrast' : ''}</span>
-         <span class="num font-mono">${v.contrast ? 'P2' : lo}</span>
-         <span class="h-2 w-32 rounded-full" style="background:${gradient(idx.ramp)}"></span>
-         <span class="num font-mono">${v.contrast ? 'P98' : hi}</span>
-         <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm" style="background:rgb(120,126,135)"></span>cloud</span>`;
+    if (idx.composite) { el.innerHTML = `<span class="text-gray-400">${idx.label}</span><span>R = MSAVI · G = NDRE · B = NDVI</span>`; return; }
+    // the colour bar is 10 value classes: click one (shift-click or drag for a range) to show only those pixels
+    const edges = edgesFor(v.indexKey), n = edges.length - 1, dp = hi > 2 ? 1 : 2;
+    const f = state_.filter && state_.filter.indexKey === v.indexKey ? state_.filter.classes : null;
+    const area = new Array(n).fill(0); let tot = 0;
+    v.results.forEach((r) => { if (r.indexKey === v.indexKey && r.classes) r.classes.forEach((a, k) => { area[k] += a; tot += a; }); });
+    const segs = Array.from({ length: n }, (_, k) => {
+      const a = edges[k], b = Math.min(edges[k + 1], hi), col = css(rampAt(idx.ramp, ((a + b) / 2 - lo) / (hi - lo || 1)));
+      return `<button type="button" class="cls-seg${f && f.has(k) ? ' is-on' : ''}${f && !f.has(k) ? ' is-off' : ''}" data-cls="${k}" style="--c:${col}" aria-pressed="${!!(f && f.has(k))}" title="${a.toFixed(dp)}–${b.toFixed(dp)} · ${tot ? ((100 * area[k]) / tot).toFixed(1) : 0}%"></button>`;
+    }).join('');
+    let sel = '';
+    if (f && f.size) {
+      const ks = [...f].sort((x, y) => x - y); const ha = ks.reduce((s, k) => s + area[k], 0);
+      sel = `<span class="cls-sel"><span class="num" dir="ltr">${edges[ks[0]].toFixed(dp)}–${Math.min(edges[ks[ks.length - 1] + 1], hi).toFixed(dp)}</span><span class="num" title="All fields of the farm on this date">${formatHaShort(ha)} ha · ${tot ? ((100 * ha) / tot).toFixed(0) : 0}% of the farm</span><button type="button" class="cls-clear" data-cls-clear title="Show all values" aria-label="Show all values">×</button></span>`;
+    }
+    el.innerHTML = `<span class="text-gray-400">${idx.label}${v.contrast && !f ? ' · contrast' : ''}</span>
+         <span class="num font-mono">${lo}</span>
+         <span class="cls-bar" role="group" aria-label="Value classes">${segs}</span>
+         <span class="num font-mono">${hi}</span>
+         ${sel || '<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-sm" style="background:rgb(120,126,135)"></span>cloud</span>'}`;
+    if (v !== views[0]) { el.querySelectorAll('.cls-seg').forEach((b) => { b.disabled = true; }); return; }
+    let dragFrom = null;
+    el.querySelectorAll('.cls-seg').forEach((b) => {
+      b.addEventListener('pointerdown', (e) => { dragFrom = +b.dataset.cls; e.preventDefault(); });
+      b.addEventListener('pointerenter', () => { if (dragFrom == null) return; const k = +b.dataset.cls; setClassFilter(range(dragFrom, k), v.indexKey); });
+      b.addEventListener('click', (e) => {
+        const k = +b.dataset.cls; const cur = state_.filter && state_.filter.indexKey === v.indexKey ? new Set(state_.filter.classes) : new Set();
+        if (e.shiftKey && cur.size) { const ks = [...cur]; setClassFilter(range(Math.min(...ks, k), Math.max(...ks, k)), v.indexKey); return; }
+        if (dragFrom != null && dragFrom !== k) return;
+        if (cur.has(k) && cur.size === 1) setClassFilter(null); else setClassFilter([k], v.indexKey);
+      });
+    });
+    window.addEventListener('pointerup', () => { dragFrom = null; }, { once: true });
+    const clr = el.querySelector('[data-cls-clear]'); if (clr) clr.addEventListener('click', () => setClassFilter(null));
+  }
+  const range = (a, b) => Array.from({ length: Math.abs(b - a) + 1 }, (_, i) => Math.min(a, b) + i);
+  const formatHaShort = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1));
+
+  /** Shows only the chosen value classes (indices into edgesFor) on the map and everywhere linked to it. */
+  function setClassFilter(classes, indexKey) {
+    const ks = classes && classes.length ? new Set(classes) : null;
+    state_.filter = ks ? { indexKey: indexKey || views[0].indexKey, classes: ks } : null;
+    views.forEach((v) => {
+      const map = v.getMap(); if (!map) return;
+      v.layerFor.forEach((l, id) => { const r = v.sr.get(id) || v.results.get(id); if (r) l.setUrl(paint(r, { contrast: v.contrast, filter: state_.filter })); });
+      renderLegend(v);
+    });
+    emit('imagery:filter');
   }
 
   function srNote(v, html, busy) {
@@ -663,7 +719,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
           const r = await SR.enhance(f, scene, v.indexKey, v.res, step);
           if (token !== v.token) return;
           const old = v.layerFor.get(f.id); if (old) { map.removeLayer(old); v.layers.splice(v.layers.indexOf(old), 1); }
-          const l = L.imageOverlay(paint(r, { contrast: v.contrast }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map);
+          const l = L.imageOverlay(paint(r, { contrast: v.contrast, filter: state_.filter }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map);
           v.layers.push(l); v.layerFor.set(f.id, l); v.sr.set(f.id, r);
         } catch (err) { if (token !== v.token) return; lastErr = err; }
       }
@@ -704,8 +760,9 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     if (token !== v.token) return;
     if (!done.length && lastErr) showError(friendly(lastErr));
     clearLayers(v);
-    done.forEach((r) => { const l = L.imageOverlay(paint(r, { contrast: v.contrast }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map); v.layers.push(l); v.layerFor.set(r.field.id, l); });
+    done.forEach((r) => { const l = L.imageOverlay(paint(r, { contrast: v.contrast, filter: state_.filter }), r.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(map); v.layers.push(l); v.layerFor.set(r.field.id, l); });
     sharpen(v);
+    renderLegend(v);
     if (v === views[0]) {
       state_.results = v.results;
       emit('imagery:change');
@@ -964,7 +1021,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       selectScene(views[0], scene.id);
     }, invalidate, labelFor, setProvider, provider: () => provider,
     resultFor: (fieldId) => views[0].results.get(fieldId), riskFor: (fieldId) => state_.risks.get(fieldId),
-    rampAt, gradient, css, fmtDay, friendly,
+    rampAt, gradient, css, fmtDay, friendly, edgesFor, classOf, setClassFilter, get filter() { return state_.filter; },
     showDelta(res, delta) {
       clearDelta();
       deltaLayer = L.imageOverlay(paint(res, { delta }), res.bounds, { pane: 'img', className: 'img-px', interactive: false }).addTo(mapInstance);

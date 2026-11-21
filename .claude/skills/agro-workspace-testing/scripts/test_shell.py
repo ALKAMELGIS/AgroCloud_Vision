@@ -64,7 +64,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(500)
     ndvi = num(pg.inner_text('[data-pane=monitoring]'), r'NDVI · .*\n([-\d.]+)')
     check('NDVI Pivot 1 ≈ 0.75', ndvi is not None and abs(ndvi - 0.75) < 0.02, ndvi)
-    check('10 value classes', pg.locator('[data-pane=monitoring] .space-y-1 > div').count() == 10)
+    check('10 value classes', pg.locator('[data-pane=monitoring] [data-cls]').count() == 10)
     pg.screenshot(path=SH + 's2_field.png')
 
     # compare and season chart were removed from the field Analytics tab

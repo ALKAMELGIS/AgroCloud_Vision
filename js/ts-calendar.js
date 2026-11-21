@@ -72,12 +72,17 @@
     const [r0, r1] = contrast && hi > lo ? [lo, hi] : idx.range || [0, 1];
     const colorOf = (v) => I.rampAt(idx.ramp, Math.max(0, Math.min(1, (v - r0) / (r1 - r0 || 1))));
     const curScene = I.state && I.state.sceneId;
+    // the map's class filter: days whose field mean is outside the chosen classes fade
+    const flt = I.filter && I.filter.indexKey === k ? I.filter.classes : null;
+    const edges = flt ? I.edgesFor(k) : null;
     cells.forEach((c) => {
       if (c.v == null) { c.rgb = BASE; c.n = 0; return; }
       c.n = hi > lo ? (c.v - lo) / (hi - lo) : 0.5;     // column height in 3D: relative to the period
       const col = colorOf(c.v);
       c.rgb = c.est ? mix(col, BASE, 0.45) : col;
       c.cur = !!(c.m && c.m.p.sceneId === curScene);
+      c.dim = !!(flt && !flt.has(I.classOf(edges, c.v)));
+      if (c.dim) c.rgb = mix(c.rgb, BASE, 0.78);
     });
     const ms = meas.slice();
     const stats = ms.length ? {
@@ -154,7 +159,7 @@
       const animate = ctx.sinceSweep < 900 && !ctx.loading && !reduce(), off = Math.round(ctx.sinceSweep);
       const months = []; let lastM = -1;
       d.cells.forEach((c) => { const m = new Date(c.t).getUTCMonth(); if (m !== lastM && (c.row === 0 || c === d.cells[0])) { lastM = m; if (!months.length || c.col - months[months.length - 1][0] >= 3) months.push([c.col, c.t]); } });
-      const rects = d.cells.map((c, i) => `<rect x="${(gx + c.col * cs).toFixed(1)}" y="${top + c.row * cs}" width="${sz}" height="${sz}" rx="${r}" fill="${rgb(c.rgb)}" data-i="${i}" class="tsc-cell${c.m ? ' is-clear' : ''}${c.cur ? ' is-cur' : ''}${animate ? ' is-enter' : ''}"${animate ? ` style="animation-delay:${c.col * 9 + c.row * 14 - off}ms"` : ''}/>`).join('');
+      const rects = d.cells.map((c, i) => `<rect x="${(gx + c.col * cs).toFixed(1)}" y="${top + c.row * cs}" width="${sz}" height="${sz}" rx="${r}" fill="${rgb(c.rgb)}" data-i="${i}" class="tsc-cell${c.m ? ' is-clear' : ''}${c.cur ? ' is-cur' : ''}${c.dim ? ' is-dim' : ''}${animate ? ' is-enter' : ''}"${animate ? ` style="animation-delay:${c.col * 9 + c.row * 14 - off}ms"` : ''}/>`).join('');
       el.innerHTML = `
         <svg class="tsc-heat" width="${box.width}" height="${top + 7 * cs}" style="width:${box.width}px;height:${top + 7 * cs}px" aria-label="${d.label} by day">
           ${months.map(([col, t]) => `<text x="${(gx + col * cs).toFixed(1)}" y="10" class="ts-axis">${new Date(t).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })}</text>`).join('')}
