@@ -52,10 +52,13 @@ with sync_playwright() as p:
         click_all('#sidePanel', v)
         if pg.locator('#fieldPanel:visible').count(): pg.click('#fpBack')
     pg.click('#navItems [data-view=fields]')
+    if pg.locator('#riskChips [data-risk=all]').count(): pg.click('#riskChips [data-risk=all]')   # the chip loop may leave an empty filter on
     pg.locator('#fieldsList .field-card').first.click(); pg.wait_for_timeout(1500)
     for tab in ['monitoring', 'overview', 'crops', 'activities']:
         if not pg.locator('#fieldPanel:visible').count():
-            pg.click('#navItems [data-view=fields]'); pg.locator('#fieldsList .field-card').first.click(); pg.wait_for_timeout(1200)
+            pg.click('#navItems [data-view=fields]')
+            if pg.locator('#riskChips [data-risk=all]').count(): pg.click('#riskChips [data-risk=all]')
+            pg.locator('#fieldsList .field-card').first.click(); pg.wait_for_timeout(1200)
         if pg.locator('#fpEditCancel:visible').count(): pg.click('#fpEditCancel')
         pg.click(f'#fieldPanel [data-tab={tab}]'); pg.wait_for_timeout(1200)
         click_all('#fieldPanel', 'field ' + tab)
