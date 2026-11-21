@@ -3,293 +3,367 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AgroSyntra One — Field boundaries, area and weather for every farm</title>
-<meta name="description" content="Draw or import field boundaries on satellite imagery. Every field gets its exact area, its own weather forecast and a record your whole team works from.">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = { theme: { extend: {
-    colors: { brand: { 50:'#eafbf0',100:'#d2f3df',600:'#16a34a',700:'#0f3d22',800:'#0a2e18',900:'#052e16' } },
-    fontFamily: { mono: ['ui-monospace','SFMono-Regular','Menlo','Consolas','monospace'] },
-  } } };
-</script>
-<style>
-  .num { font-variant-numeric: tabular-nums; }
-  .ico { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  .enter { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
-  .enter-2 { animation-delay: .08s; }
-  @media (prefers-reduced-motion: reduce) { .enter { animation: none; } }
-</style>
+<script src="js/i18n.js"></script>
+<script src="landing/ar.js"></script>
+<title>AgroSyntra One — Satellite crop monitoring for every field</title>
+<meta name="description" content="Sentinel-2 imagery for each of your fields, clouds masked inside the field. Vegetation, water and soil indices, field risks, variable rate maps, scouting and reports in one workspace, in English and Arabic.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="landing/landing.css">
 </head>
-<body class="bg-white text-gray-900 antialiased">
+<body>
 
-  <header class="sticky top-0 z-50 border-b border-gray-900/5 bg-white/90 backdrop-blur">
-    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-      <a href="index.html" class="flex items-center gap-2">
-        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-900 text-[13px] font-semibold text-white">A</div>
-        <span class="text-[15px] font-medium text-brand-900">AgroSyntra One</span>
-      </a>
-      <nav class="hidden items-center gap-8 text-[14px] text-gray-600 sm:flex">
-        <a href="#features" class="transition-colors hover:text-gray-900">Features</a>
-        <a href="#pricing" class="transition-colors hover:text-gray-900">Pricing</a>
-        <a href="https://github.com/ALKAMELGIS/AgroSyntra_One" class="transition-colors hover:text-gray-900">Source</a>
-      </nav>
-      <div class="flex items-center gap-4">
-        <a href="main.html" class="hidden text-[14px] text-gray-600 transition-colors hover:text-gray-900 sm:inline">Sign in</a>
-        <a href="main.html" class="rounded-lg bg-brand-900 px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-brand-800">Get started</a>
-      </div>
+<!-- icons (one line set, 1.5 stroke) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol>
+  <symbol id="i-sat" viewBox="0 0 24 24"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M3.3 15.3A1 1 0 0 0 4 17h16a1 1 0 0 0 .7-1.7C19.4 14 18 12.5 18 8a6 6 0 0 0-12 0c0 4.5-1.4 6-2.7 7.3"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.8 2.2a2 2 0 0 0-1.6 0L2.6 6.1a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 0-1.8Z"/><path d="m2 12 9.2 4.2a2 2 0 0 0 1.6 0L22 12"/><path d="m2 17 9.2 4.2a2 2 0 0 0 1.6 0L22 17"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 2v7.5L4.3 19a2 2 0 0 0 1.7 3h12a2 2 0 0 0 1.7-3L14 9.5V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+</svg>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="index.html" translate="no"><span class="brand-mark">A</span>AgroSyntra One</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="#capabilities">Product</a>
+      <a href="#tools">Tools</a>
+      <a href="#steps">How it works</a>
+      <a href="#audience">Who it is for</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <div class="head-end">
+      <button id="langBtn" class="lang-btn" type="button"></button>
+      <a class="link head-signin t-body" href="main.html">Sign in</a>
+      <a class="btn btn-primary btn-sm" href="main.html?mode=register">Start free</a>
     </div>
-  </header>
+  </div>
+</header>
 
-  <!-- ====== Hero ====== -->
-  <section class="overflow-hidden bg-[#f6f6f3]">
-    <div class="mx-auto max-w-6xl px-6 pt-16 sm:pt-24">
-      <div class="enter max-w-2xl">
-        <h1 class="text-[36px] font-medium leading-[1.1] tracking-[-0.02em] text-brand-900 sm:text-[52px]">
-          Every field on your farms, mapped to the hectare
-        </h1>
-        <p class="mt-5 max-w-xl text-[17px] leading-relaxed text-gray-600">
-          Draw pivots and blocks on satellite imagery, or import them from a Shapefile, KML,
-          GeoPackage or File Geodatabase. Each field gets its exact area and its own weather forecast.
-        </p>
-        <div class="mt-8 flex flex-wrap items-center gap-4">
-          <a href="main.html" class="rounded-lg bg-brand-600 px-5 py-3 text-[15px] font-medium text-white transition-colors hover:bg-brand-700">Create your organization</a>
-          <a href="main.html" class="px-1 py-3 text-[15px] font-medium text-gray-700 transition-colors hover:text-gray-900">Sign in</a>
+<main>
+  <!-- 1 · hero -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <h1 class="t-display">See every field from space, and act on what changed</h1>
+        <p class="t-lead">AgroSyntra One reads Sentinel-2 imagery for each of your fields, masks the clouds inside the field and shows where the crop is ahead or falling behind. Your team works from the same map, in English or Arabic.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="main.html?mode=register">Start free</a>
+          <a class="btn btn-quiet" href="main.html">Sign in</a>
         </div>
+        <p class="t-meta hero-note">Free during early access. No card needed.</p>
       </div>
 
-      <!-- Product preview: the workspace, pivots from above -->
-      <div class="enter enter-2 relative mt-14 sm:mt-16">
-        <div class="overflow-hidden rounded-t-2xl bg-white shadow-[0_24px_60px_-20px_rgba(17,24,39,0.25)] ring-1 ring-gray-900/10">
-          <div class="flex h-9 items-center gap-1.5 border-b border-gray-900/5 bg-gray-50 px-4">
-            <span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span><span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span><span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span>
-          </div>
-          <div class="flex h-[300px] sm:h-[460px]">
-            <!-- sidebar -->
-            <div class="hidden w-56 shrink-0 flex-col border-r border-gray-900/5 px-3 py-4 md:flex">
-              <div class="px-2 text-[12px] font-medium text-gray-500">Farms</div>
-              <div class="mt-2 flex h-8 items-center justify-between rounded-lg bg-brand-900 px-2 text-[13px] text-white"><span>Al Khatim pivots</span><span class="num font-mono text-[11px] text-white/60">6</span></div>
-              <div class="mt-0.5 flex h-8 items-center justify-between rounded-lg px-2 text-[13px] text-gray-700"><span>Liwa date blocks</span><span class="num font-mono text-[11px] text-gray-400">14</span></div>
-              <div class="mt-6 px-2 text-[12px] font-medium text-gray-500">Fields</div>
-              <div class="mt-2 flex flex-col gap-0.5 text-[13px] text-gray-700">
-                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Pivot 1</span><span class="num font-mono text-[11px] text-gray-400">81.28 ha</span></div>
-                <div class="flex h-8 items-center justify-between rounded-lg bg-gray-100 px-2"><span>Pivot 2</span><span class="num font-mono text-[11px] text-gray-500">79.19 ha</span></div>
-                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Pivot 3</span><span class="num font-mono text-[11px] text-gray-400">78.12 ha</span></div>
-                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Pivot 4</span><span class="num font-mono text-[11px] text-gray-400">80.40 ha</span></div>
-                <div class="flex h-8 items-center justify-between rounded-lg px-2"><span>Fodder block</span><span class="num font-mono text-[11px] text-gray-400">30.70 ha</span></div>
+      <figure class="hero-view" aria-label="The AgroSyntra One workspace: fields on the map with their vegetation index">
+        <div class="app">
+          <aside class="app-side">
+            <div class="app-farm"><span class="brand-mark">L</span><div><b translate="no">Liwa North</b><span class="num">6 fields · 468.3 ha</span></div></div>
+            <div class="app-label">Fields</div>
+            <div class="app-row"><span class="name"><i class="dot" style="background:#66bd63"></i><span translate="no">Pivot 1</span></span><small class="num chg chg-up">+0.03</small></div>
+            <div class="app-row is-on"><span class="name"><i class="dot" style="background:#d9ef8b"></i><span translate="no">Pivot 2</span></span><small class="num chg chg-down">−0.11</small></div>
+            <div class="app-row"><span class="name"><i class="dot" style="background:#d9ef8b"></i><span translate="no">Pivot 3</span></span><small class="num chg">0.00</small></div>
+            <div class="app-row"><span class="name"><i class="dot" style="background:#a6d96a"></i><span translate="no">Pivot 4</span></span><small class="num chg chg-up">+0.02</small></div>
+            <div class="app-row"><span class="name"><i class="dot" style="background:#fee08b"></i><span translate="no">Pivot 5</span></span><small class="num chg chg-down">−0.07</small></div>
+            <div class="app-row"><span class="name"><i class="dot" style="background:#a6d96a"></i><span translate="no">Fodder block</span></span><small class="num chg">−0.02</small></div>
+          </aside>
+          <div class="app-map">
+            <svg id="heroMap" aria-hidden="true"></svg>
+            <div class="float f-field">
+              <div class="f-head"><b translate="no">Pivot 2</b><span class="num">79.19 ha</span></div>
+              <div class="row" style="margin-top:8px"><span class="big num">0.58</span><span class="t-meta num">−0.11 since 10 Nov</span></div>
+              <div class="t-meta">NDVI · 15 Nov 2026 · 0% cloud</div>
+              <div class="bars">
+                <div class="bar"><i style="background:#f46d43"></i><s><b style="width:18%;background:#f46d43"></b></s><em class="num">14.2 ha</em></div>
+                <div class="bar"><i style="background:#fee08b"></i><s><b style="width:22%;background:#fee08b"></b></s><em class="num">17.6 ha</em></div>
+                <div class="bar"><i style="background:#a6d96a"></i><s><b style="width:34%;background:#a6d96a"></b></s><em class="num">26.9 ha</em></div>
+                <div class="bar"><i style="background:#1a9850"></i><s><b style="width:26%;background:#1a9850"></b></s><em class="num">20.5 ha</em></div>
               </div>
             </div>
-            <!-- map -->
-            <div class="relative flex-1">
-              <svg class="absolute inset-0 h-full w-full" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid slice" aria-label="Center pivot fields seen from above">
-                <defs>
-                  <radialGradient id="crop" cx="50%" cy="50%" r="50%">
-                    <stop offset="0" stop-color="#4f7a3a"/><stop offset=".7" stop-color="#466f33"/><stop offset="1" stop-color="#3c612c"/>
-                  </radialGradient>
-                  <radialGradient id="cropDry" cx="50%" cy="50%" r="50%">
-                    <stop offset="0" stop-color="#8b8a55"/><stop offset="1" stop-color="#77744a"/>
-                  </radialGradient>
-                  <pattern id="rings" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="none"/></pattern>
-                </defs>
-                <rect width="900" height="460" fill="#d9c9a6"/>
-                <!-- tracks -->
-                <g stroke="#e8dcc0" stroke-width="3" fill="none">
-                  <path d="M-20 70 L920 300"/><path d="M180 -20 L60 480"/><path d="M520 -20 L420 480"/><path d="M860 -20 L760 480"/>
-                </g>
-                <!-- pivots -->
-                <g>
-                  <circle cx="250" cy="150" r="118" fill="url(#crop)"/>
-                  <circle cx="500" cy="300" r="116" fill="url(#crop)"/>
-                  <circle cx="760" cy="170" r="112" fill="url(#cropDry)"/>
-                  <circle cx="230" cy="420" r="110" fill="url(#crop)"/>
-                  <circle cx="790" cy="430" r="108" fill="url(#crop)"/>
-                </g>
-                <!-- irrigation rings -->
-                <g fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-width="1.5">
-                  <circle cx="250" cy="150" r="30"/><circle cx="250" cy="150" r="60"/><circle cx="250" cy="150" r="90"/>
-                  <circle cx="500" cy="300" r="30"/><circle cx="500" cy="300" r="60"/><circle cx="500" cy="300" r="90"/>
-                  <circle cx="760" cy="170" r="30"/><circle cx="760" cy="170" r="60"/><circle cx="760" cy="170" r="90"/>
-                </g>
-                <!-- pivot arms -->
-                <g stroke="#e9e4d4" stroke-opacity=".55" stroke-width="2">
-                  <line x1="250" y1="150" x2="355" y2="205"/><line x1="500" y1="300" x2="420" y2="215"/><line x1="760" y1="170" x2="860" y2="130"/>
-                </g>
-                <!-- saved field boundaries -->
-                <g fill="none" stroke="#22c55e" stroke-width="2">
-                  <circle cx="250" cy="150" r="118"/><circle cx="760" cy="170" r="112"/><circle cx="230" cy="420" r="110"/><circle cx="790" cy="430" r="108"/>
-                  <rect x="590" y="36" width="58" height="58" fill="#22c55e" fill-opacity=".14"/>
-                </g>
-                <!-- selected field -->
-                <circle cx="500" cy="300" r="116" fill="#22c55e" fill-opacity=".14" stroke="#22c55e" stroke-width="2.5"/>
+            <div class="float f-trend">
+              <div class="f-head"><b>NDVI this season</b><span class="num">Jun – Nov</span></div>
+              <svg viewBox="0 0 288 92" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0 22H288M0 46H288M0 70H288" stroke="rgba(22,32,26,.07)"/>
+                <path d="M0 84 C 40 82, 70 70, 100 48 S 160 12, 200 14 S 250 26, 270 40 L 288 46" fill="none" stroke="#1f6b3a" stroke-width="2" stroke-linecap="round"/>
+                <path d="M270 40 L 288 46" stroke="#b4432d" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="288" cy="46" r="3.5" fill="#b4432d"/>
               </svg>
-              <!-- selected field tag -->
-              <div class="absolute left-[44%] top-[38%] rounded-lg bg-white/95 px-3 py-2 shadow-sm ring-1 ring-gray-900/10">
-                <div class="text-[13px] font-medium text-gray-900">Pivot 2</div>
-                <div class="num font-mono text-[12px] text-gray-500">79.19 ha · Center pivot</div>
-              </div>
-              <div class="absolute right-3 top-3 flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-[12px] font-medium text-gray-900 shadow-sm ring-1 ring-gray-900/5">
-                <svg class="ico !h-4 !w-4" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Add field
-              </div>
             </div>
+            <div class="float f-legend"><span>NDVI</span><span class="num">0</span><span class="ramp"></span><span class="num">1</span></div>
+            <div class="float f-dock">
+              <div class="chip"><b class="num">21 Oct</b><small class="num">S2 · 4%</small></div>
+              <div class="chip"><b class="num">26 Oct</b><small class="num">S2 · 61%</small></div>
+              <div class="chip"><b class="num">31 Oct</b><small class="num">S2 · 0%</small></div>
+              <div class="chip"><b class="num">5 Nov</b><small class="num">S2 · 2%</small></div>
+              <div class="chip"><b class="num">10 Nov</b><small class="num">S2 · 0%</small></div>
+              <div class="chip is-on"><b class="num">15 Nov</b><small class="num">S2 · 0%</small></div>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2 · ways it helps (5) -->
+  <section class="section section-alt" id="capabilities">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">What it does</p>
+        <h2 class="t-h2">Five ways it keeps a farm on track</h2>
+        <p class="t-body">Each one works on the same field record, so a change you see on the map can become a task, a prescription or a page in a report.</p>
+      </div>
+      <div class="cards">
+        <article class="card wide">
+          <span class="ico-box"><svg class="ico"><use href="#i-leaf"/></svg></span>
+          <h3 class="t-h3">Crop analytics</h3>
+          <p class="t-body">Thirteen indices for vegetation, nitrogen, water and soil, each with its own colour scale. See the hectares in every value class and click a class to find it on the map.</p>
+          <div class="card-visual mini-idx"><span>NDVI</span><span>SAVI</span><span>EVI</span><span>GNDVI</span><span>NDRE</span><span>MSAVI</span><span>ReCI</span><span>NDMI</span><span>NDWI</span><span>BSI</span><span>SI</span><span>VMI</span><span>Natural colour</span></div>
+        </article>
+        <article class="card wide">
+          <span class="ico-box"><svg class="ico"><use href="#i-sat"/></svg></span>
+          <h3 class="t-h3">Remote crop health</h3>
+          <p class="t-body">A new Sentinel-2 image every few days at 10 m, with clouds and shadows masked inside each field. Sharpen the view to 5 m or 2.5 m when you need more detail.</p>
+          <div class="card-visual"><span class="ramp" style="display:block;width:100%;height:10px;border-radius:5px"></span></div>
+        </article>
+        <article class="card">
+          <span class="ico-box"><svg class="ico"><use href="#i-bell"/></svg></span>
+          <h3 class="t-h3">Field risks</h3>
+          <p class="t-body">Fields whose index dropped since the last clear image move to the top, with the change in numbers.</p>
+          <div class="card-visual">
+            <div class="mini-alert"><i></i><span translate="no">Pivot 2</span><small class="num">−0.11</small></div>
+            <div class="mini-alert"><i style="background:#e4934a"></i><span translate="no">Pivot 5</span><small class="num">−0.07</small></div>
+          </div>
+        </article>
+        <article class="card">
+          <span class="ico-box"><svg class="ico"><use href="#i-drop"/></svg></span>
+          <h3 class="t-h3">Input savings</h3>
+          <p class="t-body">Split a field into productivity zones and give each its own seed or fertilizer rate. The map goes to the tractor terminal.</p>
+          <div class="card-visual zones"><div style="background:#1a9850">1</div><div style="background:#66bd63">2</div><div style="background:#a6d96a;color:#16201a">3</div><div style="background:#fee08b;color:#16201a">4</div><div style="background:#f46d43">5</div></div>
+        </article>
+        <article class="card">
+          <span class="ico-box"><svg class="ico"><use href="#i-file"/></svg></span>
+          <h3 class="t-h3">Field reports</h3>
+          <p class="t-body">Two A4 pages per field: maps, zone areas, the season curve, weather, operations and notes for the agronomist.</p>
+          <div class="card-visual t-meta">Print or save as PDF</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · six steps -->
+  <section class="section" id="steps">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">How it works</p>
+        <h2 class="t-h2">From a boundary to a decision in six steps</h2>
+      </div>
+      <ol class="steps">
+        <li class="step"><span class="step-n">01</span><h3 class="t-h3">Add your fields</h3><p class="t-body">Draw a polygon or a pivot circle, select it on the map, or import a Shapefile, KML, GeoPackage or File Geodatabase.</p></li>
+        <li class="step"><span class="step-n">02</span><h3 class="t-h3">Get the imagery</h3><p class="t-body">Every clear Sentinel-2 date for the field appears on the timeline, with its cloud cover inside the boundary.</p></li>
+        <li class="step"><span class="step-n">03</span><h3 class="t-h3">Read the trend</h3><p class="t-body">Plot several indices over the season, or switch to a heatmap of every day.</p></li>
+        <li class="step"><span class="step-n">04</span><h3 class="t-h3">Check the risks</h3><p class="t-body">See which fields dropped since the last clear image and which part of the field is behind.</p></li>
+        <li class="step"><span class="step-n">05</span><h3 class="t-h3">Take action</h3><p class="t-body">Send a scout to a point, build a variable rate map, or log the irrigation, spray or fertilizer you applied.</p></li>
+        <li class="step"><span class="step-n">06</span><h3 class="t-h3">Share the result</h3><p class="t-body">Print the field report, export the zones for the terminal, or give your team the same view with their own role.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 4 · tools (10) -->
+  <section class="section section-alt" id="tools">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Inside the workspace</p>
+        <h2 class="t-h2">The tools you work with every day</h2>
+      </div>
+      <div class="tools">
+        <div class="tool-list" role="tablist" aria-label="Tools" aria-orientation="vertical">
+          <button class="tool" role="tab" id="tab-indices" aria-controls="p-indices" aria-selected="true"><span class="ico-box"><svg class="ico"><use href="#i-leaf"/></svg></span><span><b>Crop health indices</b><span class="t-meta">Vegetation, water and soil on the same field</span></span></button>
+          <button class="tool" role="tab" id="tab-series" aria-controls="p-series" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-chart"/></svg></span><span><b>Time series and heatmap</b><span class="t-meta">The whole season in one view</span></span></button>
+          <button class="tool" role="tab" id="tab-risks" aria-controls="p-risks" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-alert"/></svg></span><span><b>Field risks</b><span class="t-meta">What changed since the last clear image</span></span></button>
+          <button class="tool" role="tab" id="tab-vra" aria-controls="p-vra" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-layers"/></svg></span><span><b>Variable rate maps</b><span class="t-meta">Zones and rates for seed and fertilizer</span></span></button>
+          <button class="tool" role="tab" id="tab-soil" aria-controls="p-soil" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-flask"/></svg></span><span><b>Soil sampling</b><span class="t-meta">A grid of points ready for the field crew</span></span></button>
+          <button class="tool" role="tab" id="tab-log" aria-controls="p-log" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-cal"/></svg></span><span><b>Field activity log</b><span class="t-meta">Every operation with its product and rate</span></span></button>
+          <button class="tool" role="tab" id="tab-scout" aria-controls="p-scout" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-pin"/></svg></span><span><b>Scout tasks</b><span class="t-meta">A point on the map, a person, a due date</span></span></button>
+          <button class="tool" role="tab" id="tab-weather" aria-controls="p-weather" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-cloud"/></svg></span><span><b>Weather analytics</b><span class="t-meta">Temperature, rain and soil moisture per field</span></span></button>
+          <button class="tool" role="tab" id="tab-report" aria-controls="p-report" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-file"/></svg></span><span><b>Field reports</b><span class="t-meta">Two printed pages an agronomist can sign</span></span></button>
+          <button class="tool" role="tab" id="tab-team" aria-controls="p-team" aria-selected="false" tabindex="-1"><span class="ico-box"><svg class="ico"><use href="#i-users"/></svg></span><span><b>Team and roles</b><span class="t-meta">Six roles, one organization</span></span></button>
+        </div>
+
+        <div class="tool-stage">
+          <div class="tool-panel" role="tabpanel" id="p-indices" aria-labelledby="tab-indices">
+            <h3 class="t-h3">Crop health indices</h3>
+            <p class="t-body">Pick an index and the field repaints with its own colour scale. Contrast stretches the colours within each field, so small differences inside a pivot stand out.</p>
+            <ul class="tool-points"><li>NDVI, SAVI and EVI for vigour, NDRE and GNDVI for nitrogen</li><li>NDMI and NDWI for water, BSI and SI for bare and salty soil</li><li>Click a value class in the legend to show only those pixels</li></ul>
+            <div class="tool-art" data-art="indices"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-series" aria-labelledby="tab-series" hidden>
+            <h3 class="t-h3">Time series and heatmap</h3>
+            <p class="t-body">Plot one or several indices for a field over any period, with the spread inside the field and weather on its own axis. Switch to a calendar heatmap, a 3D skyline or a 3D pivot ring.</p>
+            <ul class="tool-points"><li>Line, area, bars, points or change from the previous date</li><li>Each clear date is one point; days between images are estimated and marked</li><li>Download the values as CSV</li></ul>
+            <div class="tool-art" data-art="series"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-risks" aria-labelledby="tab-risks" hidden>
+            <h3 class="t-h3">Field risks</h3>
+            <p class="t-body">Every field is compared with its previous clear image. The ones that dropped come first, so the morning starts with the right field.</p>
+            <ul class="tool-points"><li>Change in index value, not just a colour</li><li>Cloud cover inside the field shown with every date</li><li>Swipe or split the map to compare two dates</li></ul>
+            <div class="tool-art" data-art="risks"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-vra" aria-labelledby="tab-vra" hidden>
+            <h3 class="t-h3">Variable rate maps</h3>
+            <p class="t-body">Build zones from one image, from the clearest dates of several seasons, or from up to five weighted layers. Give each zone a rate and see the total product and the saving.</p>
+            <ul class="tool-points"><li>Two to seven zones, smoothed, with a minimum zone size</li><li>Exports for John Deere, Trimble and any ISO-XML terminal</li><li>Shapefile, GeoJSON, KML and CSV as well</li></ul>
+            <div class="tool-art" data-art="vra"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-soil" aria-labelledby="tab-soil" hidden>
+            <h3 class="t-h3">Soil sampling</h3>
+            <p class="t-body">Place sampling points on a grid or by zone, each one set away from the field edge, and take them to the field as GPX, KML, CSV or Shapefile.</p>
+            <ul class="tool-points"><li>Grid cells sized in hectares</li><li>One to five points in every productivity zone</li></ul>
+            <div class="tool-art" data-art="soil"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-log" aria-labelledby="tab-log" hidden>
+            <h3 class="t-h3">Field activity log</h3>
+            <p class="t-body">Tillage, planting, fertilising, irrigation, spraying, pruning and harvest, each with its date, product and rate, on a monthly calendar for the whole farm.</p>
+            <ul class="tool-points"><li>Filter by type of operation</li><li>Download each month as CSV</li></ul>
+            <div class="tool-art" data-art="log"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-scout" aria-labelledby="tab-scout" hidden>
+            <h3 class="t-h3">Scout tasks</h3>
+            <p class="t-body">Drop a pin where the map shows a problem, say what to check, who goes and by when. Close it with notes when it is done.</p>
+            <ul class="tool-points"><li>Priority, issue type and due date on every task</li><li>Open tasks show as pins on the map</li></ul>
+            <div class="tool-art" data-art="scout"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-weather" aria-labelledby="tab-weather" hidden>
+            <h3 class="t-h3">Weather analytics</h3>
+            <p class="t-body">Forecast and history at each field's own coordinates. Lay temperature, rain or soil moisture over the index curve to see what drove a change.</p>
+            <ul class="tool-points"><li>Seven-day forecast per field</li><li>Past weather for any period you plot</li></ul>
+            <div class="tool-art" data-art="weather"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-report" aria-labelledby="tab-report" hidden>
+            <h3 class="t-h3">Field reports</h3>
+            <p class="t-body">Two A4 pages built from the field's own data: index and zone maps over satellite imagery, zone areas that add up to the field, the season curve, weather and operations, and notes written by rule from what the numbers show.</p>
+            <ul class="tool-points"><li>Areas in hectares, acres and dunums</li><li>Print or save as PDF from the browser</li></ul>
+            <div class="tool-art" data-art="report"></div>
+          </div>
+          <div class="tool-panel" role="tabpanel" id="p-team" aria-labelledby="tab-team" hidden>
+            <h3 class="t-h3">Team and roles</h3>
+            <p class="t-body">Each organization sees only its own farms. Roles decide who can change boundaries, who logs operations and who only reads.</p>
+            <ul class="tool-points"><li>Owner, manager, GIS analyst, agronomist, field supervisor and viewer</li><li>Field history keeps every boundary change, with restore</li></ul>
+            <div class="tool-art" data-art="team"></div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ====== Features ====== -->
-  <section id="features" class="mx-auto max-w-6xl px-6 py-24">
-    <div class="max-w-xl">
-      <h2 class="text-[28px] font-medium leading-tight tracking-[-0.01em] text-brand-900">One record per field, shared by the whole team</h2>
-      <p class="mt-3 text-[15px] leading-relaxed text-gray-600">The boundary is the start. Everything else the team does on that field attaches to it.</p>
-    </div>
-
-    <div class="mt-12 grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <!-- wide: boundaries -->
-      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:col-span-2 lg:p-8">
-        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M3.5 8.7c-.7.5-1 1.4-.7 2.2l2.8 8.7c.3.8 1 1.4 1.9 1.4h9.1c.9 0 1.6-.6 1.9-1.4l2.8-8.7c.3-.8 0-1.7-.7-2.2l-7.4-5.3a2.1 2.1 0 0 0-2.4 0Z"/></svg>Boundaries
+  <!-- 5 · start free -->
+  <section class="section-tight">
+    <div class="wrap">
+      <div class="band">
+        <div>
+          <h2 class="t-h2">Start with your first fields today</h2>
+          <p class="t-body">Create your organization, add a farm and draw or import its fields. Imagery and weather appear as soon as a field is saved.</p>
         </div>
-        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Draw them, or bring the files you already have</h3>
-        <p class="mt-2 max-w-lg text-[15px] leading-relaxed text-gray-600">Trace a polygon or drop a pivot circle on satellite imagery. Or import a survey: every polygon becomes a field, its name comes from the file, and any projection is converted to WGS84 before it is saved in PostGIS.</p>
-        <div class="mt-6 flex flex-wrap gap-2">
-          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">GeoJSON</span>
-          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">KML / KMZ</span>
-          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">Shapefile</span>
-          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">File Geodatabase</span>
-          <span class="rounded-md bg-white px-2.5 py-1 font-mono text-[12px] text-gray-600 ring-1 ring-gray-900/5">GeoPackage</span>
-        </div>
-      </div>
-      <!-- weather -->
-      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:p-8">
-        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.3-2A5 5 0 0 0 5 18"/><path d="M16 14v6m-4-4v6m-4-2v4"/></svg>Weather
-        </div>
-        <h3 class="mt-3 text-[20px] font-medium text-gray-900">A forecast for the field, not the city</h3>
-        <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Seven days of temperature and rainfall at each field's own coordinates, from Open-Meteo.</p>
-      </div>
-      <!-- area -->
-      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:p-8">
-        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>Area
-        </div>
-        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Measured on the ellipsoid</h3>
-        <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Area is calculated by PostGIS on the WGS84 ellipsoid, so the hectares match a survey, not a flat screen.</p>
-      </div>
-      <!-- monitoring -->
-      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:col-span-2 lg:p-8">
-        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></svg>Monitoring
-        </div>
-        <h3 class="mt-3 text-[20px] font-medium text-gray-900">See which part of a pivot fell behind</h3>
-        <p class="mt-2 max-w-lg text-[15px] leading-relaxed text-gray-600">Sentinel-2 NDVI for each field with clouds masked inside the field, the hectares in each growth class, a season curve, and a date comparison that marks the areas that dropped against the rest of the field.</p>
-      </div>
-      <!-- operations -->
-      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:p-8">
-        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Operations
-        </div>
-        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Crops and the activity log</h3>
-        <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Seasons and growth stages per field, and every fertilizer, spray, irrigation or harvest with its product and rate, on a monthly calendar you can export.</p>
-      </div>
-      <!-- team -->
-      <div class="rounded-2xl bg-[#f6f6f3] p-6 lg:col-span-2 lg:p-8">
-        <div class="flex items-center gap-2 text-[13px] font-medium text-gray-500">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>Team
-        </div>
-        <h3 class="mt-3 text-[20px] font-medium text-gray-900">Each organization sees only its own farms</h3>
-        <p class="mt-2 max-w-lg text-[15px] leading-relaxed text-gray-600">Farms and fields are separated per organization in the database, and roles decide who can add or change fields: owner, manager, GIS analyst, agronomist, field supervisor or viewer.</p>
+        <a class="btn btn-primary" href="main.html?mode=register">Start free</a>
       </div>
     </div>
   </section>
 
-  <!-- ====== How it works ====== -->
-  <section class="border-y border-gray-900/5 bg-[#f6f6f3]">
-    <div class="mx-auto max-w-6xl px-6 py-24">
-      <h2 class="max-w-xl text-[28px] font-medium leading-tight tracking-[-0.01em] text-brand-900">From an empty map to a tracked field in three steps</h2>
-      <div class="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-3">
-        <div>
-          <div class="num font-mono text-[13px] text-gray-400">01</div>
-          <h3 class="mt-3 text-[17px] font-medium text-gray-900">Create your organization</h3>
-          <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Register, then add your first farm by name. Coordinates are optional.</p>
-        </div>
-        <div>
-          <div class="num font-mono text-[13px] text-gray-400">02</div>
-          <h3 class="mt-3 text-[17px] font-medium text-gray-900">Add the fields</h3>
-          <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Open Add field to draw a polygon or a circle, or upload the boundary file from your survey or GIS team.</p>
-        </div>
-        <div>
-          <div class="num font-mono text-[13px] text-gray-400">03</div>
-          <h3 class="mt-3 text-[17px] font-medium text-gray-900">Work from the same record</h3>
-          <p class="mt-2 text-[15px] leading-relaxed text-gray-600">Area, boundary, irrigation type and weather are saved with the field, and every other tool builds on it.</p>
-        </div>
+  <!-- 6 · who it is for -->
+  <section class="section" id="audience">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Who it is for</p>
+        <h2 class="t-h2">Built for the people who walk the fields and the people who advise them</h2>
+      </div>
+      <div class="aud">
+        <article class="aud-card">
+          <h3 class="t-h3">Growers and farm managers</h3>
+          <div class="aud-cols">
+            <div><h4>What gets in the way</h4><ul><li>Too many fields to visit every week</li><li>Problems found when they are already visible from the road</li><li>The same rate of seed and fertilizer on good and poor ground</li><li>Records spread over notebooks and messages</li></ul></div>
+            <div><h4>What changes</h4><ul><li>The map shows which field and which part of it to visit first</li><li>A drop shows in the index days before it shows to the eye</li><li>Zones put inputs where they pay back</li><li>Every operation sits on the field it was done on</li></ul></div>
+          </div>
+        </article>
+        <article class="aud-card">
+          <h3 class="t-h3">Agronomists and consultants</h3>
+          <div class="aud-cols">
+            <div><h4>What gets in the way</h4><ul><li>Many clients, each with their own files and formats</li><li>Advice that is hard to show without a map</li><li>Hours spent turning data into a report</li></ul></div>
+            <div><h4>What changes</h4><ul><li>Import any client's boundaries in the format they have</li><li>Point to the zone, the date and the number</li><li>A two-page report per field, ready to print</li></ul></div>
+          </div>
+        </article>
       </div>
     </div>
   </section>
 
-  <!-- ====== Pricing ====== -->
-  <section id="pricing" class="mx-auto max-w-6xl px-6 py-24">
-    <div class="max-w-xl">
-      <h2 class="text-[28px] font-medium leading-tight tracking-[-0.01em] text-brand-900">Plans for one farm or a whole operation</h2>
-      <p class="mt-3 text-[15px] leading-relaxed text-gray-600">Billing is not live yet. Professional and Enterprise are available on request during early access.</p>
-    </div>
-
-    <div class="mt-12 grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <div class="flex flex-col rounded-2xl p-7 ring-1 ring-gray-900/10">
-        <h3 class="text-[17px] font-medium text-gray-900">Starter</h3>
-        <p class="mt-1 text-[14px] text-gray-500">For a single farm getting its fields mapped</p>
-        <div class="mt-6 text-[32px] font-medium tracking-[-0.01em] text-brand-900">Free</div>
-        <ul class="mt-6 flex-1 space-y-3 text-[14px] text-gray-600">
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Up to 2 farms</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Up to 10 fields</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Draw and import boundaries</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>7-day weather per field</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>1 team member</li>
-        </ul>
-        <a href="main.html" class="mt-8 rounded-lg py-2.5 text-center text-[14px] font-medium text-gray-900 ring-1 ring-gray-900/10 transition-colors hover:bg-gray-50">Start for free</a>
+  <!-- 7 · data it is built on -->
+  <section class="section-tight section-alt">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 class="t-h2">Built on open, verifiable data</h2>
+        <p class="t-body">The sources are public, so every number on the map can be checked.</p>
       </div>
-
-      <div class="flex flex-col rounded-2xl p-7 ring-2 ring-brand-600">
-        <h3 class="text-[17px] font-medium text-gray-900">Professional</h3>
-        <p class="mt-1 text-[14px] text-gray-500">For organizations running several farms and a team</p>
-        <div class="mt-6 flex items-baseline gap-1.5">
-          <span class="num text-[32px] font-medium tracking-[-0.01em] text-brand-900">$49</span>
-          <span class="text-[14px] text-gray-500">per organization, per month</span>
-        </div>
-        <ul class="mt-6 flex-1 space-y-3 text-[14px] text-gray-600">
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Unlimited farms and fields</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Team roles: owner, manager, GIS analyst and more</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Bulk import from GIS files</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>7-day weather for every field</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Sentinel-2 NDVI per field, with date compare</li>
-        </ul>
-        <a href="main.html" class="mt-8 rounded-lg bg-brand-600 py-2.5 text-center text-[14px] font-medium text-white transition-colors hover:bg-brand-700">Request early access</a>
-      </div>
-
-      <div class="flex flex-col rounded-2xl p-7 ring-1 ring-gray-900/10">
-        <h3 class="text-[17px] font-medium text-gray-900">Enterprise</h3>
-        <p class="mt-1 text-[14px] text-gray-500">For large operations with sensor fleets and compliance needs</p>
-        <div class="mt-6 text-[32px] font-medium tracking-[-0.01em] text-brand-900">Custom</div>
-        <ul class="mt-6 flex-1 space-y-3 text-[14px] text-gray-600">
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Everything in Professional</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>IoT device and ERP integrations</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Single sign-on and custom roles</li>
-          <li class="flex gap-2.5"><svg class="ico !h-4 !w-4 mt-0.5 text-gray-400" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Dedicated support and SLA</li>
-        </ul>
-        <a href="https://github.com/ALKAMELGIS/AgroSyntra_One" class="mt-8 rounded-lg py-2.5 text-center text-[14px] font-medium text-gray-900 ring-1 ring-gray-900/10 transition-colors hover:bg-gray-50">Talk to us</a>
+      <div class="sources">
+        <div class="src"><b>Sentinel-2 L2A</b><span>ESA Copernicus satellites, 10 m, a new image every few days</span></div>
+        <div class="src"><b>Scene classification</b><span>Clouds, shadows and snow masked inside each field</span></div>
+        <div class="src"><b>Open-Meteo</b><span>Forecast and past weather at the field's coordinates</span></div>
+        <div class="src"><b>PostGIS</b><span>Areas measured on the WGS84 ellipsoid, so hectares match a survey</span></div>
       </div>
     </div>
   </section>
 
-  <footer class="border-t border-gray-900/5">
-    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-[13px] text-gray-500 sm:flex-row">
-      <div class="flex items-center gap-2">
-        <div class="flex h-6 w-6 items-center justify-center rounded bg-brand-900 text-[11px] font-semibold text-white">A</div>
-        <span>© 2026 AgroSyntra One</span>
+  <!-- 8 · questions -->
+  <section class="section" id="faq">
+    <div class="wrap faq">
+      <div class="section-head">
+        <h2 class="t-h2">Questions</h2>
+        <p class="t-body">Short answers to what people ask first.</p>
       </div>
-      <a href="https://github.com/ALKAMELGIS/AgroSyntra_One" class="transition-colors hover:text-gray-900">Source on GitHub</a>
+      <div>
+        <details><summary>Which satellite images does it use?<svg class="ico"><use href="#i-plus"/></svg></summary><p class="t-body">Sentinel-2 Level-2A from the European Copernicus programme, at 10 m per pixel. You can sharpen the view to 5 m or 2.5 m with a super-resolution model; the result is a model's estimate, not a new measurement.</p></details>
+        <details><summary>How often is there a new image?<svg class="ico"><use href="#i-plus"/></svg></summary><p class="t-body">The Sentinel-2 satellites pass every few days. Each date is listed with the cloud cover inside your field, and cloudy dates can be hidden.</p></details>
+        <details><summary>What happens when it is cloudy?<svg class="ico"><use href="#i-plus"/></svg></summary><p class="t-body">Clouds and their shadows are masked pixel by pixel inside the field, so a partly cloudy date still gives values for the clear part.</p></details>
+        <details><summary>Which files can I import and export?<svg class="ico"><use href="#i-plus"/></svg></summary><p class="t-body">Import GeoJSON, KML, KMZ, zipped Shapefile, File Geodatabase and GeoPackage, in any projection. Export zones as ISO-XML, Shapefile, GeoJSON, KML, GPX or CSV.</p></details>
+        <details><summary>Does it work in Arabic?<svg class="ico"><use href="#i-plus"/></svg></summary><p class="t-body">Yes. The whole workspace, the reports and this site switch to Arabic with the layout mirrored from right to left.</p></details>
+        <details><summary>What does it cost?<svg class="ico"><use href="#i-plus"/></svg></summary><p class="t-body">It is free during early access. Plans by area will follow, and you will be told before anything changes.</p></details>
+      </div>
     </div>
-  </footer>
+  </section>
 
+  <!-- 9 · closing -->
+  <section class="section-tight closing">
+    <div class="wrap">
+      <h2 class="t-h2">Put your farm on the map</h2>
+      <p class="t-body">It takes a few minutes to add the first fields. The imagery is already waiting.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="main.html?mode=register">Start free</a>
+        <a class="btn btn-quiet" href="main.html">Sign in</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div><a class="brand" href="index.html" translate="no"><span class="brand-mark">A</span>AgroSyntra One</a><p class="t-meta" style="margin-top:12px;max-width:300px">Satellite crop monitoring for farms in English and Arabic.</p></div>
+      <div><h4>Product</h4><ul><li><a href="#capabilities">What it does</a></li><li><a href="#tools">Tools</a></li><li><a href="#steps">How it works</a></li></ul></div>
+      <div><h4>Account</h4><ul><li><a href="main.html">Sign in</a></li><li><a href="main.html?mode=register">Create an organization</a></li><li><a href="workspace.html">Open the workspace</a></li></ul></div>
+      <div><h4>Data</h4><ul><li><a href="https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-2" rel="noopener">Sentinel-2</a></li><li><a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a></li><li><a href="https://github.com/ALKAMELGIS/AgroSyntra_One" rel="noopener">Source code</a></li></ul></div>
+    </div>
+    <div class="foot-base"><span>© <span id="year" class="num">2026</span> AgroSyntra One</span><span>Imagery: contains modified Copernicus Sentinel data</span></div>
+  </div>
+</footer>
+
+<script src="landing/landing.js"></script>
 </body>
 </html>

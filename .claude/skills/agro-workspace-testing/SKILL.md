@@ -68,6 +68,9 @@ TAILWIND_SHIM=$PWD/tailwind-shim.js REPO=<repo> python3 scripts/test_panel.py
 `test_overlap.py`: every desktop size (1920×1080 to 1024×768), English and Arabic, map and
 field + time series; fails when one control covers another. Phone (390) is only reported.
 
+`test_landing.py`: index.html and main.html in English and Arabic at 1440 and 390, the ten tool tabs,
+untranslated strings, Start free → register → workspace, sign in, wrong password.
+
 ## Lessons that cost time
 
 - **`npm install --no-save X` prunes everything not in package.json** in `GIS_LIBS`. Install test libs with `--save`, or fonts and Leaflet disappear and pages time out.

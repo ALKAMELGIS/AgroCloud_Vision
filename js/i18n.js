@@ -310,5 +310,8 @@
     location.reload();
   }
 
-  window.I18n = { lang, t: tr, setLang, rtl: lang === 'ar' };
+  /** Pages with their own copy (landing/ar.js) add their strings before the page renders. */
+  function add(dict) { Object.assign(AR, dict); cache.clear(); }
+
+  window.I18n = { lang, t: tr, setLang, add, rtl: lang === 'ar' };
 })();

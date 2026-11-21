@@ -1,76 +1,60 @@
 <!doctype html>
 <html lang="en" dir="ltr">
 <head>
-<script src="js/i18n.js"></script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" />
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="js/i18n.js"></script>
+<script src="landing/ar.js"></script>
 <title>Sign In — AgroSyntra One</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = { theme: { extend: { colors: { brand: {
-    50:'#eafbf0',600:'#16a34a',700:'#0f3d22',800:'#0a2e18',900:'#052e16'
-  } } } } };
-</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="landing/landing.css">
 </head>
-<body class="min-h-screen bg-[#f6f6f3] text-gray-900 antialiased">
-<style>
-  .num { font-variant-numeric: tabular-nums; }
-  .inp { height: 44px; width: 100%; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; padding: 0 12px; font-size: 14px; outline: none; transition: border-color .12s, box-shadow .12s; }
-  .inp:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgb(22 163 74 / .15); }
-  body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif; }
-  [lang="ar"] body { font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; }
-  .font-mono { font-family: inherit !important; font-variant-numeric: tabular-nums; }
-  .lbl { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500; color: #6b7280; }
-</style>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+</svg>
+<div class="auth">
+  <div class="auth-form">
+    <div class="auth-top">
+      <a class="brand" href="index.html" translate="no"><span class="brand-mark">A</span>AgroSyntra One</a>
+      <button id="langBtn" class="lang-btn" type="button"></button>
+    </div>
 
-  <div class="mx-auto flex min-h-screen max-w-5xl items-center px-4 py-10">
-    <div class="grid w-full overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_-24px_rgba(17,24,39,0.25)] ring-1 ring-gray-900/10 md:grid-cols-2">
-      <div class="p-8 sm:p-10">
-        <div class="flex items-center justify-between">
-          <a href="index.html" class="flex items-center gap-2" translate="no">
-            <div class="flex h-7 w-7 items-center justify-center rounded-md bg-brand-900 text-[13px] font-semibold text-white">A</div>
-            <span class="text-[15px] font-medium text-brand-900">AgroSyntra One</span>
-          </a>
-          <button id="langBtn" type="button" translate="no" class="h-8 rounded-lg px-3 text-[13px] text-gray-600 ring-1 ring-gray-200 transition-colors hover:bg-gray-50"></button>
+    <div class="auth-body">
+      <h1 id="subtitle" class="t-h2">Sign in to your account</h1>
+      <p id="subtitleHint" class="t-body">Your farms and fields open on the map right after</p>
+
+      <form id="authForm" autocomplete="off">
+        <div id="registerFields" class="hidden" style="display:flex;flex-direction:column;gap:16px">
+          <div><label class="lbl" for="organizationName">Organization or farm name</label><input id="organizationName" class="inp" placeholder="e.g. Liwa North Farms"></div>
+          <div><label class="lbl" for="fullName">Full name</label><input id="fullName" class="inp" autocomplete="name"></div>
         </div>
+        <div><label class="lbl" for="email">Email</label><input id="email" name="agro-email" type="email" required autocomplete="off" value="demo@agrocloud.test" class="inp"></div>
+        <div><label class="lbl" for="password">Password</label><input id="password" name="agro-password" type="password" required minlength="8" autocomplete="new-password" value="Demo12345!" class="inp" placeholder="At least 8 characters"></div>
+        <p id="errorMsg" class="auth-err hidden" role="alert"></p>
+        <button id="submitBtn" type="submit" class="btn btn-primary">Sign in</button>
+      </form>
 
-        <h1 id="subtitle" class="mt-10 text-[24px] font-medium tracking-[-0.01em] text-gray-900">Sign in to your account</h1>
-        <p id="subtitleHint" class="mt-1 text-[14px] text-gray-500">Your farms and fields open on the map right after</p>
+      <button id="toggleMode" type="button" class="auth-switch">No account yet? <span>Create an organization</span></button>
+    </div>
 
-        <form id="authForm" class="mt-8 space-y-4" autocomplete="off">
-          <div id="registerFields" class="space-y-4 hidden">
-            <div><label class="lbl" for="organizationName">Organization or farm name</label><input id="organizationName" class="inp" placeholder="e.g. Al Khatim Farms"></div>
-            <div><label class="lbl" for="fullName">Full name</label><input id="fullName" class="inp"></div>
-          </div>
-          <div><label class="lbl" for="email">Email</label><input id="email" name="agro-email" type="email" required autocomplete="off" value="demo@agrocloud.test" class="inp"></div>
-          <div><label class="lbl" for="password">Password</label><input id="password" name="agro-password" type="password" required minlength="8" autocomplete="new-password" value="Demo12345!" class="inp" placeholder="At least 8 characters"></div>
+    <p class="auth-foot">The first request can take up to a minute while the server wakes up.</p>
+  </div>
 
-          <p id="errorMsg" class="hidden rounded-lg bg-red-50 px-3 py-2.5 text-[13px] text-red-700 ring-1 ring-red-100"></p>
-
-          <button id="submitBtn" type="submit" class="h-11 w-full rounded-[10px] bg-brand-600 text-[15px] font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-60">Sign in</button>
-        </form>
-
-        <button id="toggleMode" class="mt-5 text-[14px] text-gray-600 transition-colors hover:text-gray-900">No account yet? <span class="font-medium text-brand-700">Create an organization</span></button>
-      </div>
-
-      <!-- pivots from above -->
-      <div class="relative hidden bg-[#d9c9a6] md:block">
-        <svg class="absolute inset-0 h-full w-full" viewBox="0 0 460 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          <defs><radialGradient id="c" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#4f7a3a"/><stop offset="1" stop-color="#3c612c"/></radialGradient></defs>
-          <g stroke="#e8dcc0" stroke-width="3" fill="none"><path d="M-20 40 L480 330"/><path d="M230 -20 L130 580"/></g>
-          <circle cx="120" cy="140" r="112" fill="url(#c)"/><circle cx="350" cy="260" r="110" fill="url(#c)"/><circle cx="140" cy="430" r="108" fill="url(#c)"/><circle cx="380" cy="520" r="96" fill="#77744a"/>
-          <g fill="none" stroke="#fff" stroke-opacity=".07" stroke-width="1.5"><circle cx="120" cy="140" r="40"/><circle cx="120" cy="140" r="80"/><circle cx="350" cy="260" r="40"/><circle cx="350" cy="260" r="80"/></g>
-          <g fill="none" stroke="#22c55e" stroke-width="2"><circle cx="120" cy="140" r="112"/><circle cx="350" cy="260" r="110"/></g>
-          <circle cx="140" cy="430" r="108" fill="#22c55e" fill-opacity=".14" stroke="#22c55e" stroke-width="2.5"/>
-        </svg>
-        <div class="absolute bottom-6 start-6 rounded-lg bg-white/95 px-3 py-2 shadow-sm ring-1 ring-gray-900/10">
-          <div class="text-[13px] font-medium text-gray-900">Pivot 2</div>
-          <div class="num font-mono text-[12px] text-gray-500">79.19 ha · Center pivot</div>
-        </div>
-      </div>
+  <div class="auth-art" aria-hidden="true">
+    <svg id="authMap"></svg>
+    <div class="auth-card">
+      <div class="f-head"><b>Every field, every clear image</b><span class="num">Sentinel-2 · 10 m</span></div>
+      <ul>
+        <li><svg class="ico"><use href="#i-check"/></svg><span>Vegetation, water and soil indices with clouds masked inside the field</span></li>
+        <li><svg class="ico"><use href="#i-check"/></svg><span>The fields that changed since the last image, listed first</span></li>
+        <li><svg class="ico"><use href="#i-check"/></svg><span>Zones, scouting and reports from the same map</span></li>
+      </ul>
     </div>
   </div>
+</div>
 
 <script>
 const API_BASE_URL = 'https://agrocloud-backend-e9ea.onrender.com/api/v1';
@@ -88,20 +72,23 @@ if (localStorage.getItem('accessToken')) {
   window.location.href = 'workspace.html';
 }
 
-toggleBtn.addEventListener('click', () => {
-  mode = mode === 'login' ? 'register' : 'login';
+function setMode(next) {
+  mode = next;
   subtitle.textContent = mode === 'login' ? 'Sign in to your account' : 'Create your organization';
-  document.getElementById('subtitleHint').textContent = mode === 'login' ? 'Your farms and fields open on the map right after' : 'You become its owner and can invite your team later';
+  document.getElementById('subtitleHint').textContent = mode === 'login' ? 'Your farms and fields open on the map right after' : 'You become its owner';
   registerFields.classList.toggle('hidden', mode !== 'register');
   // Owner account is prefilled for sign-in only; registering starts empty.
   document.getElementById('email').value = mode === 'login' ? 'demo@agrocloud.test' : '';
   document.getElementById('password').value = mode === 'login' ? 'Demo12345!' : '';
   submitBtn.textContent = mode === 'login' ? 'Sign in' : 'Create organization';
   toggleBtn.innerHTML = mode === 'login'
-    ? 'No account yet? <span class="font-medium text-brand-700">Create an organization</span>'
-    : 'Already have an account? <span class="font-medium text-brand-700">Sign in</span>';
+    ? 'No account yet? <span>Create an organization</span>'
+    : 'Already have an account? <span>Sign in</span>';
   errorMsg.classList.add('hidden');
-});
+}
+toggleBtn.addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
+// index.html links "Start free" here with ?mode=register
+if (new URLSearchParams(location.search).get('mode') === 'register') setMode('register');
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -150,12 +137,6 @@ form.addEventListener('submit', async (e) => {
   }
 });
 </script>
-<script>
-  (function () {
-    const b = document.getElementById('langBtn'); const ar = window.I18n && I18n.lang === 'ar';
-    b.textContent = ar ? 'English' : 'العربية'; b.lang = ar ? 'en' : 'ar';
-    b.addEventListener('click', () => I18n.setLang(ar ? 'en' : 'ar'));
-  })();
-</script>
+<script src="landing/landing.js"></script>
 </body>
 </html>
