@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'AgroOne Vision',
+  title: 'AgroOne',
   description: 'Farm management and agricultural intelligence platform',
 };
 

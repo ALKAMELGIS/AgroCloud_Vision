@@ -1,6 +1,6 @@
 ---
 name: gis-field-import
-description: How AgroOne Vision turns GIS files into fields — the browser converter js/gis-import.js (GeoJSON, KML/KMZ, zipped Shapefile, zipped File Geodatabase, GeoPackage, any projection to WGS84), the Add field menu in workspace.html (draw, select on map, upload file, add GIS data, create group) and POST /fields/bulk. Use it whenever you add or fix an import format, a projection or CRS problem, field names or areas from a file, the Add field menu or its dialogs, reference GIS layers, or bulk field saving — even if the request only says "the file won't import", "wrong location on the map" or "add support for X".
+description: How AgroOne turns GIS files into fields — the browser converter js/gis-import.js (GeoJSON, KML/KMZ, zipped Shapefile, zipped File Geodatabase, GeoPackage, any projection to WGS84), the Add field menu in workspace.html (draw, select on map, upload file, add GIS data, create group) and POST /fields/bulk. Use it whenever you add or fix an import format, a projection or CRS problem, field names or areas from a file, the Add field menu or its dialogs, reference GIS layers, or bulk field saving — even if the request only says "the file won't import", "wrong location on the map" or "add support for X".
 ---
 
 # GIS field import

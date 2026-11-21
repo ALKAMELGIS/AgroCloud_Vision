@@ -1,5 +1,5 @@
 /*
- * AgroOne Vision — time series views: calendar heatmap and 3D skyline.
+ * AgroOne — time series views: calendar heatmap and 3D skyline.
  *
  * Both show one layer (the first ticked one, or the chip picked in the legend) day by
  * day over the period: week columns, weekday rows (Mon first). Sentinel-2 sees a field

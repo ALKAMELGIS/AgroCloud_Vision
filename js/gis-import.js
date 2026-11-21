@@ -1,5 +1,5 @@
 /*
- * AgroOne Vision — GIS import
+ * AgroOne — GIS import
  *
  * Reads field boundaries from GeoJSON, KML / KMZ, zipped ESRI Shapefile
  * (.shp .shx .dbf .prj), zipped File Geodatabase (.gdb) and GeoPackage,

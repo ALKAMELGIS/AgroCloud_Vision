@@ -1,6 +1,6 @@
 ---
 name: agro-vra-zones
-description: The zones engine in AgroOne Vision (js/vra.js) behind VRA maps — Vegetation (one date and index), Sowing and P&K (productivity from the clearest dates), Map builder (up to 5 weighted layers) — and Soil sampling; zoning (k-means / equal area, 2–7 zones, Zone 1 highest, smoothing, minimum zone), pixel-edge polygon tracing, rate distribution and savings, and exports (Shapefile written in JS, ISO-XML TASKDATA with DDI units, GeoJSON, KML, GPX, CSV). Use it for prescriptions, variable rate, zones, productivity maps, seeding/fertilizer rates, terminal exports (John Deere, Trimble, ISO-XML), or soil sampling grids and points.
+description: The zones engine in AgroOne (js/vra.js) behind VRA maps — Vegetation (one date and index), Sowing and P&K (productivity from the clearest dates), Map builder (up to 5 weighted layers) — and Soil sampling; zoning (k-means / equal area, 2–7 zones, Zone 1 highest, smoothing, minimum zone), pixel-edge polygon tracing, rate distribution and savings, and exports (Shapefile written in JS, ISO-XML TASKDATA with DDI units, GeoJSON, KML, GPX, CSV). Use it for prescriptions, variable rate, zones, productivity maps, seeding/fertilizer rates, terminal exports (John Deere, Trimble, ISO-XML), or soil sampling grids and points.
 ---
 
 # Zones, VRA and soil sampling

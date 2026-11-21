@@ -1,5 +1,5 @@
 /*
- * AgroOne Vision — farm Activity log (workspace.html)
+ * AgroOne — farm Activity log (workspace.html)
  *
  * Month calendar for the selected farm: one row per field, one column per
  * day, a coloured mark per activity (colour = activity type). Filter by type,

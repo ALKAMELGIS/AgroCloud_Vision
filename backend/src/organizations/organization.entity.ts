@@ -16,7 +16,7 @@ export enum SubscriptionPlan {
 }
 
 /**
- * Organization = المستأجر (Tenant) في منصة AgroOne Vision.
+ * Organization = المستأجر (Tenant) في منصة AgroOne.
  * كل شركة/مزرعة مشتركة تحصل على Organization مستقلة بيانياً بالكامل.
  */
 @Entity('organizations')

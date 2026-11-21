@@ -1,5 +1,5 @@
 /*
- * AgroOne Vision — Scout tasks
+ * AgroOne — Scout tasks
  *
  * Map pins with issue, priority, status, due date, assignee and notes.
  * API: /scout-tasks (POST, PATCH, DELETE) and /scout-tasks/by-farm/:farmId.

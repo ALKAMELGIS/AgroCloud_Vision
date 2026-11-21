@@ -29,7 +29,7 @@ import {
  * AppSidebar (مبني على نمط shadcn/ui الأساسي).
  * مُقتبَس ومُطوَّع من مكوّن dashboard-sidebar القياسي الذي زوّدنا به المستخدم،
  * مع استبدال بيانات العرض التجريبية (Acme Corp / Projects / Team...) ببيانات
- * وحدات AgroOne Vision الفعلية، ودعم اتجاه RTL للعربية.
+ * وحدات AgroOne الفعلية، ودعم اتجاه RTL للعربية.
  *
  * ملاحظة RTL: هذا المكوّن مبني أصلاً باتجاه LTR (كما في مكوّنات shadcn القياسية)،
  * لذلك يُغلَّف داخلياً بـ dir="ltr" لضمان ثبات شريط التمرير والأيقونات؛
@@ -50,7 +50,7 @@ export type NavGroupData = {
   items: NavItemData[];
 };
 
-// ====== AgroOne Vision navigation data ======
+// ====== AgroOne navigation data ======
 export const agroOneNavGroups: NavGroupData[] = [
   {
     items: [

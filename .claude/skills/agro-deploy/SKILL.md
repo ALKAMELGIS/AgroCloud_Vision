@@ -1,6 +1,6 @@
 ---
 name: agro-deploy
-description: How AgroOne Vision is deployed and run — GitHub Pages serves the static site (index.html, main.html, workspace.html, js/) from main, Render runs the NestJS backend + PostGIS (render.yaml) and the optional Next.js frontend, plus the local no-Docker setup and the git workflow from a shallow clone. Use it when changes don't show up on the site, the API sleeps or 404s on a new route, a deploy/env var/CORS question comes up, or when pushing changes.
+description: How AgroOne is deployed and run — GitHub Pages serves the static site (index.html, main.html, workspace.html, js/) from main, Render runs the NestJS backend + PostGIS (render.yaml) and the optional Next.js frontend, plus the local no-Docker setup and the git workflow from a shallow clone. Use it when changes don't show up on the site, the API sleeps or 404s on a new route, a deploy/env var/CORS question comes up, or when pushing changes.
 ---
 
 # Deploying and running
