@@ -184,3 +184,20 @@ are AgroSyntra One's. Do not copy another product's logo, wordmark or icon artwo
   (≤ 820 / 640 px): smaller side column, period strip and chart picker, status hidden.
 - Below 1280 px wide the sidebar starts as the icon rail unless the person chose (stored `navCollapsed`).
 - Check with `test_overlap.py` after any layout change.
+
+## Phones and tablets (compact layout, ≤ 899 px)
+
+- One breakpoint: `matchMedia('(max-width: 899px)')` in js/shell.js adds `#appRoot.is-compact`. Phones and
+  upright tablets (768, 820, 834) get it; landscape tablets (1024+) keep the desktop layout with the icon rail.
+- Map fills the screen. The sidebar is a drawer from the start edge: `#navOpenBtn` (top start of the map),
+  `#navScrim` behind it, closes on a tap outside, Escape or choosing a view (`setNavDrawer`). In the drawer the
+  rail is always expanded (never the icon rail).
+- The fields panel is a bottom sheet with `data-sheet` = peek (152 px: title, search) | half (52 %) | full
+  (to 56 px from the top). `#sheetHandle` taps cycle and drags snap to the nearest. `setSidePanel(true)` raises
+  peek to half, so opening a field or a module shows it. `window.setSheet(state)` for code and tests.
+- Map controls keep clear of the peek height: dock bottom = peek + 10 px, tools centred on the visible map.
+  Phones (< 600 px) hide the zoom buttons (pinch). The Leaflet scale sits beside the menu button.
+- The time series is its own sheet (72 % high) above the fields sheet; its side controls become label|control
+  rows and its top bar wraps. The imagery dock hides while it is open.
+- Stacking (compact): drawer 1300 > scrim 1290 > time series 1150 > sheet 1100 > Leaflet controls 1000.
+- Check with `test_responsive.py` (390, 768, 820; English and Arabic) and `test_overlap.py` (desktop).

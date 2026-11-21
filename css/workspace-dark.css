@@ -736,3 +736,74 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
 #imageryDock { left: 28px; }
 [dir="rtl"] #imageryDock { right: 28px; }
 #mapMain.ts-open .panel-tab { top: calc((100% - 304px) / 2); }
+
+/* ------------------------------------------------------------ compact screens (≤ 899 px: phones, upright tablets)
+   The map fills the screen. The sidebar is a drawer from the start edge (menu button top
+   start, scrim behind). The fields panel is a bottom sheet: peek 152 px (title, search,
+   risk chips start), half 52 %, full to 56 px from the top; the handle cycles or drags.
+   Map controls keep clear of the peek height. The time series is its own sheet over it. */
+.nav-open-btn, .sheet-handle, #navScrim { display: none; }
+@media (max-width: 899px) {
+  #appRoot { position: relative; --sheet-peek: 152px; --sheet-h: var(--sheet-peek); }
+  #appRoot[data-sheet="half"] { --sheet-h: 52%; }
+  #appRoot[data-sheet="full"] { --sheet-h: calc(100% - 56px); }
+  #appRoot.sheet-dragging { --sheet-h: var(--sheet-live); }
+
+  /* drawer */
+  .nav-rail, .nav-rail.collapsed { position: fixed; top: 0; bottom: 0; inset-inline-start: 0; z-index: 1300; width: min(300px, 86vw);
+    transform: translateX(-104%); transition: transform .28s cubic-bezier(.2,.8,.2,1); box-shadow: 0 0 40px rgb(0 0 0 / calc(.35 * var(--sh, 1))); }
+  [dir="rtl"] .nav-rail, [dir="rtl"] .nav-rail.collapsed { transform: translateX(104%); }
+  #appRoot.nav-open .nav-rail { transform: none; }
+  #navScrim { display: block; position: fixed; inset: 0; z-index: 1290; background: rgb(10 12 10 / .38); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  #appRoot.nav-open #navScrim { opacity: 1; pointer-events: auto; }
+  #navCollapse, .panel-tab { display: none !important; }
+  .nav-open-btn { display: grid; position: absolute; top: 12px; inset-inline-start: 12px; z-index: 560; }
+  #geoSearchWrap { right: 12px; left: auto; }
+  [dir="rtl"] #geoSearchWrap { left: 12px; right: auto; }
+
+  /* bottom sheet */
+  #sidePanel, #appRoot.side-collapsed #sidePanel { position: fixed; inset-inline: 0; bottom: 0; z-index: 1100; width: 100%; height: var(--sheet-h);
+    border: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px rgb(0 0 0 / calc(.22 * var(--sh, 1))), 0 0 0 1px var(--line);
+    transition: height .28s cubic-bezier(.2,.8,.2,1); padding-top: 18px; }
+  #appRoot.sheet-dragging #sidePanel { transition: none; }
+  #sidePanel > * { min-width: 0; }
+  .sheet-handle { display: grid; place-items: center; position: absolute; top: 0; left: 50%; z-index: 2; width: 96px; height: 22px; margin-left: -48px; padding: 0; border: 0; background: transparent; cursor: grab; touch-action: none; }
+  .sheet-handle i { width: 40px; height: 4px; border-radius: 4px; background: var(--line-strong, rgb(0 0 0 / .2)); }
+  .sheet-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+
+  /* map controls stay above the peeking sheet */
+  #imageryDock, [dir="rtl"] #imageryDock { left: 12px; right: 64px; bottom: calc(var(--sheet-peek) + 10px); }
+  [dir="rtl"] #imageryDock { left: 64px; right: 12px; }
+  #mapTools { top: calc((100% - var(--sheet-h)) / 2 + 28px); transition: top .28s cubic-bezier(.2,.8,.2,1); }
+  #appRoot[data-sheet="full"] #mapTools { top: 30%; }
+  /* Leaflet's scale sits next to the menu button, not under it */
+  .dark-ui .leaflet-control-scale, .leaflet-control-scale { margin-top: 22px !important; margin-left: 64px !important; }
+  [dir="rtl"] .dark-ui .leaflet-control-scale, [dir="rtl"] .leaflet-control-scale { margin-left: 0 !important; margin-right: 64px !important; }
+  .img-bar select[id^="imgRes"] { flex: none; }
+  .map-credit { bottom: calc(var(--sheet-peek) + 4px) !important; }
+  #addMenu { bottom: calc(var(--sheet-peek) + 12px); }
+
+  /* time series: a sheet of its own over the fields sheet */
+  .ts-panel { position: fixed; z-index: 1150; height: min(72%, 640px); flex-direction: column; overflow-y: auto; border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 30px rgb(0 0 0 / calc(.25 * var(--sh, 1))); }
+  #mapMain.ts-open #mapRow { height: 100%; }
+  #mapMain.ts-open #mapTools { top: 68px; transform: none; }
+  #mapMain.ts-open #imageryDock { display: none; }
+  .ts-side { width: auto; flex: none; display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 6px 10px;
+    padding: 12px 14px; border-inline-end: 0; border-bottom: 1px solid var(--line); overflow: visible; }
+  .ts-title { grid-column: 1 / -1; margin: 0; }
+  .ts-label { margin: 0; }
+  .ts-main { flex: none; min-height: 360px; padding: 10px 12px 12px; }
+  .ts-top { flex-wrap: wrap; height: auto; row-gap: 6px; }
+  .ts-quick { width: 148px; }
+  .ts-chart { min-height: 220px; }
+  .ts-legend { padding-inline-start: 0; }
+
+  /* dialogs and menus fit the screen */
+  dialog.sheet { width: calc(100% - 24px) !important; max-height: calc(100% - 24px); }
+}
+/* phones: pinch replaces the zoom buttons, so the tools column stays short */
+@media (max-width: 599px) {
+  #mapTools .map-group { display: none; }
+}
+@media (max-width: 899px) and (prefers-reduced-motion: reduce) { .nav-rail, #sidePanel { transition: none; } }

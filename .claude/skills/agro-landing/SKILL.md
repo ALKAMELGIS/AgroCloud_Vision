@@ -42,6 +42,10 @@ EOS sections left out on purpose: case studies, testimonials and partner logos. 
 
 ## Design rules
 
+- Fluid frame: `.wrap` has gutters `--gutter: clamp(20px, 4.4vw, 64px)` and content up to 1600 px, so wide screens
+  do not show empty bands at the sides. The hero splits (headline | lead and actions) from 1000 px up.
+- Check 1920, 1440, 1024, 768 and 390 after any change.
+
 - Chrome stays neutral; colour only inside the fields and charts, from the app's real ramps.
 - Signed numbers (`.chg`, `.f-field .big`) are isolated left-to-right so Arabic shows −0.11, not 0.11−.
 - SVG art is `direction: ltr`; its text is translated by `I18n.t` after drawing.

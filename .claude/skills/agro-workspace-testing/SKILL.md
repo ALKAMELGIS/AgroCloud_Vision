@@ -71,6 +71,9 @@ field + time series; fails when one control covers another. Phone (390) is only 
 `test_landing.py`: index.html and main.html in English and Arabic at 1440 and 390, the ten tool tabs,
 untranslated strings, Start free → register → workspace, sign in, wrong password.
 
+`test_responsive.py`: phones and upright tablets (390, 768, 820), English and Arabic — sheet peek/half/full,
+a field, the time series sheet, the drawer; fails on overlap, sideways scroll, page errors or a stuck sheet/drawer.
+
 ## Lessons that cost time
 
 - **`npm install --no-save X` prunes everything not in package.json** in `GIS_LIBS`. Install test libs with `--save`, or fonts and Leaflet disappear and pages time out.

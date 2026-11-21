@@ -95,6 +95,7 @@
   try { pref = localStorage.getItem('navCollapsed'); } catch { /* ignore */ }
   if (pref === '1' || (pref === null && narrow.matches)) setCollapsed(true, false);
   narrow.addEventListener('change', (e) => {
+    if (window.matchMedia('(max-width: 899px)').matches) return;   // compact: the drawer handles it
     let p = null; try { p = localStorage.getItem('navCollapsed'); } catch { /* ignore */ }
     if (p === null) setCollapsed(e.matches, false);
   });
@@ -199,7 +200,88 @@
   panelTab.className = 'panel-tab';
   panelTab.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg>';
   document.getElementById('mapMain').appendChild(panelTab);
+  // Compact screens (phones, tablets held upright): the map fills the screen, the sidebar
+  // becomes a drawer from the start edge and the fields panel a bottom sheet with three
+  // heights (peek: title and search; half; full). The sheet handle cycles them or drags.
+  const compact = window.matchMedia('(max-width: 899px)');
+  const isCompact = () => compact.matches;
+  const SHEETS = ['peek', 'half', 'full'];
+  function setSheet(st) {
+    if (!SHEETS.includes(st)) st = 'peek';
+    appRoot.dataset.sheet = st;
+    sheetHandle.setAttribute('aria-label', st === 'full' ? 'Lower the fields panel' : 'Raise the fields panel');
+    setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); if (window.Imagery && Imagery.invalidate) Imagery.invalidate(); }, 300);
+  }
+  window.setSheet = setSheet;
+  const sheetHandle = document.createElement('button');
+  sheetHandle.type = 'button'; sheetHandle.id = 'sheetHandle'; sheetHandle.className = 'sheet-handle';
+  sheetHandle.innerHTML = '<i aria-hidden="true"></i>';
+  document.getElementById('sidePanel').prepend(sheetHandle);
+  let drag = null;
+  sheetHandle.addEventListener('pointerdown', (e) => {
+    drag = { y: e.clientY, h: document.getElementById('sidePanel').getBoundingClientRect().height, moved: false };
+    sheetHandle.setPointerCapture(e.pointerId); appRoot.classList.add('sheet-dragging');
+  });
+  sheetHandle.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dy = drag.y - e.clientY; if (Math.abs(dy) > 4) drag.moved = true;
+    const max = appRoot.clientHeight - 56;
+    appRoot.style.setProperty('--sheet-live', Math.max(96, Math.min(max, drag.h + dy)) + 'px');
+  });
+  const endDrag = (e) => {
+    if (!drag) return;
+    const d = drag; drag = null; appRoot.classList.remove('sheet-dragging');
+    const live = parseFloat(getComputedStyle(appRoot).getPropertyValue('--sheet-live')) || d.h;
+    appRoot.style.removeProperty('--sheet-live');
+    const cur = appRoot.dataset.sheet || 'peek';
+    if (!d.moved) { setSheet(SHEETS[(SHEETS.indexOf(cur) + 1) % 3]); return; }
+    const H = appRoot.clientHeight, stops = { peek: 152, half: H * 0.52, full: H - 56 };
+    setSheet(Object.keys(stops).reduce((a, k) => (Math.abs(stops[k] - live) < Math.abs(stops[a] - live) ? k : a), 'peek'));
+  };
+  sheetHandle.addEventListener('pointerup', endDrag);
+  sheetHandle.addEventListener('pointercancel', endDrag);
+
+  // the sidebar as a drawer
+  const navBtn = document.createElement('button');
+  navBtn.type = 'button'; navBtn.id = 'navOpenBtn'; navBtn.className = 'map-btn nav-open-btn';
+  navBtn.title = 'Menu'; navBtn.setAttribute('aria-label', 'Menu'); navBtn.innerHTML = icon('menu');
+  document.getElementById('mapMain').appendChild(navBtn);
+  const scrim = document.createElement('div'); scrim.id = 'navScrim'; appRoot.appendChild(scrim);
+  function setNavDrawer(open) {
+    appRoot.classList.toggle('nav-open', open && isCompact());
+    navBtn.setAttribute('aria-expanded', String(open));
+  }
+  window.setNavDrawer = setNavDrawer;
+  navBtn.addEventListener('click', () => setNavDrawer(true));
+  scrim.addEventListener('click', () => setNavDrawer(false));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && appRoot.classList.contains('nav-open')) setNavDrawer(false); });
+  rail.addEventListener('click', (e) => { if (isCompact() && e.target.closest('[data-view]')) setNavDrawer(false); });
+
+  function applyCompact() {
+    const on = isCompact();
+    appRoot.classList.toggle('is-compact', on);
+    if (on) {
+      // the drawer shows the full sidebar, never the icon rail
+      setCollapsed(false, false);
+      appRoot.classList.remove('side-collapsed');
+      if (!appRoot.dataset.sheet) setSheet('peek');
+    } else {
+      setNavDrawer(false);
+      let p = null; try { p = localStorage.getItem('navCollapsed'); } catch { /* ignore */ }
+      setCollapsed(p === '1' || (p === null && narrow.matches), false);
+      let c = null; try { c = localStorage.getItem('panelCollapsed'); } catch { /* ignore */ }
+      appRoot.classList.toggle('side-collapsed', c === '1');
+    }
+    setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); if (window.Imagery && Imagery.invalidate) Imagery.invalidate(); }, 300);
+  }
+  compact.addEventListener('change', applyCompact);
+
   function setSidePanel(open) {
+    if (isCompact()) {
+      const cur = appRoot.dataset.sheet || 'peek';
+      setSheet(open ? (cur === 'peek' ? 'half' : cur) : 'peek');
+      return;
+    }
     const was = !appRoot.classList.contains('side-collapsed');
     appRoot.classList.toggle('side-collapsed', !open);
     panelTab.setAttribute('aria-expanded', String(open));
@@ -210,7 +292,8 @@
   }
   window.setSidePanel = setSidePanel;
   panelTab.addEventListener('click', () => setSidePanel(appRoot.classList.contains('side-collapsed')));
-  try { if (localStorage.getItem('panelCollapsed') === '1') setSidePanel(false); else setSidePanel(true); } catch { setSidePanel(true); }
+  if (isCompact()) applyCompact();
+  else try { if (localStorage.getItem('panelCollapsed') === '1') setSidePanel(false); else setSidePanel(true); } catch { setSidePanel(true); }
   markNav('fields');
 
   // ------------------------------------------------------------ risk chips
