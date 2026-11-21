@@ -26,6 +26,14 @@
       <h1 id="subtitle" class="t-h2">Sign in to your account</h1>
       <p id="subtitleHint" class="t-body">Your farms and fields open on the map right after</p>
 
+      <div id="signedBox" class="auth-signed hidden">
+        <p><span>You are signed in as</span> <b id="signedWho" translate="no"></b></p>
+        <div class="row">
+          <a class="btn btn-primary" href="workspace.html">Open the workspace</a>
+          <button type="button" id="signedOther" class="btn btn-quiet">Use another account</button>
+        </div>
+      </div>
+
       <form id="authForm" autocomplete="off">
         <div id="registerFields" class="hidden" style="display:flex;flex-direction:column;gap:16px">
           <div><label class="lbl" for="organizationName">Organization or farm name</label><input id="organizationName" class="inp" placeholder="e.g. Liwa North Farms"></div>
@@ -34,6 +42,7 @@
         <div><label class="lbl" for="email">Email</label><input id="email" name="agro-email" type="email" required autocomplete="off" value="demo@agrocloud.test" class="inp"></div>
         <div><label class="lbl" for="password">Password</label><input id="password" name="agro-password" type="password" required minlength="8" autocomplete="new-password" value="Demo12345!" class="inp" placeholder="At least 8 characters"></div>
         <p id="errorMsg" class="auth-err hidden" role="alert"></p>
+        <p id="waitMsg" class="auth-wait hidden num" role="status"></p>
         <button id="submitBtn" type="submit" class="btn btn-primary">Sign in</button>
       </form>
 
@@ -43,10 +52,11 @@
     <p class="auth-foot">The first request can take up to a minute while the server wakes up.</p>
   </div>
 
-  <div class="auth-art" aria-hidden="true">
-    <svg id="authMap"></svg>
+  <div class="auth-art" id="authScene">
+    <canvas id="authCanvas" role="img" aria-label="Fields seen from a satellite: the pass turns natural colour into index values and masks a cloud"></canvas>
+    <div class="sc-legend auth-legend" aria-hidden="true"><span id="authLeg">Natural colour</span><span class="num" id="authLo"></span><span class="sc-legbar" id="authSeg"></span><span class="num" id="authHi"></span><span class="sc-cloudkey"><i></i><span>cloud</span></span></div>
     <div class="auth-card">
-      <div class="f-head"><b>Every field, every clear image</b><span class="num">Sentinel-2 · 10 m</span></div>
+      <div class="f-head"><b>Every field, every clear image</b><span class="num" id="authStep">Sentinel-2 · 10 m</span></div>
       <ul>
         <li><svg class="ico"><use href="#i-check"/></svg><span>Vegetation, water and soil indices with clouds masked inside the field</span></li>
         <li><svg class="ico"><use href="#i-check"/></svg><span>The fields that changed since the last image, listed first</span></li>
@@ -58,19 +68,40 @@
 
 <script>
 const API_BASE_URL = 'https://agrocloud-backend-e9ea.onrender.com/api/v1';
+const T = (x) => (window.I18n ? I18n.t(x) : x);
 
 let mode = 'login';
+let busy = false;
 const form = document.getElementById('authForm');
 const subtitle = document.getElementById('subtitle');
 const registerFields = document.getElementById('registerFields');
 const submitBtn = document.getElementById('submitBtn');
 const toggleBtn = document.getElementById('toggleMode');
 const errorMsg = document.getElementById('errorMsg');
+const waitMsg = document.getElementById('waitMsg');
+const AUTH_KEYS = ['accessToken', 'refreshToken', 'user'];
+const store = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* storage off */ } },
+  del: (k) => { try { localStorage.removeItem(k); } catch { /* storage off */ } },
+};
 
-// Already signed in? Skip straight to the map workspace.
-if (localStorage.getItem('accessToken')) {
-  window.location.href = 'workspace.html';
-}
+// Already signed in: say so and let the person choose, instead of jumping to the map.
+// (A token kept from an old session no longer moves the page by itself.)
+(function signedIn() {
+  if (!store.get('accessToken')) return;
+  let who = '';
+  try { const u = JSON.parse(store.get('user') || 'null'); who = (u && (u.email || u.fullName)) || ''; } catch { /* ignore */ }
+  const box = document.getElementById('signedBox');
+  document.getElementById('signedWho').textContent = who;
+  box.classList.remove('hidden');
+  form.classList.add('hidden'); toggleBtn.classList.add('hidden');
+  document.getElementById('signedOther').addEventListener('click', () => {
+    AUTH_KEYS.forEach(store.del);
+    box.classList.add('hidden'); form.classList.remove('hidden'); toggleBtn.classList.remove('hidden');
+    document.getElementById('email').focus();
+  });
+})();
 
 function setMode(next) {
   mode = next;
@@ -82,61 +113,78 @@ function setMode(next) {
   document.getElementById('password').value = mode === 'login' ? 'Demo12345!' : '';
   submitBtn.textContent = mode === 'login' ? 'Sign in' : 'Create organization';
   toggleBtn.innerHTML = mode === 'login'
-    ? 'No account yet? <span>Create an organization</span>'
-    : 'Already have an account? <span>Sign in</span>';
+    ? `${T('No account yet?')} <span>${T('Create an organization')}</span>`
+    : `${T('Already have an account?')} <span>${T('Sign in')}</span>`;
   errorMsg.classList.add('hidden');
+  const url = new URL(location.href);
+  if (mode === 'register') url.searchParams.set('mode', 'register'); else url.searchParams.delete('mode');
+  history.replaceState(null, '', url);
 }
 toggleBtn.addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
 // index.html links "Start free" here with ?mode=register
 if (new URLSearchParams(location.search).get('mode') === 'register') setMode('register');
 
+// The free server sleeps: the first request can fail or hang while it wakes.
+// Try for up to 90 s, telling the person what is happening.
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function call(path, body) {
+  const t0 = Date.now();
+  let last = null;
+  while (Date.now() - t0 < 90000) {
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 30000);
+    try {
+      const res = await fetch(API_BASE_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
+      clearTimeout(timer);
+      if (res.status === 502 || res.status === 503 || res.status === 504) { last = res.status; }
+      else {
+        let data = null; try { data = await res.json(); } catch { /* not JSON */ }
+        return { res, data };
+      }
+    } catch (err) { clearTimeout(timer); last = err; }
+    waitMsg.textContent = `${T('The server is waking up')} · ${Math.round((Date.now() - t0) / 1000)} ${T('s')}`;
+    waitMsg.classList.remove('hidden');
+    await sleep(3000);
+  }
+  throw new Error('Could not reach the server. It may be waking up (free tier), so try again in 30 to 60 seconds');
+}
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (busy) return;
+  busy = true;
   errorMsg.classList.add('hidden');
   submitBtn.disabled = true;
   submitBtn.textContent = mode === 'login' ? 'Signing in' : 'Creating';
 
-  const email = document.getElementById('email').value;
+  const email = document.getElementById('email').value.trim().toLowerCase();
   const password = document.getElementById('password').value;
 
   try {
-    let res;
-    if (mode === 'login') {
-      res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-    } else {
-      const organizationName = document.getElementById('organizationName').value;
-      const fullName = document.getElementById('fullName').value;
-      res = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationName, fullName, email, password }),
-      });
-    }
-
-    const data = await res.json();
-    if (!res.ok) {
-      const m = data.message;
+    const body = mode === 'login' ? { email, password }
+      : { organizationName: document.getElementById('organizationName').value.trim(), fullName: document.getElementById('fullName').value.trim(), email, password };
+    const { res, data } = await call(mode === 'login' ? '/auth/login' : '/auth/register', body);
+    if (!res.ok || !data || !data.accessToken) {
+      const m = data && data.message;
       const text = typeof m === 'string' ? m : Array.isArray(m) ? m.join(', ') : (m && (Array.isArray(m.message) ? m.message.join(', ') : m.message));
-      throw new Error(text || 'Authentication failed');
+      throw new Error(text || (res.status === 401 ? 'Wrong email or password' : 'Authentication failed'));
     }
-
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    store.set('accessToken', data.accessToken);
+    store.set('refreshToken', data.refreshToken);
+    store.set('user', JSON.stringify(data.user));
     window.location.href = 'workspace.html';
   } catch (err) {
     errorMsg.textContent = err.message || 'Could not reach the server. It may be waking up (free tier), so try again in 30 to 60 seconds';
     errorMsg.classList.remove('hidden');
   } finally {
+    busy = false;
+    waitMsg.classList.add('hidden');
     submitBtn.disabled = false;
     submitBtn.textContent = mode === 'login' ? 'Sign in' : 'Create organization';
   }
 });
 </script>
+<script src="landing/motion/motion.js"></script>
 <script src="landing/landing.js"></script>
+<script src="landing/scenes.js"></script>
 </body>
 </html>

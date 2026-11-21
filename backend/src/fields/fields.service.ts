@@ -178,10 +178,11 @@ export class FieldsService {
    * Validate → find overlaps → apply the overlap choice. Returns the shape to save and
    * what happened to it, or throws a FieldProblem the client can show with choices.
    */
-  private async resolveShape(boundary: any, organizationId: string, excludeId: string | null, mode: OverlapMode, q: Query) {
+  private async resolveShape(boundary: any, organizationId: string, excludeId: string | null, mode: OverlapMode, q: Query, copyOf: string | null = null) {
     let prep = await this.prepare(boundary, q);
     const found = await this.conflicts(prep.geojson, prep.areaHa, organizationId, excludeId, q);
-    const dup = found.find((c) => c.duplicate);
+    // a copy may sit on the field it was copied from (kept as an overlap), never on a third one
+    const dup = found.find((c) => c.duplicate && !(copyOf && c.id === copyOf));
     if (dup) {
       throw new FieldProblem('FIELD_DUPLICATE', `This field is already saved as “${dup.name}”`, { conflicts: found, areaHa: prep.areaHa });
     }
@@ -243,7 +244,7 @@ export class FieldsService {
     try {
       return await this.fieldsRepo.manager.transaction(async (m) => {
         const q: Query = m.query.bind(m);
-        const { prep, clippedHa, overlapsKept } = await this.resolveShape(dto.boundary, organizationId, null, dto.overlap || 'reject', q);
+        const { prep, clippedHa, overlapsKept } = await this.resolveShape(dto.boundary, organizationId, null, dto.copyOf ? 'allow' : dto.overlap || 'reject', q, dto.copyOf || null);
         const name = dto.name?.trim() || (await this.nextName(organizationId, q));
         const [row] = await q(
           `INSERT INTO fields (name, "farmId", irrigation, boundary, "areaHectares")
@@ -252,7 +253,7 @@ export class FieldsService {
            ${RETURNING}`,
           [name, dto.farmId, dto.irrigation ?? null, prep.geojson],
         );
-        const detail = { ...(prep.repaired ? { repaired: true } : {}), ...(clippedHa ? { clippedHa } : {}), ...(overlapsKept ? { overlapsKept } : {}) };
+        const detail = { ...(prep.repaired ? { repaired: true } : {}), ...(clippedHa ? { clippedHa } : {}), ...(overlapsKept ? { overlapsKept } : {}), ...(dto.copyOf ? { copyOf: dto.copyOf } : {}) };
         await this.log(row.id, 'created', userId, Object.keys(detail).length ? detail : null, true, q);
         return { ...row, repaired: prep.repaired, clippedHa, overlapsKept };
       });

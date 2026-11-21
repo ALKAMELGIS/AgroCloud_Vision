@@ -49,6 +49,11 @@ export class CreateFieldDto {
   @IsOptional()
   @IsIn(OVERLAP_MODES)
   overlap?: (typeof OVERLAP_MODES)[number];
+
+  /** Duplicate of a saved field (field menu → Duplicate): the same shape is allowed once more, kept as an overlap. */
+  @IsOptional()
+  @IsString()
+  copyOf?: string;
 }
 
 export class BulkFieldItemDto {

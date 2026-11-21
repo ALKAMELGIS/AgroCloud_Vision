@@ -521,7 +521,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     return m || 'Satellite data is not available right now';
   }
   function currentFields() {
-    return state.fieldsById ? [...state.fieldsById.values()].filter((f) => f.geometry && /Polygon/.test(f.geometry.type)) : [];
+    return state.fieldsById ? [...state.fieldsById.values()].filter((f) => f.geometry && /Polygon/.test(f.geometry.type) && !(window.FieldPrefs && FieldPrefs.get(f.id).hidden)) : [];
   }
   function visibleScenes(v) {
     return state_.scenes.filter((s) => state_.showCloudy || s.tileCloud < CONFIG.cloudThreshold || s.id === v.sceneId);

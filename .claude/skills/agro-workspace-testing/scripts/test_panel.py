@@ -90,7 +90,7 @@ with sync_playwright() as p:
     check('area ≈ quarter after shrink (≈20.3 ha)', 19.5 < area < 21, meta)
 
     # delete field
-    pg.click('#fpDelete'); expect(pg.locator('#toast')).to_contain_text('deleted')
+    pg.click('#fpDelete'); expect(pg.locator('#toast')).to_contain_text('archived')
     expect(pg.locator('#fieldsList .field-item')).to_have_count(2)
     check('panel closed after delete', not pg.locator('#fieldPanel').is_visible())
     check('no JS errors', not errors, errors)

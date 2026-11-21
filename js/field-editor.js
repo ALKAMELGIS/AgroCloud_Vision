@@ -304,7 +304,7 @@
     await apiDelete(`/fields/${field.id}`);
     document.dispatchEvent(new CustomEvent('fieldpanel:close'));
     await goToFarm(state.selectedFarmId);
-    showToast(`${field.name} deleted`, { label: 'Undo', run: () => restoreField(field.id, field.name) });
+    showToast(`${field.name} archived`, { label: 'Undo', run: () => restoreField(field.id, field.name) });
   }
 
   async function restoreField(id, name, overlap) {

@@ -36,11 +36,9 @@
     return (ha * u.k).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + u.short;
   };
 
-  const KEEP = ['lang', 'navCollapsed', 'panelCollapsed', 'imgProvider', 'imgContrast', 'imgRes', 'tsIndices', 'tsChart', 'tsMode', 'theme', 'areaUnit', 'weekStart', 'reduceMotion', 'defaultIndex'];
   function logout() {
-    const keep = KEEP.map((k) => [k, get(k, null)]);
-    try { localStorage.clear(); } catch { /* ignore */ }
-    keep.forEach(([k, v]) => { if (v != null) set(k, v); });
+    // only this app's session: the github.io origin is shared with other sites, and preferences stay
+    ['accessToken', 'refreshToken', 'user'].forEach((k) => { try { localStorage.removeItem(k); } catch { /* ignore */ } });
     window.location.href = 'main.html';
   }
   window.AppLogout = logout;

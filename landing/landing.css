@@ -256,7 +256,15 @@ img, svg { display: block; max-width: 100%; }
 .auth-switch span { color: var(--green-ink); font-weight: 500; }
 .auth-foot { font-size: 13px; color: var(--ink-3); }
 .auth-art { position: relative; overflow: hidden; background: #d8cba9; }
-.auth-art > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.auth-art > svg, .auth-art > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; direction: ltr; }
+.auth-art > canvas { cursor: grab; touch-action: pan-y; }
+.auth-legend { position: absolute; top: 24px; inset-inline-start: 24px; direction: ltr; }
+.auth-signed { margin-top: 32px; padding: 16px; border-radius: var(--r-lg); background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+.auth-signed p { font-size: 14px; color: var(--ink-2); }
+.auth-signed b { color: var(--ink); font-weight: 500; }
+.auth-signed .row { display: flex; gap: 8px; margin-top: 12px; }
+.auth-signed .row .btn { margin-top: 0; }
+.auth-wait { font-size: 13px; color: var(--ink-3); }
 .auth-card { position: absolute; inset-inline: 40px; bottom: 40px; padding: 20px 22px; border-radius: var(--r-lg); background: rgb(255 255 255 / .96); box-shadow: var(--shadow); }
 .auth-card ul { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .auth-card li { display: flex; gap: 10px; font-size: 14px; color: var(--ink-2); }

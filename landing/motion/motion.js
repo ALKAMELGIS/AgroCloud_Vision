@@ -192,7 +192,7 @@
     { idx: 'bsi', date: 5, label: 'BSI · bare soil', cloud: false },
   ];
   const STEP_T = 4.4, SWEEP_T = 2.4;
-  function hero(canvas, onState) {
+  function hero(canvas, onState, opts = {}) {
     const F = farm();
     const sel = F.pivots[1];
     const cloudC = { x: 0.1, z: 0.6, r: 0.21 }, shadowOff = { x: -0.12, z: -0.1 };
@@ -227,7 +227,7 @@
       if (i !== state.lastStep) { state.lastStep = i; report(i); }
       const cur = STEPS[i], prev = STEPS[(i + STEPS.length - 1) % STEPS.length];
       const sweep = state.forced !== null ? 1 : clamp(local / SWEEP_T, 0, 1), sx = -1.75 + ease(sweep) * 3.5;
-      const cam = camera(W, H, st.yaw, st.pitch, Math.min(W, H * 1.7) * 0.36, H * 0.54);
+      const cam = camera(W, H, st.yaw, st.pitch, Math.min(W, H * 1.7) * 0.36 * (opts.zoom || 1), H * (opts.cy || 0.54));
       ctx.beginPath(); quad(ctx, cam.p(-1.75, 0, -1.05), cam.p(1.75, 0, -1.05), cam.p(1.75, 0, 1.05), cam.p(-1.75, 0, 1.05)); ctx.fillStyle = '#d9cca9'; ctx.fill();
       ctx.strokeStyle = 'rgba(236,227,204,.9)'; ctx.lineWidth = 3 * st.dpr;
       [[-0.52, -1.05, -0.52, 1.05], [0.52, -1.05, 0.52, 1.05], [-1.75, -0.02, 1.75, -0.02]].forEach(([a, b, c, d]) => { const p = cam.p(a, 0, b), q = cam.p(c, 0, d); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); });
@@ -271,7 +271,7 @@
           ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(q[0], q[1], rr, rr * 0.62, 0, 0, Math.PI * 2); ctx.fill();
         });
       }
-    });
+    }, opts);
     return {
       stop: m.stop, steps: STEPS,
       show(i) { state.forced = i === null ? null : clamp(i, 0, STEPS.length - 1); state.lastStep = -1; },

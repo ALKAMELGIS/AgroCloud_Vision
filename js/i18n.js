@@ -86,7 +86,7 @@
     // fields panel
     'Search fields': 'ابحث في الحقول', 'Sort fields': 'ترتيب الحقول', 'Name': 'الاسم', 'Check fields with risks': 'افحص الحقول المعرّضة للمخاطر',
     'All': 'الكل', 'High NDVI drop': 'انخفاض كبير في NDVI', 'NDVI drop': 'انخفاض NDVI', 'No data': 'لا توجد بيانات', 'No risks': 'لا مخاطر',
-    'No crop': 'بدون محصول', 'Add fields': 'إضافة حقول', 'GIS layers': 'طبقات GIS', 'Recently deleted': 'المحذوفة مؤخراً', 'Restore': 'استرجاع',
+    'No crop': 'بدون محصول', 'Add fields': 'إضافة حقول', 'GIS layers': 'طبقات GIS', 'Recently deleted': 'المحذوفة مؤخراً', 'Archived': 'المؤرشفة', 'Archive': 'أرشفة', 'Archive: recoverable under Archived': 'أرشفة: يمكن استرجاعه من المؤرشفة', 'Restore': 'استرجاع',
     'Delete forever': 'حذف نهائي', 'Draw polygon': 'رسم مضلع', 'Draw circle': 'رسم دائرة', 'Select on map': 'التحديد على الخريطة', 'Upload file': 'رفع ملف',
     'Add GIS data': 'إضافة بيانات GIS', 'Draw a polygon field': 'ارسم حقلاً مضلعاً', 'Draw a pivot circle': 'ارسم دائرة محور', 'Select fields on the map': 'حدد الحقول على الخريطة',
     'Upload field boundaries': 'ارفع حدود الحقول', 'Show a file as a reference layer': 'اعرض ملفاً كطبقة مرجعية', 'Add GIS data layer': 'إضافة طبقة بيانات GIS',
@@ -217,6 +217,7 @@
     [/^1 ha \(about 2\.5 ac\)$/, () => '1 هكتار (حوالي 2.5 فدان)'],
     [/^(.+) saved$/, (m) => `حُفظ ${m[1]}`],
     [/^(.+) deleted$/, (m) => `حُذف ${m[1]}`],
+    [/^(.+) archived$/, (m) => `أُرشف ${m[1]}`],
     [/^(.+) restored$/, (m) => `استُرجع ${m[1]}`],
     [/^(\d+) fields? imported$/, (m) => `استُورد ${m[1]} ${+m[1] === 1 ? 'حقل' : 'حقول'}`],
     [/^(\d+) skipped$/, (m) => `تُخطّي ${m[1]}`],

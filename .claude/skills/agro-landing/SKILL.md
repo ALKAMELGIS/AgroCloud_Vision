@@ -10,7 +10,7 @@ description: The public pages of AgroSyntra One — the landing page (index.html
 | File | What it holds |
 |---|---|
 | `index.html` | The landing page. Plain HTML, no Tailwind runtime, one icon sprite at the top. |
-| `main.html` | Sign in and register (same IDs as before: `authForm`, `registerFields`, `email`, `password`, `submitBtn`, `toggleMode`, `errorMsg`, `subtitle`, `subtitleHint`, `langBtn`). `?mode=register` opens registration; every "Start free" links there. |
+| `main.html` | Sign in and register (same IDs as before: `authForm`, `registerFields`, `email`, `password`, `submitBtn`, `toggleMode`, `errorMsg`, `subtitle`, `subtitleHint`, `langBtn`). `?mode=register` opens registration; every "Start free" links there. The right half is motion scene 1 on `#authCanvas` (map only, legend `#auth*`, step in `#authStep`); on tall canvases `AgroMotion.hero(canvas, onState, { pitch, zoom, cy })` looks down more steeply so the fields fill it. Hidden under 900 px and started on resize. |
 | `landing/landing.css` | Tokens and components for both pages. Warm paper neutrals, one green (`--green`) for actions, six type sizes (`.t-display`, `.t-h2`, `.t-h3`, `.t-lead`, `.t-body`, `.t-meta`). |
 | `landing/landing.js` | Draws the art (fields as 10 m pixels with the app's own ramps: RDYLGN, MOIST, SOIL), the ten tool tabs (arrow keys move), the language button, the year. |
 | `landing/ar.js` | Arabic for every string on both pages, added with `I18n.add({...})` before the page renders. |

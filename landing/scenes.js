@@ -90,10 +90,24 @@
     }
   }
 
+  // ------------------------------------------------------------ sign-in page: the same pass, map only
+  function authScene() {
+    const canvas = $('authCanvas'); if (!canvas || !window.AgroMotion) return;
+    if (!canvas.offsetWidth) { const again = () => { if (canvas.offsetWidth) { removeEventListener('resize', again); authScene(); } }; addEventListener('resize', again); return; }
+    const sc = AgroMotion.hero(canvas, (s) => {
+      const step = sc.steps[s.step];
+      $('authStep').textContent = `${String(s.step + 1).padStart(2, '0')} · ${t(step ? step.label : '')}`;
+      $('authLeg').textContent = s.natural ? t('Natural colour') : s.indexLabel + (s.contrast ? ' · ' + t('contrast') : '');
+      $('authLo').textContent = s.natural ? '' : f2(s.lo); $('authHi').textContent = s.natural ? '' : f2(s.hi);
+      $('authSeg').innerHTML = s.natural ? '' : s.legend.map((c) => `<i style="background:${rgb(c)}"></i>`).join('');
+    }, canvas.offsetHeight > canvas.offsetWidth * 0.9 ? { pitch: 1.1, zoom: 1.45, cy: 0.5 } : {});
+  }
+
   function init() {
     const a = $('scene1'), b = $('analysis');
     if (a) whenNear(a, scene1);
     if (b) whenNear(b, scene2);
+    authScene();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

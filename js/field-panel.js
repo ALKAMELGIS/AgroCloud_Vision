@@ -58,7 +58,7 @@
       <div class="mt-3 flex gap-1.5">
         <button type="button" id="fpZoom" class="fp-act">${icon('focus')}<span>Zoom</span></button>
         <button type="button" id="fpEdit" class="fp-act">${icon('pencil')}<span>Edit boundary</span></button>
-        <button type="button" id="fpDelete" class="fp-act ms-auto hover:!text-red-600">${icon('trash')}<span>Delete</span></button>
+        <button type="button" id="fpDelete" class="fp-act ms-auto" title="Archive: recoverable under Archived">${icon('archive')}<span>Archive</span></button>
       </div>
     </div>
     <div class="flex h-10 shrink-0 gap-4 border-b border-gray-100 px-4 text-[13px]" role="tablist">

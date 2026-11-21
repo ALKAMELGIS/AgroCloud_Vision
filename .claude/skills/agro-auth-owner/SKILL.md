@@ -27,8 +27,17 @@ description: Sign-in, registration, roles and the default owner account in AgroS
   Fields (create/import/edit) are owner, manager and gis_analyst; deleting is
   owner and manager. See agro-field-operations for crops and activities.
 - **JWT:** access token 15 min, refresh 7 days; secrets come from env
-  (`generateValue: true` on Render). The workspace clears `localStorage` and
-  returns to `main.html` on any 401.
+  (`generateValue: true` on Render). When renewal fails the workspace removes
+  only `accessToken`, `refreshToken` and `user` and returns to `main.html`.
+  Never `localStorage.clear()`: alkamelgis.github.io is one origin shared by
+  the owner's other sites, and clearing it wiped their data and the language.
+- **`main.html` never jumps by itself.** With a saved token it shows "You are
+  signed in as …" with *Open the workspace* / *Use another account* (the old
+  silent redirect bounced people between the pages with stale tokens).
+- **Sign-in waits for the free server:** `call()` retries 502/503/504 and
+  network errors for up to 90 s (30 s per try) and shows "The server is waking
+  up · N s" in `#waitMsg`; the email is trimmed and lower-cased; a double click
+  sends one request; a non-JSON reply still gives a readable error.
 
 ## Session renewal (access 15 min, refresh 7 days)
 
