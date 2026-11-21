@@ -124,7 +124,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
       const i = y * W + x; gx[i] = sx; gy[i] = sy; mag[i] = Math.hypot(sx, sy);
     }
     const thr = Math.max(0.12, Array.from(mag).sort((a, b) => b - a)[Math.floor(W * H * 0.12)] || 0);
-    const RAD = []; for (let r = 18; r <= 56; r += 2) RAD.push(r);
+    const RAD = []; for (let r = 24; r <= 58; r += 2) RAD.push(r);
     const acc = RAD.map(() => new Float32Array(W * H));
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
       const i = y * W + x, m = mag[i]; if (m < thr) continue;
@@ -176,7 +176,8 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
     fields.sort((a, b) => (Math.abs(a.z - b.z) > 0.3 ? b.z - a.z : a.x - b.x)).forEach((f, i) => { f.name = 'Pivot ' + (i + 1); });
     // the field to open: the one whose NDVI varies most (the most to read in its classes)
     const spread = (f) => { const v = f.px.map((i) => INDICES.ndvi.f({ nir: data.clear.nir[i], red: data.clear.red[i] })).filter(Number.isFinite).sort((a, b) => a - b); return pct(v, 0.9) - pct(v, 0.1); };
-    const sel = fields.slice().sort((a, b) => spread(b) - spread(a))[0];
+    const big = Math.max(...fields.map((f) => f.ha));
+    const sel = fields.filter((f) => f.ha >= 0.6 * big).sort((a, b) => spread(b) - spread(a))[0];
     return { fields, sel };
   }
   function bandAt(B, i) { return { blue: B.blue[i], green: B.green[i], red: B.red[i], nir: B.nir[i], nir08: B.nir08[i], swir16: B.swir16[i] }; }
