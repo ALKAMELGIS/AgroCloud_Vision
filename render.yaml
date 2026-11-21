@@ -36,6 +36,9 @@ services:
         fromDatabase:
           name: agrocloud-db
           property: database
+      # Supabase session pooler URI; when set it replaces the DB_* values above.
+      - key: DATABASE_URL
+        sync: false
       - key: DB_SYNCHRONIZE
         value: "false"
       - key: JWT_ACCESS_SECRET

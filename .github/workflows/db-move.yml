@@ -1,0 +1,48 @@
+# One-time move of the AgroOne data from Render PostgreSQL to Supabase.
+#
+# Before running (GitHub → Settings → Secrets and variables → Actions):
+#   RENDER_DATABASE_URL  Render → agrocloud-db → Connections → External Database URL
+#   DATABASE_URL         Supabase → Connect → Session pooler URI (with the password)
+#
+# The Supabase tables already exist (baseline migration). This copies the rows
+# only, in one transaction, and refuses to run if Supabase already has data, so
+# run it BEFORE pointing the backend at Supabase (the backend seeds an owner).
+name: Move database to Supabase
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type MOVE to copy the data'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  move:
+    if: github.event.inputs.confirm == 'MOVE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Copy rows
+        env:
+          SRC: ${{ secrets.RENDER_DATABASE_URL }}
+          DST: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          [ -n "$SRC" ] && [ -n "$DST" ] || { echo "::error::Add RENDER_DATABASE_URL and DATABASE_URL secrets first."; exit 1; }
+          ssl() { case "$1" in *sslmode=*) echo "$1" ;; *\?*) echo "$1&sslmode=require" ;; *) echo "$1?sslmode=require" ;; esac; }
+          export SRC="$(ssl "$SRC")" DST="$(ssl "$DST")"
+          docker run --rm -e SRC -e DST -v "$PWD:/w" -w /w postgres:17 bash -euo pipefail -c '
+            n=$(psql "$DST" -Atc "select count(*) from public.organizations")
+            [ "$n" = 0 ] || { echo "Supabase already has $n organisations; nothing copied."; exit 1; }
+            echo "Source rows:"
+            psql "$SRC" -Atc "select '\''organizations '\''||count(*) from organizations union all select '\''users '\''||count(*) from users union all select '\''farms '\''||count(*) from farms union all select '\''fields '\''||count(*) from fields"
+            pg_dump "$SRC" --data-only --no-owner --no-privileges --schema=public \
+              --exclude-table=public.migrations --exclude-table=public.spatial_ref_sys > data.sql
+            psql "$DST" -v ON_ERROR_STOP=1 --single-transaction -q -f data.sql
+            echo "Supabase rows:"
+            psql "$DST" -Atc "select '\''organizations '\''||count(*) from organizations union all select '\''users '\''||count(*) from users union all select '\''farms '\''||count(*) from farms union all select '\''fields '\''||count(*) from fields"
+            rm data.sql
+          '

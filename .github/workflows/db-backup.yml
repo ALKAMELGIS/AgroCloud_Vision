@@ -1,7 +1,7 @@
-# Nightly encrypted backup of the AgroOne database (Render PostgreSQL).
+# Nightly encrypted backup of the AgroOne database (Supabase; public schema).
 #
 # Setup, once (GitHub → Settings → Secrets and variables → Actions):
-#   DATABASE_URL       Render → agrocloud-db → Connections → External Database URL
+#   DATABASE_URL       Supabase → Connect → Session pooler URI (with the password)
 #   BACKUP_PASSPHRASE  any long password; keep a copy somewhere safe
 #
 # Each run uploads agroone-<date>.dump.gpg as a workflow artifact (kept 30 days).
@@ -48,7 +48,7 @@ jobs:
           name="agroone-$(date -u +%Y-%m-%d).dump"
           # pg_dump must be at least the server's version; the postgres:17 image covers 15–17.
           docker run --rm -e URL="$url" -v "$PWD:/out" postgres:17 \
-            sh -c 'pg_dump --format=custom --no-owner --no-privileges "$URL" > /out/db.dump'
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges --schema=public --exclude-table=public.spatial_ref_sys "$URL" > /out/db.dump'
           test -s db.dump
           gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" \
             --symmetric --cipher-algo AES256 --output "$name.gpg" db.dump

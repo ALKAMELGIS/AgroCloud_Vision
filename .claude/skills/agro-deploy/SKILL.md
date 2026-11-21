@@ -9,7 +9,7 @@ description: How AgroOne is deployed and run — GitHub Pages serves the static 
 |---|---|---|
 | Static site (`*.html`, `js/`) | GitHub Pages, `main` branch root (`.nojekyll`) | about 1 minute after a push to `main` |
 | API (`backend/`) | Render web service `agrocloud-backend` (free, sleeps) | on push if auto-deploy is on, else **Manual Deploy** |
-| Database | Render Postgres 15 + PostGIS (free: deleted after 30 days, no backups) | migrations in `backend/src/migrations` run on boot (`migrationsRun`); `DB_SYNCHRONIZE=false` |
+| Database | Supabase project `AgroCloud` (ref `hrhhafiolowjxypbbxxb`, ap-south-1, free; PostGIS in schema `extensions`). Backend reads `DATABASE_URL` = session pooler URI (IPv4, TLS). Render Postgres `agrocloud-db` is the old copy | migrations in `backend/src/migrations` run on boot (`migrationsRun`); `DB_SYNCHRONIZE=false` |
 | Next.js app | Render `agrocloud-frontend` | optional second client |
 
 ## Schema changes (migrations)
@@ -25,6 +25,14 @@ Every entity change ships with a migration in the same commit:
 
 `1795258352581-Baseline.ts` is the schema as of 2026-11-21. On a database that
 already has tables (built by the old synchronize) it records itself and does nothing.
+
+## Supabase
+
+- Free plan: 500 MB, paused after a week without activity (the app's own traffic counts); a pause keeps the data, restore from the dashboard.
+- Every table in `public` has RLS on with no policies, so Supabase's REST API exposes nothing; the backend connects as `postgres` (bypasses RLS). A migration that adds a table must also `ALTER TABLE … ENABLE ROW LEVEL SECURITY`, then check `get_advisors(security)`.
+- The schema was created by the Supabase MCP (`apply_migration agroone_baseline`) with the `migrations` row already recorded.
+- Data move from Render: `.github/workflows/db-move.yml` (manual, type MOVE). Copies rows only, one transaction, refuses if Supabase already has organisations. Run it before the backend points at Supabase, or the seeded owner blocks it.
+- `typeorm.config.ts`: `DATABASE_URL` wins over `DB_*`; TLS on (CA not pinned) unless localhost or `DB_SSL=false`; pool max `DB_POOL_MAX` (5).
 
 ## CORS
 
