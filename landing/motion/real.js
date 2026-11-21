@@ -104,10 +104,18 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
   }
   // pivots: the live demo's cache, else found here in the clear NDVI (centres along gradients, as js/demo.js)
   function pivotsFrom(ndvi) {
+    let cached = [];
     try {
       const c = JSON.parse(localStorage.getItem('agroDemoPivots:v1') || 'null');
-      if (c && c.circles && c.circles.length >= 2) return c.circles.map((p) => ({ x: (p.cx - mx) / k / 1000, z: (p.cy - my) / k / 1000, r: p.r / 1000 }));
+      if (c && c.circles) cached = c.circles.map((p) => ({ x: (p.cx - mx) / k / 1000, z: (p.cy - my) / k / 1000, r: p.r / 1000 }));
     } catch { /* none */ }
+    let found = [];
+    try { found = detect(ndvi); } catch { found = []; }
+    if (found.length >= Math.max(2, cached.length)) return found;
+    if (cached.length >= 2) return cached;
+    throw new Error('no pivots found');
+  }
+  function detect(ndvi) {
     const W = GW, H = GH, g = new Float32Array(W * H), mag = new Float32Array(W * H), gx = new Float32Array(W * H), gy = new Float32Array(W * H);
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { let s = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) s += ndvi[(y + j) * W + x + i] || 0; g[y * W + x] = s / 9; }
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
@@ -123,11 +131,20 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
       RAD.forEach((r, ri) => { for (const sg of [1, -1]) { const cx = Math.round(x + sg * gx[i] / m * r), cy = Math.round(y + sg * gy[i] / m * r); if (cx >= 0 && cy >= 0 && cx < W && cy < H) acc[ri][cy * W + cx]++; } });
     }
     const cands = [];
-    RAD.forEach((r, ri) => { const A = acc[ri]; for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { let s = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) s += A[(y + j) * W + x + i]; const sc = s / (2 * Math.PI * r); if (sc > 0.32 && x - r >= 0 && y - r >= 0 && x + r < W && y + r < H) cands.push({ x, y, r, sc }); } });
+    RAD.forEach((r, ri) => { const A = acc[ri]; for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { let s = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) s += A[(y + j) * W + x + i]; const sc = s / (2 * Math.PI * r); if (sc > 0.28 && x - r >= 0 && y - r >= 0 && x + r < W && y + r < H) cands.push({ x, y, r, sc }); } });
     cands.sort((a, b) => b.sc - a.sc);
     const out = [];
-    for (const c of cands) { if (out.length >= 8) break; if (out.some((o) => Math.hypot(o.x - c.x, o.y - c.y) < (o.r + c.r) * 0.92)) continue; out.push(c); }
-    if (out.length < 2) throw new Error('no pivots found');
+    for (const c of cands) {
+      if (out.length >= 8) break;
+      if (out.some((o) => Math.hypot(o.x - c.x, o.y - c.y) < (o.r + c.r) * 0.92)) continue;
+      let si = 0, ni = 0, so = 0, no = 0;   // one crop inside, something else just outside
+      for (let y = Math.max(0, c.y - c.r - 6); y < Math.min(H, c.y + c.r + 6); y++) for (let x = Math.max(0, c.x - c.r - 6); x < Math.min(W, c.x + c.r + 6); x++) {
+        const dd = Math.hypot(x - c.x, y - c.y), v = ndvi[y * W + x] || 0;
+        if (dd < c.r * 0.85) { si += v; ni++; } else if (dd > c.r * 1.05 && dd < c.r * 1.2) { so += v; no++; }
+      }
+      if (!ni || !no || Math.abs(si / ni - so / no) < 0.05) continue;
+      out.push(c);
+    }
     return out.map((c) => ({ x: -HX + (c.x + 0.5) * 0.01, z: HZ - (c.y + 0.5) * 0.01, r: c.r * 0.01 }));
   }
 
