@@ -391,6 +391,14 @@
     return { keys, left, right, L: range(left), R: right.length ? range(right) : null };
   }
 
+  /** Ramp range for colouring by value: the map's contrast spans this period's values, else the index range. */
+  function rampRange(k, data) {
+    const I = window.Imagery, v0 = I.views && I.views[0];
+    const vals = data.map((d) => d.val).filter(Number.isFinite);
+    if (v0 && v0.contrast && vals.length > 1) { const lo = Math.min(...vals), hi = Math.max(...vals); if (hi > lo) return [lo, hi]; }
+    return I.indices[k].range || [0, 1];
+  }
+
   function draw() {
     if (!ts.open) return;
     const I = window.Imagery;
@@ -463,33 +471,47 @@
     let gap = Infinity; for (let i = 1; i < inView.length; i++) gap = Math.min(gap, X(inView[i].t) - X(inView[i - 1].t));
     const groupW = Math.max(3, Math.min(22, (Number.isFinite(gap) ? gap : 40) * 0.72));
     let defs = '', back = '', front = '';
+    const mapKey = I.views && I.views[0] && I.views[0].indexKey;
+    const flt = I.filter && I.filter.classes && I.filter.classes.size ? I.filter : null;
     ax.keys.forEach((k, ki) => {
       const c = COLORS[k], Y = Yk(k), data = seriesOf(k, pts), vis = data.filter((d) => d.p.t >= a && d.p.t <= b);
       const [lo, hi] = ax.right.includes(k) ? ax.R : ax.L;
       const base = Y(Math.max(lo, Math.min(hi, 0)));
+      // the layer shown on the map (or the only layer) is coloured by value with the map's ramp
+      const rampOn = ts.chart !== 'change' && (ax.keys.length === 1 || k === mapKey) && I.indices[k].ramp;
+      const rr = rampOn ? rampRange(k, data) : null;
+      const colOf = (v) => (rampOn ? I.css(I.rampAt(I.indices[k].ramp, Math.max(0, Math.min(1, (v - rr[0]) / (rr[1] - rr[0] || 1))))) : c);
+      const edges = flt && flt.indexKey === k ? I.edgesFor(k) : null;
+      const faded = (v) => !!(edges && !flt.classes.has(I.classOf(edges, v)));
+      const stroke = rampOn && data.length > 1 ? `url(#tsRamp-${k})` : c;
+      if (rampOn && data.length > 1) {
+        const x0 = P.l, x1 = W - P.r;
+        defs += `<linearGradient id="tsRamp-${k}" gradientUnits="userSpaceOnUse" x1="${x0}" x2="${x1}" y1="0" y2="0">${data.map((d) => `<stop offset="${Math.max(0, Math.min(1, (X(d.p.t) - x0) / (x1 - x0))).toFixed(4)}" stop-color="${colOf(d.val)}"/>`).join('')}</linearGradient>`;
+      }
       if (ts.chart === 'area' || ts.chart === 'line') {
         const line = smoothPath(data.map((d) => [X(d.p.t), Y(d.val)]));
         if (single && data.length > 1) {
           const band = `${smoothPath(data.map((d) => [X(d.p.t), Y(d.hi)]))} L${data.slice().reverse().map((d) => `${X(d.p.t).toFixed(1)} ${Y(d.lo).toFixed(1)}`).join(' L')} Z`;
-          back += `<path d="${band}" fill="${c}" opacity=".1" class="ts-band${sweep ? ' is-enter' : ''}" style="animation-delay:${-off}ms"/>`;
+          back += `<path d="${band}" fill="${rampOn ? 'var(--t-3)' : c}" opacity="${rampOn ? 0.14 : 0.1}" class="ts-band${sweep ? ' is-enter' : ''}" style="animation-delay:${-off}ms"/>`;
         }
         if (ts.chart === 'area' && data.length > 1) {
-          defs += `<linearGradient id="tsFill-${k}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity="${single ? 0.22 : 0.12}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient>`;
+          const fc = rampOn ? 'var(--t-3)' : c;
+          defs += `<linearGradient id="tsFill-${k}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${fc}" stop-opacity="${rampOn ? 0.12 : single ? 0.22 : 0.12}"/><stop offset="1" stop-color="${fc}" stop-opacity="0"/></linearGradient>`;
           back += `<path d="${line} L${X(data[data.length - 1].p.t).toFixed(1)} ${base.toFixed(1)} L${X(data[0].p.t).toFixed(1)} ${base.toFixed(1)} Z" fill="url(#tsFill-${k})" class="ts-area${sweep ? ' is-enter' : ''}" style="animation-delay:${-off}ms"/>`;
         }
         // while dates stream in only the points show; the line sweeps in once the load is done
-        if (line) front += `<path d="${line}" pathLength="1" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" class="ts-line${sweep ? ' is-enter' : ''}" style="animation-delay:${ki * 60 - off}ms" data-k="${k}"/>`;
-        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 4.5 : 2.75}" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        if (line) front += `<path d="${line}" pathLength="1" fill="none" stroke="${stroke}" stroke-width="${rampOn ? 2.4 : 2}" stroke-linejoin="round" stroke-linecap="round" class="ts-line${sweep ? ' is-enter' : ''}" style="animation-delay:${ki * 60 - off}ms" data-k="${k}"/>`;
+        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="3" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else if (ts.chart === 'scatter') {
-        front += vis.map((d) => `<line x1="${X(d.p.t).toFixed(1)}" x2="${X(d.p.t).toFixed(1)}" y1="${Y(d.lo).toFixed(1)}" y2="${Y(d.hi).toFixed(1)}" stroke="${c}" stroke-width="1.5" opacity=".35" class="ts-whisker"/>`).join('');
-        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="${d.p === hov ? 5 : 3.5}" class="ts-dot is-solid${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)};--c:${c}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        front += vis.map((d) => `<line x1="${X(d.p.t).toFixed(1)}" x2="${X(d.p.t).toFixed(1)}" y1="${Y(d.lo).toFixed(1)}" y2="${Y(d.hi).toFixed(1)}" stroke="${colOf(d.val)}" stroke-width="1.5" opacity="${faded(d.val) ? 0.1 : 0.35}" class="ts-whisker"/>`).join('');
+        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="3.5" class="ts-dot is-solid${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else {
         // bar and change: grouped bars from zero
         const n = ax.keys.length, bw = Math.max(1.5, groupW / n - (n > 1 ? 1 : 0));
         front += vis.map((d, i) => {
           const x = X(d.p.t) - groupW / 2 + ki * (groupW / n), y = Y(d.val);
           const top = Math.min(y, base), h = Math.max(1, Math.abs(base - y));
-          return `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(2, bw / 3).toFixed(1)}" fill="${c}" opacity="${d.p === hov || !hov ? (ts.chart === 'change' && d.val < 0 ? 0.6 : 0.9) : 0.35}" class="ts-bar${enter(k, d.p.t)}${y > base ? ' is-neg' : ''}${isCur(d.p) ? ' is-current' : ''}"${dly(i, vis.length)}" data-k="${k}" data-t="${d.p.t}"/>`;
+          return `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(2, bw / 3).toFixed(1)}" fill="${colOf(d.val)}" opacity="${faded(d.val) ? 0.15 : d.p === hov || !hov ? (ts.chart === 'change' && d.val < 0 ? 0.6 : 0.9) : 0.35}" class="ts-bar${y > base ? ' is-neg' : ''}${isCur(d.p) ? ' is-current' : ''}" data-k="${k}" data-t="${d.p.t}"/>`;
         }).join('');
       }
     });
@@ -519,12 +541,17 @@
     const years = ts.from.slice(0, 4) === ts.to.slice(0, 4) ? ts.to.slice(0, 4) : `${ts.from.slice(0, 4)}–${ts.to.slice(2, 4)}`;
     const single = ax.keys.length === 1;
     $('tsLegend').innerHTML = `
-      ${ax.keys.map((k, i) => `<span class="ts-key" data-k="${k}"><i style="background:${COLORS[k]}"></i>${I.indices[k].label}${ax.right.includes(k) ? ' <span class="ts-key-sub">right axis</span>' : ''}${i === 0 && !ax.right.includes(k) ? ` <span class="ts-key-sub" dir="ltr">${years}</span>` : ''}</span>`).join('')}
+      ${ax.keys.map((k, i) => `<span class="ts-key" data-k="${k}" role="button" tabindex="0" title="Show on the map"><i style="background:${ts.chart !== 'change' && (ax.keys.length === 1 || k === mapKeyNow()) && I.indices[k].ramp ? I.gradient(I.indices[k].ramp) : COLORS[k]}"${ts.chart !== 'change' && (ax.keys.length === 1 || k === mapKeyNow()) ? ' class="is-ramp"' : ''}></i>${I.indices[k].label}${ax.right.includes(k) ? ' <span class="ts-key-sub">right axis</span>' : ''}${i === 0 && !ax.right.includes(k) ? ` <span class="ts-key-sub" dir="ltr">${years}</span>` : ''}</span>`).join('')}
       ${ts.chart === 'change' ? '<span class="ts-key-sub">Change since previous date</span>' : ''}
-      ${single && (ts.chart === 'area' || ts.chart === 'line') ? `<span class="ts-key"><i class="is-band" style="background:${COLORS[ax.keys[0]]}2e"></i>P10–P90</span>` : ''}
+      ${single && (ts.chart === 'area' || ts.chart === 'line') ? `<span class="ts-key"><i class="is-band" style="background:rgb(var(--ink) / .12)"></i>P10–P90</span>` : ''}
       ${ts.chart === 'scatter' ? '<span class="ts-key"><i class="is-whisker"></i>P10–P90</span>' : ''}
       ${w ? `<span class="ts-key"><i class="is-dash"></i>${w.label} <span class="ts-key-sub">${w.unit}</span></span>` : ''}`;
+    $('tsLegend').querySelectorAll('.ts-key[data-k]').forEach((el) => {
+      const go = () => { const sel = document.getElementById('imgIndex'); if (sel && sel.value !== el.dataset.k) { sel.value = el.dataset.k; sel.dispatchEvent(new Event('change')); } };
+      el.addEventListener('click', go); el.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    });
   }
+  const mapKeyNow = () => { const I = window.Imagery; return I && I.views && I.views[0] && I.views[0].indexKey; };
 
   function tip(p, X, yOf) {
     const el = $('tsTip');
@@ -637,6 +664,17 @@
   document.addEventListener('workspace:fields', () => { if (ts.open) { const before = ts.fieldId; fillFields(); if (ts.fieldId !== before) load(); } });
   document.addEventListener('imagery:change', schedule);
   document.addEventListener('imagery:filter', schedule);
+  // the map's index leads: a single plotted layer switches to it; with several, it is added
+  let lastMapKey = null;
+  document.addEventListener('imagery:change', () => {
+    const k = mapKeyNow(); if (!k || k === lastMapKey) return;
+    const first = lastMapKey === null; lastMapKey = k;
+    if (first || !INDEX_KEYS.includes(k) || ts.indices.includes(k)) { schedule(); return; }
+    ts.indices = ts.indices.length === 1 ? [k] : [...ts.indices, k];
+    store('tsIndices', keysOrdered().join(','));
+    fillIndices();
+    if (ts.open) load();
+  });
   document.addEventListener('theme:change', (e) => { Object.assign(COLORS, PALETTES[e.detail] || PALETTES.dark); fillIndices(); setTimeout(schedule, 30); });
   // opening a field in the panel shows that field here too
   const prevOpen = window.openFieldPanel;
