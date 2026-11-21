@@ -684,3 +684,7 @@ select[id^="imgRes"]:disabled { opacity: .4; cursor: not-allowed; }
 .theme-prev.is-system { background: linear-gradient(105deg, #fbfaf8 50%, #121519 50%); box-shadow: inset 0 0 0 1px rgb(33 30 25 / .1); }
 .theme-prev.is-system i { background: #f2f0eb; } .theme-prev.is-system b { background: linear-gradient(105deg, #fff 40%, #1e2228 40%); }
 @media (max-width: 640px) { .set-shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .set-side { border-inline-end: 0; border-bottom: 1px solid var(--line); padding: 14px; } .set-nav { flex-direction: row; overflow-x: auto; } .set-row { flex-direction: column; align-items: stretch; } .theme-cards { grid-template-columns: 1fr 1fr 1fr; } .set-body { padding: 18px; } }
+
+/* weather in the time series legend */
+.ts-key i.is-wx-line { width: 16px; height: 0; border-top: 2px solid var(--wc); background: none; border-radius: 0; }
+.ts-key i.is-wx-bar { width: 6px; height: 10px; background: var(--wc); border-radius: 1px; }

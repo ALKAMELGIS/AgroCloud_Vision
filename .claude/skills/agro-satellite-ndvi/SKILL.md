@@ -62,7 +62,8 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 - **Tests:** `test_timeseries.py` (agro-workspace-testing) mocks the weather history route.
 
 **Layers and chart types.** `#tsIndex` is a button with a checkbox menu (`#tsIndexMenu`, on `<body>` so the side column does not clip it); at least one layer stays ticked. Selection in `localStorage.tsIndices`, chart in `tsChart`.
-- One colour per index, chosen for what it measures, never the UI accent: NDVI leaf `#7cc46a`, NDRE red-edge copper `#e08a5b`, MSAVI soil ochre `#d4b26a`, NDMI water `#5ea7e0`, ReCI chlorophyll teal `#4fb8a5`. Weather is neutral grey `#9aa3ad` (dashed line, grey bars) so it never competes with an index.
+- One colour per index, chosen for what it measures, never the UI accent: NDVI leaf `#7cc46a`, NDRE red-edge copper `#e08a5b`, MSAVI soil ochre `#d4b26a`, NDMI water `#5ea7e0`, ReCI chlorophyll teal `#4fb8a5`. 
+- **Weather overlay is clearly visible in its own colours** (owner found grey dashed lines too faint): temperature terracotta (light `#c2511f`, dark `#f0894a`) as a 3-day mean line plus the daily min–max band at 13 %; rain blue (`#2f6fb3` / `#62a3dc`) daily bars at 72 % in the lower 55 % of the chart; soil moisture deep teal (`#167a73` / `#4cc3b0`) line with a soft fill. Right-axis numbers take the weather colour; the unit is in the legend ("°C, right axis"), not on the axis. Tooltip shows the weather value with its swatch (temperature with min–max).
 - Points hold `v[index] = { mean, p10, p90 }` per date; cloud % is per date.
 - Left axis = union of the selected indices' ranges. ReCI (0–8) next to other layers goes to the right axis and weather is disabled.
 - `#tsChartType`: Area (default), Line, Bars (grouped per date), Points (with P10–P90 whiskers), Change (bars of the change since the previous clear date, zero line, signed ticks). The P10–P90 band shows only with one layer on Area/Line.

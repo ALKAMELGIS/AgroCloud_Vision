@@ -48,12 +48,20 @@
   }
   const seriesColors = () => Object.fromEntries(INDEX_KEYS.map((k) => [k, colorOf(k)]));
   const WEATHER_INK = '#9aa3ad';
+  // Weather keeps its own colours so it reads next to the index: heat in terracotta (with the
+  // daily min–max as a band), rain as blue bars, soil moisture in deep teal with a soft fill.
+  const WEATHER_COLORS = {
+    light: { temp: '#c2511f', rain: '#2f6fb3', soil: '#167a73' },
+    dark: { temp: '#f0894a', rain: '#62a3dc', soil: '#4cc3b0' },
+  };
+  const wColor = (k) => WEATHER_COLORS[window.Theme && Theme.current === 'dark' ? 'dark' : 'light'][k];
   const WEATHER = {
     none: null,
-    temp: { label: 'Temperature', unit: '°C', color: WEATHER_INK, get: (d) => (d.temperatureMaxC != null && d.temperatureMinC != null ? (d.temperatureMaxC + d.temperatureMinC) / 2 : null), kind: 'line' },
-    rain: { label: 'Rain', unit: 'mm', color: WEATHER_INK, get: (d) => d.precipitationMm, kind: 'bars' },
-    soil: { label: 'Soil moisture', unit: 'm³/m³', color: WEATHER_INK, get: (d) => d.soilMoisture, kind: 'line' },
+    temp: { key: 'temp', label: 'Temperature', unit: '°C', get color() { return wColor('temp'); }, get: (d) => (d.temperatureMaxC != null && d.temperatureMinC != null ? (d.temperatureMaxC + d.temperatureMinC) / 2 : null), lo: (d) => d.temperatureMinC, hi: (d) => d.temperatureMaxC, kind: 'line' },
+    rain: { key: 'rain', label: 'Rain', unit: 'mm', get color() { return wColor('rain'); }, get: (d) => d.precipitationMm, kind: 'bars' },
+    soil: { key: 'soil', label: 'Soil moisture', unit: 'm³/m³', get color() { return wColor('soil'); }, get: (d) => d.soilMoisture, kind: 'area' },
   };
+  void WEATHER_INK;
   const CHARTS = { area: 'Area', line: 'Line', bar: 'Bars', scatter: 'Points', change: 'Change' };
   const stored = (k, d) => { try { return localStorage.getItem(k) || d; } catch { return d; } };
   const store = (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
@@ -446,27 +454,37 @@
     const months = monthTicks(a, b);
     const single = ax.keys.length === 1;
     const w = reciMixed() ? null : WEATHER[ts.weather];
-    let weatherSvg = '', rightAxis = '';
+    let weatherSvg = '', rightAxis = '', wxDefs = '';
     if (ax.R) {
       rightAxis = ticks(ax.R).map((v) => `<text x="${W - P.r + 6}" y="${(YR(v) + 3).toFixed(1)}" class="ts-axis" fill="${COLORS.reci}">${fmtTick(v, ax.R)}</text>`).join('');
     } else if (w && ts.weatherDays && ts.weatherDays.length) {
-      const days = ts.weatherDays.map((d) => ({ t: t0(d.date), v: w.get(d) })).filter((d) => d.v != null && Number.isFinite(d.v) && d.t >= a && d.t <= b);
+      const days = ts.weatherDays.map((d) => ({ t: t0(d.date), v: w.get(d), lo: w.lo ? w.lo(d) : null, hi: w.hi ? w.hi(d) : null })).filter((d) => d.v != null && Number.isFinite(d.v) && d.t >= a && d.t <= b);
       if (days.length) {
-        let lo = Math.min(...days.map((d) => d.v)), hi = Math.max(...days.map((d) => d.v));
+        let lo = Math.min(...days.map((d) => (Number.isFinite(d.lo) ? d.lo : d.v))), hi = Math.max(...days.map((d) => (Number.isFinite(d.hi) ? d.hi : d.v)));
         if (w.kind === 'bars') lo = 0;
         if (hi === lo) hi = lo + 1;
         const pad = (hi - lo) * 0.08; if (w.kind !== 'bars') { lo -= pad; hi += pad; }
         const top = w.kind === 'bars' ? P.t + (H - P.t - P.b) * 0.45 : P.t;
         const YW = (v) => top + (1 - (v - lo) / (hi - lo)) * (H - P.b - top);
+        const wc = w.color;
+        // 3-day running mean: smooth enough to read, close enough to show heat waves and wet spells
+        const run = (f) => days.map((d, i) => { const win = days.slice(Math.max(0, i - 1), i + 2).map(f).filter(Number.isFinite); return win.length ? win.reduce((s, x) => s + x, 0) / win.length : NaN; });
         if (w.kind === 'bars') {
-          const bw = Math.max(1, Math.min(6, ((W - P.l - P.r) / ((b - a) / DAY)) * 0.7));
-          weatherSvg = days.filter((d) => d.v > 0).map((d) => `<rect x="${(X(d.t) - bw / 2).toFixed(1)}" y="${YW(d.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H - P.b - YW(d.v)).toFixed(1)}" fill="${w.color}" opacity=".3" class="ts-weather"/>`).join('');
+          const bw = Math.max(1.5, Math.min(7, ((W - P.l - P.r) / ((b - a) / DAY)) * 0.75));
+          weatherSvg = days.filter((d) => d.v > 0.05).map((d) => `<rect x="${(X(d.t) - bw / 2).toFixed(1)}" y="${YW(d.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, H - P.b - YW(d.v)).toFixed(1)}" rx="1" fill="${wc}" opacity=".72" class="ts-weather"/>`).join('');
+        } else if (w.key === 'temp') {
+          const mid = run((d) => d.v), mn = run((d) => d.lo), mx = run((d) => d.hi);
+          const up = days.map((d, i) => [X(d.t), YW(mx[i])]), dn = days.map((d, i) => [X(d.t), YW(mn[i])]).reverse();
+          weatherSvg = `<path d="${smoothPath(up)} L${dn.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')} Z" fill="${wc}" opacity=".13" class="ts-weather ts-weather-band"/>
+            <path d="${smoothPath(days.map((d, i) => [X(d.t), YW(mid[i])]))}" fill="none" stroke="${wc}" stroke-width="1.8" stroke-linejoin="round" opacity=".95" class="ts-weather"/>`;
         } else {
-          // 7-day running mean keeps the weather quiet behind the index line
-          const sm = days.map((d, i) => { const win = days.slice(Math.max(0, i - 3), i + 4); return [X(d.t), YW(win.reduce((s, x) => s + x.v, 0) / win.length)]; });
-          weatherSvg = `<path d="${smoothPath(sm)}" fill="none" stroke="${w.color}" stroke-width="1.25" stroke-dasharray="4 3" opacity=".7" class="ts-weather"/>`;
+          const sm = run((d) => d.v), pts = days.map((d, i) => [X(d.t), YW(sm[i])]);
+          wxDefs = `<linearGradient id="tsWx" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${wc}" stop-opacity=".28"/><stop offset="1" stop-color="${wc}" stop-opacity="0"/></linearGradient>`;
+          weatherSvg = `<path d="${smoothPath(pts)} L${pts[pts.length - 1][0].toFixed(1)} ${H - P.b} L${pts[0][0].toFixed(1)} ${H - P.b} Z" fill="url(#tsWx)" class="ts-weather ts-weather-band"/>
+            <path d="${smoothPath(pts)}" fill="none" stroke="${wc}" stroke-width="1.8" stroke-linejoin="round" class="ts-weather"/>`;
         }
-        rightAxis = [lo, (lo + hi) / 2, hi].map((v) => `<text x="${W - P.r + 6}" y="${(YW(v) + 3).toFixed(1)}" class="ts-axis">${w.kind === 'bars' || Math.abs(hi) >= 10 ? Math.round(v) : v.toFixed(2)}</text>`).join('');
+        const fmt = (v) => (w.kind === 'bars' || Math.abs(hi) >= 10 ? Math.round(v) : v.toFixed(2));
+        rightAxis = [lo, (lo + hi) / 2, hi].map((v) => `<text x="${W - P.r + 6}" y="${(YW(v) + 3).toFixed(1)}" class="ts-axis" style="fill:${wc}">${fmt(v)}</text>`).join('');
       }
     }
     const crops = ts.crops.map((c) => {
@@ -535,7 +553,7 @@
     });
     const zero = ts.chart === 'change' || (ax.L[0] < 0 && ax.L[1] > 0) ? `<line x1="${P.l}" x2="${W - P.r}" y1="${YL(0).toFixed(1)}" y2="${YL(0).toFixed(1)}" class="ts-zero"/>` : '';
     svg.innerHTML = `
-      <defs>${defs}<clipPath id="tsClip"><rect x="${P.l}" y="0" width="${W - P.l - P.r}" height="${H}"/></clipPath></defs>
+      <defs>${defs}${wxDefs}<clipPath id="tsClip"><rect x="${P.l}" y="0" width="${W - P.l - P.r}" height="${H}"/></clipPath></defs>
       ${ticks(ax.L).map((v) => `<line x1="${P.l}" x2="${W - P.r}" y1="${YL(v).toFixed(1)}" y2="${YL(v).toFixed(1)}" class="ts-grid"/><text x="${P.l - 8}" y="${(YL(v) + 3).toFixed(1)}" text-anchor="end" class="ts-axis">${fmtTick(v, ax.L)}</text>`).join('')}
       ${months.map((t) => `<line x1="${X(t).toFixed(1)}" x2="${X(t).toFixed(1)}" y1="${P.t}" y2="${H - P.b}" class="ts-grid ts-vgrid"/><text x="${X(t).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="ts-axis">${monthLabel(t)}</text>`).join('')}
       ${zero}
@@ -563,7 +581,7 @@
       ${ts.chart === 'change' ? '<span class="ts-key-sub">Change since previous date</span>' : ''}
       ${single && (ts.chart === 'area' || ts.chart === 'line') ? `<span class="ts-key"><i class="is-band" style="background:rgb(var(--ink) / .12)"></i>P10–P90</span>` : ''}
       ${ts.chart === 'scatter' ? '<span class="ts-key"><i class="is-whisker"></i>P10–P90</span>' : ''}
-      ${w ? `<span class="ts-key"><i class="is-dash"></i>${w.label} <span class="ts-key-sub">${w.unit}</span></span>` : ''}`;
+      ${w ? `<span class="ts-key ts-key-wx"><i class="${w.kind === 'bars' ? 'is-wx-bar' : 'is-wx-line'}" style="--wc:${w.color}"></i>${w.label}${w.key === 'temp' ? ' <span class="ts-key-sub">mean, min–max band</span>' : ''} <span class="ts-key-sub">${w.unit}, right axis</span></span>` : ''}`;
     $('tsLegend').querySelectorAll('.ts-key[data-k]').forEach((el) => {
       const go = () => { const sel = document.getElementById('imgIndex'); if (sel && sel.value !== el.dataset.k) { sel.value = el.dataset.k; sel.dispatchEvent(new Event('change')); } };
       el.addEventListener('click', go); el.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
@@ -591,7 +609,7 @@
       ${rows}
       ${one && ts.chart !== 'change' ? `<div class="ts-tip-row"><span>P10–P90</span><span>${one.p10.toFixed(2)}–${one.p90.toFixed(2)}</span></div>` : ''}
       <div class="ts-tip-row"><span>Cloud</span><span>${p.cloud}%</span></div>
-      ${w && wv != null ? `<div class="ts-tip-row"><span>${w.label}</span><span>${w.kind === 'bars' ? wv.toFixed(1) : Math.abs(wv) >= 10 ? wv.toFixed(1) : wv.toFixed(2)} ${w.unit}</span></div>` : ''}
+      ${w && wv != null ? `<div class="ts-tip-row"><span class="ts-tip-k"><i style="background:${w.color}"></i>${w.label}</span><span>${w.kind === 'bars' ? wv.toFixed(1) : Math.abs(wv) >= 10 ? wv.toFixed(1) : wv.toFixed(2)} ${w.unit}${w.key === 'temp' && d && d.temperatureMinC != null ? ` <span style="color:var(--t-3)">(${Math.round(d.temperatureMinC)}–${Math.round(d.temperatureMaxC)})</span>` : ''}</span></div>` : ''}
       <div class="ts-tip-hint">Click to open this date</div>`;
     el.hidden = false;
     const box = $('tsChart').getBoundingClientRect();
