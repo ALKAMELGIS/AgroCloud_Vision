@@ -222,8 +222,9 @@ Add the band to `make-s2mock.mjs` with a known value and assert it in `test_shel
 Scene classification marks bright desert or fallow soil as cloud (8, 9), cirrus (10) or snow (11), so a bare pivot
 came out grey with a few green islands ("part shows, part doesn't"). Rule in `analyse()` (and `superres.js`): SCL
 4–7 kept; 2, 8, 9, 10 kept when B02 < 0.18 and 11 when B02 < 0.3 (real cloud and snow are bright in blue); 0, 1, 3
-masked. The blue band is read only when such classes fall inside the field. What stays masked is drawn as diagonal
-stripes (legend: "cloud or shadow"), and a field ≥ 40 % masked gets a dark note on the map: "Cloud over N% of the
+masked. The blue band is read only when such classes fall inside the field. What stays masked is drawn in the
+scene's own TRUE COLOUR (`res.cloudRgb`, from the `visual` band; `superres.js` from its sharpened RGB), so the map shows
+the real cloud and its shadow as Sentinel-2 saw them; diagonal stripes only if that colour is missing (legend: "cloud or shadow"), and a field ≥ 40 % masked gets a dark note on the map: "Cloud over N% of the
 field on this date. Pick a clearer date". Test: `agro-workspace-testing/scripts/test_cloudmask.py` (SH mock with
 SCL 9 everywhere, dark left half, bright right half → about 50 % masked, note shown).
 

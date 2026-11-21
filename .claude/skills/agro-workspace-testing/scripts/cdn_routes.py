@@ -66,6 +66,10 @@ def sh_mock(route):
         if os.environ.get('SH_SOILCLOUD'):   # test_cloudmask.py: SCL says cloud everywhere; left half dark soil, right half bright cloud
             bands[7] = np.full((h, w), 9, np.float32)
             bands[0] = np.where(np.arange(w)[None, :] < w // 2, 0.05, 0.45).astype(np.float32) * np.ones((h, 1), np.float32)
+            right = (np.arange(w)[None, :] >= w // 2) * np.ones((h, 1), bool)
+            # real cloud is bright in every visible band (white), with a soft edge of thinner cloud
+            yy, xx = np.mgrid[0:h, 0:w]; soft = np.clip((xx - w / 2) / (w * 0.12), 0, 1).astype(np.float32)
+            for k, lvl in ((0, 0.45), (1, 0.43), (2, 0.42)): bands[k] = np.where(right, 0.05 + (lvl - 0.05) * (0.55 + 0.45 * soft) + 0.03 * np.sin(yy / 3.0 + xx / 5.0), bands[k]).astype(np.float32)
         if 'bands: 7' in script:   # landing/motion/real.js: B02 B03 B04 B08 B8A B11 SCL
             bands = [np.full((h, w), v, np.float32) for v in (0.04, 0.07)] + [red, nir, nir, np.full((h, w), 0.2, np.float32), np.full((h, w), 4, np.float32)]
         buf = io.BytesIO(); tifffile.imwrite(buf, np.stack(bands).astype(np.float32), photometric='minisblack', planarconfig='separate')

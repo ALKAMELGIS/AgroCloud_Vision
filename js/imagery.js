@@ -414,6 +414,19 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
           }
         }
       }
+      // the masked part keeps the scene's own true colour, so the map shows the real cloud and its shadow
+      let cloudRgb = null;
+      if (validPx < fieldPx && !index.rgb) {
+        const vis = await readBand(scene, field.id, 'visual', ubox).catch(() => null);
+        if (vis) {
+          cloudRgb = new Uint8ClampedArray(n * 4);
+          for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+            const i = r * w + c; if (!inField[i] || !Number.isNaN(values[i])) continue;
+            const vi = vis.at(gx0 + (c + 0.5) * 10, gy0 - (r + 0.5) * 10); if (vi < 0) continue;
+            cloudRgb[i * 4] = vis.data[vi * 3]; cloudRgb[i * 4 + 1] = vis.data[vi * 3 + 1]; cloudRgb[i * 4 + 2] = vis.data[vi * 3 + 2]; cloudRgb[i * 4 + 3] = 255;
+          }
+        }
+      }
       const pxHa = 0.01;
       const sorted = []; for (let i = 0; i < n; i++) if (!Number.isNaN(values[i])) sorted.push(values[i]);
       sorted.sort((a, b) => a - b);
@@ -425,7 +438,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       const fromUtm = proj4(utmDef(code), 'EPSG:4326');
       const sw = fromUtm.forward([gx0, gy0 - h * 10]), ne = fromUtm.forward([gx0 + w * 10, gy0]);
       return {
-        key, field, scene, indexKey, values, inField, rgba, w, h, pxHa, gx0, gy0, code,
+        key, field, scene, indexKey, values, inField, rgba, cloudRgb, w, h, pxHa, gx0, gy0, code,
         bounds: [[sw[1], sw[0]], [ne[1], ne[0]]],
         fieldHa: fieldPx * pxHa, validHa: validPx * pxHa,
         cloudPct: fieldPx ? Math.round(100 * (1 - validPx / fieldPx)) : 100,
@@ -512,7 +525,11 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       }
       const v = res.values[i];
       // cloud or shadow: diagonal stripes, so a masked part reads as "covered", not as a colour of the index
-      if (Number.isNaN(v)) { const x = i % res.w, y = (i / res.w) | 0; out.data.set((x + y) % 4 < 2 ? [238, 240, 243, 215] : [124, 130, 140, 215], i * 4); continue; }
+      if (Number.isNaN(v)) {
+        // cloud or shadow as the satellite saw it (true colour of the date); stripes only when that colour is missing
+        if (res.cloudRgb && res.cloudRgb[i * 4 + 3]) { out.data.set(res.cloudRgb.subarray(i * 4, i * 4 + 4), i * 4); continue; }
+        const x = i % res.w, y = (i / res.w) | 0; out.data.set((x + y) % 4 < 2 ? [238, 240, 243, 215] : [124, 130, 140, 215], i * 4); continue;
+      }
       if (res.rgba) { out.data.set(res.rgba.subarray(i * 4, i * 4 + 4), i * 4); continue; }
       if (filt && !filt.classes.has(classOf(edges, v))) { out.data.set([150, 150, 146, 70], i * 4); continue; }
       const col = rampAt(idx.ramp, (v - lo) / (hi - lo || 1));
@@ -675,7 +692,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
          <span class="num font-mono">${lo}</span>
          <span class="cls-bar" role="group" aria-label="Value classes">${segs}</span>
          <span class="num font-mono">${hi}</span>
-         ${sel || '<span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm" style="background:repeating-linear-gradient(135deg,#eef0f3 0 2px,#7c828c 2px 4px)"></span>cloud or shadow</span>'}`;
+         ${sel || '<span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm" style="background:linear-gradient(135deg,#f7f8fa,#aab0b8 60%,#6f7680)"></span>cloud or shadow</span>'}`;
     if (v !== views[0]) { el.querySelectorAll('.cls-seg').forEach((b) => { b.disabled = true; }); return; }
     let dragFrom = null;
     el.querySelectorAll('.cls-seg').forEach((b) => {

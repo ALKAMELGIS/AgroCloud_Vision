@@ -159,6 +159,7 @@
       const inField = fieldMask(polys, cx0, cy0, px, W, H);
       const values = new Float32Array(W * H).fill(NaN);
       const rgba = indexKey === 'rgb' ? new Uint8ClampedArray(W * H * 4) : null;
+      const cloudRgb = new Uint8ClampedArray(W * H * 4);
       const idx = window.Imagery.indices[indexKey];
       const keep = window.Imagery.config.keepScl;
       let fieldPx = 0, validPx = 0; const sorted = [];
@@ -169,7 +170,7 @@
         const B = out[0][i] / 1e4, G = out[1][i] / 1e4, R = out[2][i] / 1e4, N = out[3][i] / 1e4;
         // as js/imagery.js: cloud/snow classes over ground that is not bright in blue are bare soil, not cloud
         const cls = scl.data[si], lim = (window.Imagery.config.sclChecked || {})[cls];
-        if (!keep.has(cls) && !(lim != null && B > 0 && B < lim)) continue;
+        if (!keep.has(cls) && !(lim != null && B > 0 && B < lim)) { const [cr, cg, cb] = toRGB(R, G, B); cloudRgb.set([cr, cg, cb, 255], i * 4); continue; }   // the real cloud, as seen
         if (rgba) { const [cr, cg, cb] = toRGB(R, G, B); rgba.set([cr, cg, cb, 255], i * 4); values[i] = 1; validPx++; continue; }
         const v = idx.f({ blue: B, green: G, red: R, nir: N });
         if (!Number.isFinite(v)) continue;
@@ -181,7 +182,7 @@
       const sw = fromUtm.forward([cx0, cy0 - ch * 10]), ne = fromUtm.forward([cx0 + cw * 10, cy0]);
       if (onProgress) onProgress({ phase: 'run', f: 1 });
       return {
-        key, field, scene, indexKey, values, inField, rgba, w: W, h: H, px, pxHa: (px * px) / 1e4, gx0: cx0, gy0: cy0, code, model: modelKey,
+        key, field, scene, indexKey, values, inField, rgba, cloudRgb, w: W, h: H, px, pxHa: (px * px) / 1e4, gx0: cx0, gy0: cy0, code, model: modelKey,
         bounds: [[sw[1], sw[0]], [ne[1], ne[0]]],
         fieldHa: (fieldPx * px * px) / 1e4, validHa: (validPx * px * px) / 1e4,
         cloudPct: fieldPx ? Math.round(100 * (1 - validPx / fieldPx)) : 100,
