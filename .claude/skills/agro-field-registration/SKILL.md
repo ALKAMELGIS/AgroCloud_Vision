@@ -52,8 +52,8 @@ Rules:
   - Archived (`#deletedSection` under the fields list; it was "Recently deleted"). The panel's button is *Archive*.
 - **Field options menu (`js/field-menu.js`):** ⋮ on each card (`.field-row` wraps `.field-card`), right-click on a card or a
   field on the map, and `#fpMore` in the panel header. Items, in order: Open field, Zoom to field, Hide on map, Add to
-  favourites · Rename, Change color, Transparency & outline · Field settings, Edit boundary on map, Duplicate, Move to
-  farm › · Export field › (GeoJSON, KML, Shapefile zip via `Vra.writeShapefile`, GPX, CSV with WKT), Archive · Delete field.
+  favourites · Rename, Change color, Transparency & outline · Field settings, Edit boundary on map, Duplicate, Add to
+  group ›, Move to farm › · Export field › (GeoJSON, KML, Shapefile zip via `Vra.writeShapefile`, GPX, CSV with WKT), Archive · Delete field.
   - Server: rename/move = `PATCH /fields/:id`; Duplicate = `POST /fields` with `copyOf` (the copy may sit on its source,
     kept as an overlap, needs the backend deploy); Archive = the recoverable delete (Undo, *Archived* list); Delete field =
     confirm dialog then `DELETE ?permanent=true`.
@@ -61,6 +61,12 @@ Rules:
     layer opacity. `fieldStyle()` is wrapped to draw them; hidden fields leave `state.fieldsLayer` and `Imagery`'s
     `currentFields()`; favourites lead the list with a star. Dialogs preview live and restore the old look on Cancel.
   - Demo mode (`window.DEMO`) refuses server actions with a toast.
+  - **Groups (layer tree, like ArcGIS Online group layers):** a field has at most one `fields."groupName"` (Supabase,
+    shared by the team; migration `20261121200000_field_groups.sql` wraps `api()` around `_api_core()` so
+    `PATCH /fields/:id { groupName }` sets or clears it, `''` = no group). Menu → *Add to group ›* (existing groups,
+    *New group…* with a name and a checklist of the farm's fields, *Remove from group*). The list shows each group as
+    a node (`.fg`): collapse (state per browser, `fieldGroupsUI:v1`), eye for all its fields, count · area, ⋮ menu
+    (zoom to group, show/hide, rename, choose fields, ungroup); ungrouped fields follow. Tested in test_field_menu.py.
   - Test: `agro-workspace-testing/scripts/test_field_menu.py` (every item, five exports, both right-clicks, Arabic at 1440 and 390).
 - **Boundary edit (`js/field-panel.js`):** the same live check runs in `#fpEditStatus`, and a 409 asks the same question.
 - **Import (`workspace.html`):** sends everything in one request. On `FIELD_IMPORT_PROBLEMS`, `#importProblems` lists them and offers skip, clip or allow. Duplicates and invalid shapes are always skipped.

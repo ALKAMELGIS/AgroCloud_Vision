@@ -24,7 +24,7 @@ ok = True
 def check(label, cond, extra=''):
     global ok; ok &= bool(cond); print(('PASS ' if cond else 'FAIL ') + label, str(extra)[:300], flush=True)
 
-ITEMS = ['open', 'zoom', 'hide', 'fav', 'rename', 'color', 'style', 'settings', 'edit', 'duplicate', 'move', 'export', 'archive', 'delete']
+ITEMS = ['open', 'zoom', 'hide', 'fav', 'rename', 'color', 'style', 'settings', 'edit', 'duplicate', 'group', 'move', 'export', 'archive', 'delete']
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
     ctx = b.new_context(viewport={'width': 1440, 'height': 900}, accept_downloads=True)
@@ -44,7 +44,7 @@ with sync_playwright() as p:
 
     menu('Pivot 1')
     got = pg.eval_on_selector_all('.fm-menu:not(.fm-sub) [data-act]', 'els => els.map(e => e.dataset.act)')
-    check('menu has the 14 items in order', got == ITEMS, got)
+    check('menu has the 15 items in order', got == ITEMS, got)
     pg.keyboard.press('Escape'); check('Escape closes it', pg.locator('.fm-menu:not(.fm-sub)').is_hidden())
 
     menu('Pivot 1'); act('open'); expect(pg.locator('#fieldPanel')).to_be_visible()
@@ -98,6 +98,28 @@ with sync_playwright() as p:
     check('duplicate saved on the server', any(f['name'] == 'Pivot 1 copy' for f in fields(farm['id'])), [f['name'] for f in fields(farm['id'])])
     expect(pg.locator('#fieldsList .field-row')).to_have_count(4)
 
+    # groups: a named node in the list with several fields, its own eye, rename, ungroup
+    menu('Pivot 1'); act('group'); expect(pg.locator('.fm-sub')).to_be_visible(); pg.click('.fm-sub [data-group-new]')
+    pg.fill('#fmGroupName', 'North pivots')
+    pg.locator('.fm-check', has_text='Pivot 2 South').locator('input').check(); pg.click('.fm-dialog .fm-ok')
+    expect(pg.locator('#fieldsList .fg')).to_have_count(1, timeout=15000)
+    grp = {f['name']: f.get('groupName') for f in fields(farm['id'])}
+    check('new group saved on the server with both fields', grp.get('Pivot 1') == 'North pivots' and grp.get('Pivot 2 South') == 'North pivots', grp)
+    check('the group node lists its two fields', pg.locator('#fieldsList .fg .fg-body .field-row').count() == 2 and 'North pivots' in pg.inner_text('#fieldsList .fg-head'))
+    menu('Pivot 1 copy'); act('group'); pg.click('.fm-sub [data-group="North pivots"]'); expect(pg.locator('#fieldsList .fg .fg-body .field-row')).to_have_count(3, timeout=15000)
+    check('add a field to an existing group', True)
+    pg.click('#fieldsList .fg .fg-toggle'); pg.wait_for_timeout(300)
+    check('collapse hides the members', pg.locator('#fieldsList .fg .fg-body').is_hidden())
+    pg.click('#fieldsList .fg .fg-toggle'); pg.wait_for_timeout(300)
+    pg.click('#fieldsList .fg .fg-eye'); pg.wait_for_timeout(1200)
+    check('group eye hides all its fields on the map', pg.evaluate(f"!state.fieldsLayer.hasLayer(state.fieldLayerById.get('{p1}'))"))
+    pg.click('#fieldsList .fg .fg-eye'); pg.wait_for_timeout(1200)
+    pg.click('#fieldsList .fg .fg-more'); pg.click('.fm-menu [data-gact="rename"]'); pg.fill('#fmGroupName', 'Pivots N'); pg.click('.fm-dialog .fm-ok')
+    expect(pg.locator('#fieldsList .fg-head')).to_contain_text('Pivots N', timeout=15000)
+    check('rename group on the server', all(f.get('groupName') in (None, 'Pivots N') for f in fields(farm['id'])) and any(f.get('groupName') == 'Pivots N' for f in fields(farm['id'])))
+    pg.click('#fieldsList .fg .fg-more'); pg.click('.fm-menu [data-gact="ungroup"]')
+    expect(pg.locator('#fieldsList .fg')).to_have_count(0, timeout=15000)
+    check('ungroup clears the group', all(not f.get('groupName') for f in fields(farm['id'])))
     menu('Pivot 1 copy'); act('move'); expect(pg.locator('.fm-sub')).to_be_visible()
     pg.click('.fm-sub [data-farm]'); expect(pg.locator('#toast')).to_contain_text('East block', timeout=15000)
     check('move to farm', any(f['name'] == 'Pivot 1 copy' for f in fields(farm2['id'])) and not any(f['name'] == 'Pivot 1 copy' for f in fields(farm['id'])))

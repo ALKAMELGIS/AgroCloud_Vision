@@ -18,6 +18,7 @@
 (function () {
   'use strict';
   const T = (s) => (window.I18n ? I18n.t(s) : s);
+  if (window.I18n && I18n.add) I18n.add({"Add to group": "إضافة إلى مجموعة", "Group": "المجموعة", "New group…": "مجموعة جديدة…", "Remove from group": "إزالة من المجموعة", "fields": "حقول", "field": "حقل", "Removed from the group": "أُزيل من المجموعة", "Could not change the group": "تعذّر تغيير المجموعة", "Edit group": "تعديل المجموعة", "New group": "مجموعة جديدة", "Group name": "اسم المجموعة", "e.g. North pivots": "مثال: محاور الشمال", "Fields in the group": "الحقول في المجموعة", "The group needs a name": "تحتاج المجموعة إلى اسم", "Choose at least one field": "اختر حقلاً واحداً على الأقل", "Rename group": "إعادة تسمية المجموعة", "Collapse group": "طي المجموعة", "Expand group": "توسيع المجموعة", "Show the group on the map": "إظهار المجموعة على الخريطة", "Hide the group on the map": "إخفاء المجموعة على الخريطة", "Group options": "خيارات المجموعة", "Zoom to group": "التكبير إلى المجموعة", "Choose fields…": "اختيار الحقول…", "Ungroup": "فك المجموعة"});
   if (window.I18n && I18n.add) I18n.add({"Field options": "خيارات الحقل", "Open field": "فتح الحقل", "Zoom to field": "التكبير إلى الحقل", "Hide on map": "إخفاء على الخريطة", "Show on map": "إظهار على الخريطة", "Add to favourites": "إضافة إلى المفضلة", "Remove from favourites": "إزالة من المفضلة", "Rename": "إعادة التسمية", "Change color": "تغيير اللون", "Transparency & outline": "الشفافية والحدود", "Field settings": "إعدادات الحقل", "Edit boundary on map": "تعديل الحدود على الخريطة", "Duplicate": "تكرار", "Move to farm": "نقل إلى مزرعة", "Export field": "تصدير الحقل", "Archive": "أرشفة", "Delete field": "حذف الحقل", "Favourite": "مفضّل", "Hidden on the map": "مخفي على الخريطة", "No other farm yet": "لا توجد مزرعة أخرى بعد", "Shapefile (zip)": "Shapefile (ملف مضغوط)", "CSV (WKT)": "CSV (WKT)", "Field": "حقل", "The demo is read-only: sign in to change fields": "العرض التجريبي للقراءة فقط: سجّل الدخول لتعديل الحقول", "Could not complete this action": "تعذّر تنفيذ هذا الإجراء", "is hidden on the map": "مخفي على الخريطة", "is shown on the map": "ظاهر على الخريطة", "Undo": "تراجع", "added to favourites": "أُضيف إلى المفضلة", "removed from favourites": "أُزيل من المفضلة", "moved to": "نُقل إلى", "Open farm": "فتح المزرعة", "Could not move the field": "تعذّر نقل الحقل", "This field has no boundary to copy": "لا توجد حدود لهذا الحقل لنسخها", "copy": "نسخة", "saved": "حُفظ", "Open": "فتح", "The server needs the latest update to duplicate fields: redeploy the backend on Render": "يحتاج الخادم إلى آخر تحديث لتكرار الحقول: أعد نشر الخادم على Render", "Could not duplicate the field": "تعذّر تكرار الحقل", "This field has no boundary to export": "لا توجد حدود لهذا الحقل لتصديرها", "Exported": "تم التصدير", "The Shapefile writer is not loaded": "كاتب Shapefile غير محمّل", "Could not write the Shapefile": "تعذّرت كتابة Shapefile", "Could not load the zip writer": "تعذّر تحميل أداة الضغط", "Close": "إغلاق", "Cancel": "إلغاء", "Rename field": "إعادة تسمية الحقل", "Name": "الاسم", "Save": "حفظ", "The field needs a name": "يحتاج الحقل إلى اسم", "Renamed to": "أُعيدت تسميته إلى", "Field colour": "لون الحقل", "The outline and fill of this field on the map": "حدود هذا الحقل وتعبئته على الخريطة", "Colour": "اللون", "Default": "الافتراضي", "Custom": "مخصص", "Custom colour": "لون مخصص", "Apply": "تطبيق", "colour saved": "حُفظ اللون", "Satellite layer opacity": "عتامة طبقة القمر الصناعي", "Fill opacity": "عتامة التعبئة", "Outline width": "عرض الحدود", "An outline of 0 px hides the boundary line": "حدود بعرض 0 بكسل تُخفي خط الحدود", "style saved": "حُفظ النمط", "and its crops, activities and history will be deleted forever. This cannot be undone.": "ومحاصيله وأنشطته وسجلّه ستُحذف نهائياً. لا يمكن التراجع عن ذلك.", "To keep it recoverable, use Archive instead.": "لإبقائه قابلاً للاستعادة، استخدم الأرشفة بدلاً من ذلك.", "Delete forever": "حذف نهائي", "deleted forever": "حُذف نهائياً", "Archived": "المؤرشفة", "archived": "أُرشف"});
 
   // ------------------------------------------------------------ icons this menu needs
@@ -112,6 +113,7 @@
     // favourites first, keeping the chosen order inside each group
     const rows = [...list.querySelectorAll(':scope > .field-row')];
     rows.filter((r) => FieldPrefs.get(r.dataset.fieldId).fav).reverse().forEach((r) => list.prepend(r));
+    buildTree();
   };
   new MutationObserver(() => { if (list.querySelector(':scope > .field-card')) decorate(); }).observe(list, { childList: true });
   decorate();
@@ -177,6 +179,7 @@
       ${item('settings', 'settings', 'Field settings')}
       ${item('edit', 'shapes', 'Edit boundary on map')}
       ${item('duplicate', 'copy', 'Duplicate')}
+      ${item('group', 'layers', f.groupName ? 'Group' : 'Add to group', 'has-sub')}
       ${item('move', 'moveTo', 'Move to farm', 'has-sub')}
       ${sep}
       ${item('export', 'download', 'Export field', 'has-sub')}
@@ -219,7 +222,13 @@
   function openSub(kind, btn) {
     if (sub) sub.remove();
     sub = document.createElement('div'); sub.className = 'fm-menu fm-sub'; sub.setAttribute('role', 'menu');
-    if (kind === 'move') {
+    if (kind === 'group') {
+      const f = fieldOf(menuFor) || {}, groups = groupNames();
+      sub.innerHTML = groups.map((g) => `<button type="button" role="menuitemradio" aria-checked="${g === f.groupName}" class="fm-item" data-group="${escapeHtml(g)}">${icon(g === f.groupName ? 'check' : 'layers')}<span>${escapeHtml(g)}</span></button>`).join('')
+        + (groups.length ? sep : '')
+        + `<button type="button" role="menuitem" class="fm-item" data-group-new="1">${icon('folderPlus')}<span>${T('New group…')}</span></button>`
+        + (f.groupName ? `<button type="button" role="menuitem" class="fm-item" data-group-out="1">${icon('x')}<span>${T('Remove from group')}</span></button>` : '');
+    } else if (kind === 'move') {
       const others = state.farms.filter((fm) => fm.id !== state.selectedFarmId);
       sub.innerHTML = others.length
         ? others.map((fm) => `<button type="button" role="menuitem" class="fm-item" data-farm="${fm.id}"><span>${escapeHtml(fm.name)}</span></button>`).join('')
@@ -234,7 +243,10 @@
     sub.addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
       closeMenu();
-      if (b.dataset.farm) moveTo(id, b.dataset.farm); else exportField(id, b.dataset.exp);
+      if (b.dataset.group != null) setGroup([id], b.dataset.group);
+      else if (b.dataset.groupNew) groupDialog({ fieldIds: [id] });
+      else if (b.dataset.groupOut) setGroup([id], '');
+      else if (b.dataset.farm) moveTo(id, b.dataset.farm); else exportField(id, b.dataset.exp);
     });
     const first = sub.querySelector('button'); if (first) first.focus({ preventScroll: true });
   }
@@ -243,7 +255,7 @@
     const b = e.target.closest('[data-act]'); if (!b) return;
     e.stopPropagation();
     const act = b.dataset.act, id = menuFor;
-    if (act === 'move' || act === 'export') { openSub(act, b); return; }
+    if (act === 'move' || act === 'export' || act === 'group') { openSub(act, b); return; }
     closeMenu();
     run(act, id);
   });
@@ -345,6 +357,141 @@
       showError(/already saved/i.test(err.message || '') ? T('The server needs the latest update to duplicate fields: redeploy the backend on Render') : err.message || T('Could not duplicate the field'));
     }
   }
+
+  // ------------------------------------------------------------ groups (a layer tree, like ArcGIS Online group layers)
+  // A field belongs to at most one named group (fields."groupName", shared through Supabase). The list shows each
+  // group as a collapsible node with its own eye, count, area and menu; ungrouped fields follow.
+  const UI_KEY = 'fieldGroupsUI:v1';
+  let ui = {}; try { ui = JSON.parse(localStorage.getItem(UI_KEY) || '{}') || {}; } catch { ui = {}; }
+  const uiKey = (name) => (state.selectedFarmId || '') + '|' + name;
+  const saveUi = () => { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch { /* storage off */ } };
+  const groupOf = (id) => ((state.fieldList || []).find((f) => f.id === id) || {}).groupName || '';
+  function groupNames() { return [...new Set((state.fieldList || []).map((f) => f.groupName).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })); }
+  const membersOf = (name) => (state.fieldList || []).filter((f) => f.groupName === name).map((f) => f.id);
+
+  async function setGroup(ids, name) {
+    if (readOnly()) return;
+    const target = String(name || '').trim();
+    const todo = ids.filter((id) => groupOf(id) !== target);
+    try {
+      for (const id of todo) await apiPatch(`/fields/${id}`, { groupName: target });
+      await reloadFarm();
+      if (todo.length) showToast(target ? `${todo.length === 1 ? (fieldOf(todo[0]) || {}).name : todo.length + ' ' + T('fields')} → ${target}` : T('Removed from the group'));
+    } catch (err) { showError(err.message || T('Could not change the group')); }
+  }
+
+  // New group / edit a group: a name and the fields in it, chosen from the farm's list
+  function groupDialog({ fieldIds = [], editing = null }) {
+    if (readOnly()) return;
+    const all = (state.fieldList || []).slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    const pre = new Set(editing ? membersOf(editing) : fieldIds);
+    openDialog(T(editing ? 'Edit group' : 'New group'), `
+      <label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="fmGroupName">${T('Group name')}</label>
+      <input id="fmGroupName" required maxlength="120" class="h-10 w-full rounded-lg border border-gray-200 px-3 text-[14px] outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20" value="${escapeHtml(editing || '')}" placeholder="${T('e.g. North pivots')}">
+      <div class="mb-1.5 mt-4 flex items-center justify-between text-[12px] font-medium text-gray-500"><span>${T('Fields in the group')}</span><span class="num" id="fmGroupCount"></span></div>
+      <div class="fm-checklist thin-scroll">${all.map((f) => `<label class="fm-check"><input type="checkbox" value="${f.id}" ${pre.has(f.id) ? 'checked' : ''}><span class="truncate">${escapeHtml(f.name)}</span><span class="num">${formatHa(f.areaHectares)}</span>${f.groupName && f.groupName !== editing ? `<em>${escapeHtml(f.groupName)}</em>` : ''}</label>`).join('')}</div>`,
+    T('Save'), async (d) => {
+      const name = d.querySelector('#fmGroupName').value.trim();
+      if (!name) throw new Error(T('The group needs a name'));
+      const chosen = [...d.querySelectorAll('.fm-check input:checked')].map((i) => i.value);
+      if (!chosen.length) throw new Error(T('Choose at least one field'));
+      const out = editing ? membersOf(editing).filter((id) => !chosen.includes(id)) : [];
+      for (const id of chosen) if (groupOf(id) !== name) await apiPatch(`/fields/${id}`, { groupName: name });
+      for (const id of out) await apiPatch(`/fields/${id}`, { groupName: '' });
+      if (editing && editing !== name && ui[uiKey(editing)] != null) { ui[uiKey(name)] = ui[uiKey(editing)]; delete ui[uiKey(editing)]; saveUi(); }
+      await reloadFarm();
+      showToast(`${name}: ${chosen.length} ${T(chosen.length === 1 ? 'field' : 'fields')}`);
+    });
+    const count = () => { dlg.querySelector('#fmGroupCount').textContent = dlg.querySelectorAll('.fm-check input:checked').length + ' / ' + all.length; };
+    dlg.querySelectorAll('.fm-check input').forEach((i) => i.addEventListener('change', count)); count();
+  }
+
+  function renameGroup(name) {
+    if (readOnly()) return;
+    openDialog(T('Rename group'), `<label class="mb-1.5 block text-[12px] font-medium text-gray-500" for="fmGroupName">${T('Group name')}</label>
+      <input id="fmGroupName" required maxlength="120" class="h-10 w-full rounded-lg border border-gray-200 px-3 text-[14px] outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20" value="${escapeHtml(name)}">`,
+    T('Save'), async (d) => {
+      const next = d.querySelector('#fmGroupName').value.trim();
+      if (!next) throw new Error(T('The group needs a name'));
+      if (next === name) return true;
+      for (const id of membersOf(name)) await apiPatch(`/fields/${id}`, { groupName: next });
+      if (ui[uiKey(name)] != null) { ui[uiKey(next)] = ui[uiKey(name)]; delete ui[uiKey(name)]; saveUi(); }
+      await reloadFarm();
+      showToast(`${T('Renamed to')} ${next}`);
+    });
+    dlg.querySelector('#fmGroupName').select();
+  }
+
+  function zoomToGroup(name) {
+    let b = null;
+    membersOf(name).forEach((id) => { const l = state.fieldLayerById && state.fieldLayerById.get(id); if (l) b = b ? b.extend(l.getBounds()) : L.latLngBounds(l.getBounds().getSouthWest(), l.getBounds().getNorthEast()); });
+    if (b && mapInstance) mapInstance.fitBounds(b, { padding: [60, 60], maxZoom: 16 });
+  }
+  function setGroupHidden(name, hidden) {
+    membersOf(name).forEach((id) => FieldPrefs.set(id, { hidden }));
+    applyVisibility(); refreshImagery(); renderFieldsList();
+  }
+
+  function buildTree() {
+    if (list.querySelector(':scope > .fg')) return;
+    const names = groupNames(); if (!names.length) return;
+    const first = list.firstChild;
+    names.forEach((name) => {
+      const rows = [...list.querySelectorAll(':scope > .field-row')].filter((r) => groupOf(r.dataset.fieldId) === name);
+      if (!rows.length) return;   // filtered out by the search or a risk chip
+      const ids = membersOf(name), ha = (state.fieldList || []).filter((f) => ids.includes(f.id)).reduce((a, f) => a + (f.areaHectares || 0), 0);
+      const allHidden = ids.every((id) => FieldPrefs.get(id).hidden), open = !ui[uiKey(name)];
+      const sec = document.createElement('div'); sec.className = 'fg'; sec.dataset.group = name; sec.setAttribute('role', 'group');
+      sec.innerHTML = `<div class="fg-head">
+          <button type="button" class="fg-toggle" aria-expanded="${open}" aria-label="${T(open ? 'Collapse group' : 'Expand group')}">${icon('chevronDown')}</button>
+          <button type="button" class="fg-eye" aria-pressed="${!allHidden}" title="${T(allHidden ? 'Show the group on the map' : 'Hide the group on the map')}" aria-label="${T(allHidden ? 'Show the group on the map' : 'Hide the group on the map')}">${icon(allHidden ? 'eyeOff' : 'eye')}</button>
+          <span class="fg-name truncate" translate="no">${escapeHtml(name)}</span>
+          <span class="fg-meta num">${ids.length} · ${formatHa(ha)}</span>
+          <button type="button" class="field-more fg-more" aria-haspopup="menu" aria-label="${T('Group options')}" title="${T('Group options')}">${icon('more')}</button>
+        </div><div class="fg-body"${open ? '' : ' hidden'}></div>`;
+      const body = sec.querySelector('.fg-body');
+      rows.forEach((r) => body.appendChild(r));
+      list.insertBefore(sec, first && first.parentNode === list ? first : null);
+      sec.querySelector('.fg-toggle').addEventListener('click', () => { ui[uiKey(name)] = open ? 1 : undefined; if (!ui[uiKey(name)]) delete ui[uiKey(name)]; saveUi(); renderFieldsList(); });
+      sec.querySelector('.fg-name').addEventListener('click', () => sec.querySelector('.fg-toggle').click());
+      sec.querySelector('.fg-eye').addEventListener('click', () => setGroupHidden(name, !allHidden));
+      const more = sec.querySelector('.fg-more');
+      more.addEventListener('click', (e) => { e.stopPropagation(); openGroupMenu(name, more); });
+      sec.querySelector('.fg-head').addEventListener('contextmenu', (e) => { e.preventDefault(); openGroupMenu(name, null, e.clientX, e.clientY); });
+    });
+    // keep the groups in name order at the top, then the fields without a group
+    [...list.querySelectorAll(':scope > .fg')].reverse().forEach((g) => list.prepend(g));
+  }
+
+  let groupFor = null;
+  function openGroupMenu(name, anchor, x, y) {
+    closeMenu();
+    groupFor = name; anchorEl = anchor;
+    const ids = membersOf(name), allHidden = ids.every((id) => FieldPrefs.get(id).hidden);
+    const g = (act, ico, label, extra = '') => `<button type="button" role="menuitem" class="fm-item ${extra}" data-gact="${act}">${icon(ico)}<span>${T(label)}</span></button>`;
+    menu.innerHTML = `<div class="fm-head"><b translate="no">${escapeHtml(name)}</b><span class="num">${ids.length} ${T(ids.length === 1 ? 'field' : 'fields')}</span></div>
+      ${g('zoom', 'focus', 'Zoom to group')}
+      ${g('vis', allHidden ? 'eye' : 'eyeOff', allHidden ? 'Show the group on the map' : 'Hide the group on the map')}
+      ${sep}
+      ${g('rename', 'type', 'Rename group')}
+      ${g('edit', 'layers', 'Choose fields…')}
+      ${sep}
+      ${g('ungroup', 'x', 'Ungroup', 'is-danger')}`;
+    menu.hidden = false; place(menu, anchor, x, y);
+    if (anchor) anchor.setAttribute('aria-expanded', 'true');
+    menu.querySelector('.fm-item').focus({ preventScroll: true });
+  }
+  menu.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-gact]'); if (!b) return;
+    e.stopPropagation();
+    const name = groupFor; closeMenu();
+    const act = b.dataset.gact;
+    if (act === 'zoom') zoomToGroup(name);
+    else if (act === 'vis') setGroupHidden(name, !membersOf(name).every((id) => FieldPrefs.get(id).hidden));
+    else if (act === 'rename') renameGroup(name);
+    else if (act === 'edit') groupDialog({ editing: name });
+    else if (act === 'ungroup') setGroup(membersOf(name), '');
+  });
 
   // ------------------------------------------------------------ export
   function ringsOf(g) { return g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []; }
@@ -533,6 +680,28 @@
     .fm-range label { grid-column: 1 / -1; font-size: 12px; font-weight: 500; color: var(--t-3, #6b7280); }
     .fm-range input { width: 100%; accent-color: var(--accent, #16a34a); }
     .fm-range output { text-align: end; font-size: 12px; color: var(--t-1, #111827); }
+    .fg { margin: 2px 0 6px; }
+    .fg-head { display: flex; align-items: center; gap: 2px; height: 36px; padding-inline: 2px 0; border-radius: 8px; }
+    .fg-head:hover { background: var(--g-850, #f9fafb); }
+    .fg-head:hover .fg-more, .fg-more:focus-visible, .fg-more[aria-expanded="true"] { opacity: 1; }
+    .fg-toggle, .fg-eye { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border-radius: 6px; color: var(--t-3, #6b7280); }
+    .fg-toggle:hover, .fg-eye:hover { background: var(--g-800, #f3f4f6); color: var(--t-1, #111827); }
+    .fg-toggle .ico, .fg-eye .ico { width: 15px; height: 15px; }
+    .fg-toggle .ico { transition: transform .15s; }
+    .fg-toggle[aria-expanded="false"] .ico { transform: rotate(-90deg); }
+    [dir="rtl"] .fg-toggle[aria-expanded="false"] .ico { transform: rotate(90deg); }
+    .fg-eye[aria-pressed="false"] { color: var(--t-4, #9ca3af); }
+    .fg-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: var(--t-1, #111827); cursor: pointer; }
+    .fg-meta { flex: none; font-size: 11px; color: var(--t-3, #6b7280); }
+    .fg-body { margin-inline-start: 13px; padding-inline-start: 6px; border-inline-start: 1px solid var(--line, #e5e7eb); }
+    .fg-body[hidden] { display: none; }
+    .fm-checklist { max-height: 260px; overflow-y: auto; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--line, #e5e7eb); padding: 4px; }
+    .fm-check { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 4px 8px; border-radius: 7px; font-size: 13px; color: var(--t-1, #111827); cursor: pointer; }
+    .fm-check:hover { background: var(--g-850, #f9fafb); }
+    .fm-check input { width: 16px; height: 16px; accent-color: var(--accent, #16a34a); flex: none; }
+    .fm-check .truncate { flex: 1; min-width: 0; }
+    .fm-check .num { font-size: 12px; color: var(--t-3, #6b7280); }
+    .fm-check em { font-style: normal; font-size: 11px; color: var(--t-3, #6b7280); padding: 1px 6px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--line, #e5e7eb); }
   `;
   document.head.appendChild(css);
 })();
