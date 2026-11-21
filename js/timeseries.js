@@ -263,6 +263,27 @@
 
   const fieldOf = (id) => state.fieldsById && state.fieldsById.get(id);
 
+  // Dates already read are kept per field (and boundary), so the chart opens with them at once
+  // and only new dates are read from the satellite.
+  const SAVE = 'tsSeries:v1:';
+  const geomKey = (g) => { const t = JSON.stringify(g && g.coordinates); let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return String(h); };
+  function savedOf(field) {
+    try { const o = JSON.parse(localStorage.getItem(SAVE + field.id) || 'null'); return o && o.g === geomKey(field.geometry) ? o.s : {}; } catch { return {}; }
+  }
+  function saveSeries(field, s) {
+    const body = JSON.stringify({ g: geomKey(field.geometry), at: Date.now(), s });
+    try { localStorage.setItem(SAVE + field.id, body); } catch {
+      // storage full: drop the other fields' series, then try once more
+      try { Object.keys(localStorage).filter((k) => k.startsWith(SAVE) && k !== SAVE + field.id).forEach((k) => localStorage.removeItem(k)); localStorage.setItem(SAVE + field.id, body); } catch { /* keep in memory only */ }
+    }
+  }
+  // spread order: every 8th date first, then the gaps, so the whole season shows after a few reads
+  function spread(n) {
+    const out = [], seen = new Uint8Array(n);
+    for (let step = 8; step >= 1; step >>= 1) for (let i = 0; i < n; i += step) if (!seen[i]) { seen[i] = 1; out.push(i); }
+    return out;
+  }
+
   async function load() {
     const I = window.Imagery;
     const field = fieldOf(ts.fieldId);
@@ -270,7 +291,17 @@
     ts.points = []; ts.crops = []; ts.view = null; ts.done = 0; ts.total = 0; ts.hover = null; ts.seen.clear();
     if (!I || !field || !field.geometry) { status(I ? 'Pick a field' : 'Satellite tools are loading'); draw(); return; }
     fillIndices();
-    status('Finding images');
+    const keys = keysOrdered();
+    const saved = savedOf(field);
+    const has = (e) => e && (e.c > 40 || keys.every((k) => e.v[k] !== undefined));
+    const add = (day, sceneId, scene, e) => {
+      const v = {}; keys.forEach((k) => { if (e.v[k]) v[k] = { mean: e.v[k][0], p10: e.v[k][1], p90: e.v[k][2] }; });
+      if (e.c <= 40 && Object.keys(v).length) ts.points.push({ day, t: t0(day), sceneId, scene, v, cloud: e.c });
+    };
+    // 1. saved dates of this period, drawn before anything is fetched
+    Object.entries(saved).forEach(([id, e]) => { if (e.d >= ts.from && e.d <= ts.to && has(e)) add(e.d, id, null, e); });
+    ts.points.sort((a, b) => a.t - b.t);
+    status(ts.points.length ? `${ts.points.length} clear dates` : 'Finding images');
     draw();
     apiGet(`/crops/by-field/${field.id}`).then((c) => { if (token === ts.token) { ts.crops = c || []; draw(); } }).catch(() => {});
     loadWeather().then(() => token === ts.token && draw());
@@ -278,39 +309,42 @@
     try {
       const lookback = Math.ceil((Date.now() - t0(ts.from)) / DAY) + 1;
       scenes = await I.searchScenes([field.geometry], 'ts:' + field.id, lookback);
-    } catch (err) { if (token === ts.token) status(I.friendly(err), true); return; }
+    } catch (err) { if (token === ts.token && !ts.points.length) status(I.friendly(err), true); return; }
     if (token !== ts.token) return;
     const list = scenes.filter((s) => s.day >= ts.from && s.day <= ts.to && s.tileCloud < 70 && s.covers !== false)
       .sort((a, b) => (a.day < b.day ? -1 : 1));
-    ts.total = list.length;
+    // saved points get their scene so a click opens the image
+    const byId = new Map(list.map((s) => [s.id, s]));
+    ts.points.forEach((p) => { p.scene = byId.get(p.sceneId) || null; });
+    ts.points = ts.points.filter((p) => p.scene);
+    const todo = list.filter((s) => !has(saved[s.id]));
+    ts.total = todo.length;
     if (!list.length) { status('No images in this period'); draw(); return; }
-    let next = 0;
+    if (!todo.length) { status(`${ts.points.length} clear dates`); ts.sweepAt = performance.now(); draw(); return; }
+    const order = spread(todo.length);
+    let next = 0, dirty = 0;
     const work = async () => {
-      while (next < list.length) {
-        const s = list[next++];
+      while (next < order.length) {
+        const s = todo[order[next++]];
         try {
-          // all layers of a date at once: they share the same band reads
-          const keys = keysOrdered();
-          const res = await Promise.all(keys.map((k) => I.analyse(field, s, k).catch(() => null)));
+          const r = I.seriesStats ? await I.seriesStats(field, s, keys, 40)
+            : await Promise.all(keys.map((k) => I.analyse(field, s, k).catch(() => null))).then((rs) => ({ cloud: (rs.find(Boolean) || { cloudPct: 100 }).cloudPct, v: Object.fromEntries(rs.map((x, i) => [keys[i], x && Number.isFinite(x.mean) ? x : null]).filter(([, x]) => x)) }));
           if (token !== ts.token) return;
-          const v = {}; let cloud = null;
-          res.forEach((r, i) => {
-            if (!r) return;
-            if (cloud === null) cloud = r.cloudPct;
-            if (Number.isFinite(r.mean)) v[keys[i]] = { mean: r.mean, p10: r.p10, p90: r.p90 };
-          });
-          if (cloud <= 40 && Object.keys(v).length) {
-            ts.points.push({ day: s.day, t: t0(s.day), sceneId: s.id, scene: s, v, cloud });
-            ts.points.sort((a, b) => a.t - b.t);
-          }
+          const e = { d: s.day, c: r.cloud, v: {} };
+          keys.forEach((k) => { const x = r.v[k]; e.v[k] = x ? [+x.mean.toFixed(4), +x.p10.toFixed(4), +x.p90.toFixed(4)] : null; });
+          saved[s.id] = e; dirty++;
+          add(s.day, s.id, s, e);
+          ts.points.sort((a, b) => a.t - b.t);
         } catch { /* a date that cannot be read is left out */ }
         if (token !== ts.token) return;
         ts.done++;
+        if (dirty >= 8) { saveSeries(field, saved); dirty = 0; }
         status(ts.done < ts.total ? `${ts.done} / ${ts.total}` : `${ts.points.length} clear dates`);
         schedule();
       }
     };
-    await Promise.all(Array.from({ length: 6 }, work));
+    await Promise.all(Array.from({ length: 8 }, work));
+    if (dirty) saveSeries(field, saved);
     if (token !== ts.token) return;
     ts.sweepAt = performance.now(); cancelAnimationFrame(raf); draw();
   }
@@ -634,7 +668,7 @@
   $('tsSvg').addEventListener('mouseleave', () => { ts.hover = null; schedule(); });
   $('tsSvg').addEventListener('click', (e) => {
     const p = nearest(e);
-    if (!p || !window.Imagery) return;
+    if (!p || !p.scene || !window.Imagery) return;
     Imagery.showScene(p.scene);
     schedule();
   });

@@ -45,7 +45,7 @@ with sync_playwright() as p:
     expect(pg.locator('#tsPanel')).to_be_visible()
     check('map makes room for the panel', pg.locator('#mapRow').bounding_box()['height'] < h0 - 250)
     check('opens on the selected field', pg.locator('#tsField option:checked').inner_text() == 'Pivot 1', pg.locator('#tsField option:checked').inner_text())
-    expect(pg.locator('#tsSvg .ts-dot')).to_have_count(3, timeout=30000)   # 26 Oct is cloudy over the field
+    expect(pg.locator('#tsSvg .ts-dot')).to_have_count(4, timeout=30000)   # SCL calls 26 Oct cloudy, but the blue band shows the ground (sclChecked)
     check('status counts clear dates', 'clear dates' in pg.inner_text('#tsStatus'), pg.inner_text('#tsStatus'))
     check('progress bar gone once loaded', pg.locator('#tsProgress').is_hidden())
     pg.select_option('#tsChartType', 'line'); pg.wait_for_timeout(120)
@@ -162,6 +162,16 @@ with sync_playwright() as p:
     check('back to chart', pg.locator('#tsSvg path.ts-line').count() >= 1 and pg.locator('#tsBrush').is_visible())
     pg.click('#tsClose')
     check('close gives the map back', abs(pg.locator('#mapRow').bounding_box()['height'] - h0) < 2)
+    # reopening: saved dates draw at once, and no band is read again
+    reads = []
+    pg.on('request', lambda r: reads.append(r.url) if r.url.endswith('.tif') else None)
+    pg.reload(); expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(1500)
+    pg.locator('#fieldsList .field-card', has_text='Pivot 1').click(); pg.wait_for_timeout(300)
+    if pg.evaluate("TimeSeries.state.indices.join()") != 'ndvi': pg.select_option('#imgIndex', 'ndvi'); pg.wait_for_timeout(500)
+    reads.clear(); pg.click('#tsBtn')
+    expect(pg.locator('#tsSvg .ts-dot')).to_have_count(4, timeout=1500)
+    pg.wait_for_timeout(1500)
+    check('reopening draws saved dates at once, no band reads', not reads, reads[:4])
     check('no JS errors', not errors, errors)
     b.close()
 print('ALL PASS' if ok else 'SOME FAILED')

@@ -450,6 +450,81 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
     return p;
   }
 
+  /**
+   * Time-series figures for one date: field cloud % from the mask alone, and only when the field is clear enough
+   * (cloud <= maxCloud) the bands of every layer, read once and computed in one pass. No images are built.
+   * Returns { cloud, v: { key: { mean, p10, p90 } } }.
+   */
+  const statsCache = new Map();
+  async function seriesStats(field, scene, keys, maxCloud = 40) {
+    const key = scene.id + '|' + field.id + '|' + keys.join(',');
+    if (statsCache.has(key)) return statsCache.get(key);
+    const p = (async () => {
+      await libs();
+      const code = epsgOf(scene.item);
+      const toUtm = proj4('EPSG:4326', utmDef(code));
+      const polys = ringsOf(field.geometry).map((poly) => poly.map((ring) => ring.map(([lng, lat]) => toUtm.forward([lng, lat]))));
+      const xs = polys.flatMap((q) => q[0].map((pt) => pt[0])), ys = polys.flatMap((q) => q[0].map((pt) => pt[1]));
+      const ubox = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+      const scl = await readBand(scene, field.id, 'scl', ubox);
+      const gx0 = Math.floor((ubox[0] - 20 - scl.ox) / 10) * 10 + scl.ox, gy0 = scl.oy - Math.floor((scl.oy - ubox[3] - 20) / 10) * 10;
+      const w = Math.ceil((ubox[2] + 20 - gx0) / 10), h = Math.ceil((gy0 - (ubox[1] - 20)) / 10);
+      // field pixel centres and their mask class
+      const pts = []; let needBlue = false;
+      for (let r = 0; r < h; r++) {
+        const y = gy0 - (r + 0.5) * 10;
+        for (let c = 0; c < w; c++) {
+          const x = gx0 + (c + 0.5) * 10;
+          if (!polys.some((poly) => pointInRings(x, y, poly))) continue;
+          const si = scl.at(x, y); const cls = si < 0 ? -1 : scl.data[si];
+          if (CONFIG.sclChecked[cls] != null) needBlue = true;
+          pts.push(x, y, cls);
+        }
+      }
+      const fieldPx = pts.length / 3;
+      if (!fieldPx) return { cloud: 100, v: {} };
+      const blue = needBlue ? await readBand(scene, field.id, 'blue', ubox).catch(() => null) : null;
+      const clear = [];
+      for (let i = 0; i < pts.length; i += 3) {
+        const x = pts[i], y = pts[i + 1], cls = pts[i + 2];
+        if (CONFIG.keepScl.has(cls)) { clear.push(x, y); continue; }
+        const lim = CONFIG.sclChecked[cls]; if (lim == null || !blue) continue;
+        const bi = blue.at(x, y); if (bi < 0) continue;
+        const b = blue.data[bi] * blue.sc.scale + blue.sc.offset;
+        if (b > 0 && b < lim) clear.push(x, y);
+      }
+      const cloud = Math.round(100 * (1 - clear.length / 2 / fieldPx));
+      if (cloud > maxCloud) return { cloud, v: {} };
+      const idx = keys.map((k) => [k, INDICES[k]]).filter(([, ix]) => ix && !ix.rgb);
+      const need = [...new Set(idx.flatMap(([, ix]) => ix.bands))];
+      const bands = Object.fromEntries(await Promise.all(need.map(async (b) => [b, await readBand(scene, field.id, b, ubox)])));
+      const vals = idx.map(() => []); const refl = {};
+      for (let i = 0; i < clear.length; i += 2) {
+        let ok = true;
+        for (const b of need) {
+          const bb = bands[b]; const bi = bb.at(clear[i], clear[i + 1]);
+          const dn = bi < 0 ? 0 : bb.data[bi];
+          if (!dn) { ok = false; break; }
+          refl[b] = dn * bb.sc.scale + bb.sc.offset;
+        }
+        if (!ok) continue;
+        idx.forEach(([, ix], j) => { const v = ix.f(refl); if (Number.isFinite(v)) vals[j].push(v); });
+      }
+      const v = {};
+      idx.forEach(([k], j) => {
+        const s = vals[j]; if (!s.length) return;
+        s.sort((a, b) => a - b);
+        const q = (pp) => s[Math.min(s.length - 1, Math.floor(pp * s.length))];
+        v[k] = { mean: s.reduce((a, b) => a + b, 0) / s.length, p10: q(0.1), p90: q(0.9) };
+      });
+      const valid = vals.length ? Math.max(...vals.map((s) => s.length)) : 0;
+      return { cloud: Math.round(100 * (1 - valid / fieldPx)), v };
+    })();
+    statsCache.set(key, p);
+    p.catch(() => statsCache.delete(key));
+    return p;
+  }
+
   /** Previous date on the same tile where the field is at least (100 - clearFieldPct)% clear. */
   async function previousClear(field, scene, indexKey) {
     const list = state_.scenes.filter((s) => s.day < scene.day && s.tile === scene.tile && s.tileCloud < 80);
@@ -1043,7 +1118,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
   document.addEventListener('fieldpanel:close', () => clearDelta());
 
   window.Imagery = {
-    config: CONFIG, indices: INDICES, state: state_, views, analyse, compare, paint, previousClear, searchScenes, sceneById,
+    config: CONFIG, indices: INDICES, state: state_, views, analyse, seriesStats, compare, paint, previousClear, searchScenes, sceneById,
     current: () => sceneById(views[0].sceneId),
     selectScene: (id) => selectScene(views[0], id),
     refresh: () => refresh(views[0]),

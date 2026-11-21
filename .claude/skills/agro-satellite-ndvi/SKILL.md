@@ -46,7 +46,13 @@ EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 - **Opening:** the chart button `#tsBtn` sits in the map tools under the ruler. It opens `#tsPanel`, a 304 px drawer under the map: `#mapMain.ts-open` shortens `#mapRow`, then both maps are invalidated.
 - **Data:**
   - `Imagery.searchScenes([field.geometry], 'ts:'+fieldId, lookback)`, filtered to the period, tile cloud < 70 %, and the scene covering the field;
-  - `Imagery.analyse` with three workers;
+  - `Imagery.seriesStats(field, scene, keys, 40)` with eight workers (never `analyse`, which builds images): it reads
+    the SCL mask (and blue, for the checked classes) first and skips a date over 40 % cloud before reading any other
+    band, then reads the union of the layers' bands once and computes every layer in one pass;
+  - dates go in spread order (every 8th, then the gaps), so the whole season's shape shows after a few reads;
+  - results are saved in localStorage `tsSeries:v1:<fieldId>` (`{ g: boundary hash, s: { sceneId: { d, c, v } } }`,
+    cloudy dates too) and drawn before the scene search on the next open; only new dates or new layers are read.
+    Editing the boundary changes the hash and starts again. Storage full → other fields' series are dropped;
   - only dates with the field ≤ 40 % cloudy are kept;
   - points arrive progressively and the status shows `done / total`.
 - **Chart:** an SVG drawn by hand, consistent with the rest of the app:
