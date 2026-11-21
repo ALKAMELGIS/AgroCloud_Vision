@@ -309,7 +309,7 @@
 
 <script>
 const API_BASE_URL = 'https://agrocloud-backend-e9ea.onrender.com/api/v1';
-const token = localStorage.getItem('accessToken');
+let token = localStorage.getItem('accessToken');
 if (!token) window.location.href = 'main.html';
 
 const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -317,10 +317,7 @@ if (user) {
   document.getElementById('userFooter').textContent = user.email + (user.role ? ' · ' + user.role : '');
 }
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  localStorage.clear();
-  window.location.href = 'main.html';
-});
+document.getElementById('logoutBtn').addEventListener('click', () => { if (window.AppLogout) AppLogout(); else { localStorage.clear(); window.location.href = 'main.html'; } });
 
 // ====== Icons (lucide, 16px, 1.5 stroke) ======
 const ICONS = {
@@ -395,20 +392,49 @@ function hydrateIcons(root) {
 hydrateIcons();
 
 // ====== API ======
+// The access token lives 15 minutes. On a 401 the session is renewed once with the refresh
+// token (7 days) and the request retried; only when that fails does the user sign in again,
+// and their preferences stay (AppLogout keeps them).
+let refreshing = null;
+function renewSession() {
+  if (refreshing) return refreshing;
+  const rt = localStorage.getItem('refreshToken');
+  refreshing = (async () => {
+    if (!rt) return false;
+    try {
+      const r = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: rt }) });
+      if (!r.ok) return false;
+      const d = await r.json();
+      token = d.accessToken;
+      localStorage.setItem('accessToken', d.accessToken);
+      localStorage.setItem('refreshToken', d.refreshToken);
+      if (d.user) localStorage.setItem('user', JSON.stringify(d.user));
+      return true;
+    } catch { return false; }
+  })();
+  refreshing.finally(() => { setTimeout(() => { refreshing = null; }, 0); });
+  return refreshing;
+}
+async function authFetch(url, init = {}) {
+  const go = () => fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` } });
+  let res = await go();
+  if (res.status === 401 && await renewSession()) res = await go();
+  return res;
+}
 function handle401(res) {
-  if (res.status === 401) { localStorage.clear(); window.location.href = 'main.html'; return true; }
+  if (res.status === 401) { if (window.AppLogout) AppLogout(); else { localStorage.clear(); window.location.href = 'main.html'; } return true; }
   return false;
 }
 async function apiGet(path) {
-  const res = await fetch(`${API_BASE_URL}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  const res = await authFetch(`${API_BASE_URL}${path}`);
   if (handle401(res)) return;
   if (!res.ok) { const err = new Error('Request failed: ' + res.status); err.status = res.status; throw err; }
   return res.json();
 }
 async function apiSend(method, path, body) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await authFetch(`${API_BASE_URL}${path}`, {
     method,
-    headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${token}` },
+    headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (handle401(res)) return;
@@ -424,9 +450,9 @@ const apiPatch = (path, body) => apiSend('PATCH', path, body);
 const apiDelete = (path) => apiSend('DELETE', path);
 
 async function apiPost(path, body) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await authFetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (handle401(res)) return;

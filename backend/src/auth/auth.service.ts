@@ -95,6 +95,24 @@ export class AuthService implements OnApplicationBootstrap {
     return this.buildTokens(user.id, user.organizationId, user.role, user.email);
   }
 
+  /**
+   * Swaps a valid refresh token for a new access + refresh pair, so a session
+   * outlives the short access token without asking for the password again.
+   * The user must still exist and be active.
+   */
+  async refresh(refreshToken: string) {
+    if (!refreshToken || typeof refreshToken !== 'string') throw new UnauthorizedException('Session expired');
+    let payload: { sub: string };
+    try {
+      payload = this.jwtService.verify(refreshToken, { secret: this.configService.get('JWT_REFRESH_SECRET') });
+    } catch {
+      throw new UnauthorizedException('Session expired');
+    }
+    const user = await this.usersService.findById(payload.sub);
+    if (!user || !user.isActive) throw new UnauthorizedException('Session expired');
+    return this.buildTokens(user.id, user.organizationId, user.role, user.email);
+  }
+
   private buildTokens(userId: string, organizationId: string, role: string, email: string) {
     const payload = { sub: userId, organizationId, role, email };
 

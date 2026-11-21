@@ -29,3 +29,9 @@ description: Sign-in, registration, roles and the default owner account in AgroC
 - **JWT:** access token 15 min, refresh 7 days; secrets come from env
   (`generateValue: true` on Render). The workspace clears `localStorage` and
   returns to `main.html` on any 401.
+
+## Session renewal (access 15 min, refresh 7 days)
+
+- `POST /auth/refresh { refreshToken }` (throttled 30/min) verifies with `JWT_REFRESH_SECRET`, checks the user still exists and is active, and returns a new access + refresh pair. An access token is not accepted as a refresh token.
+- Workspace: every API call goes through `authFetch` — on a 401 it renews once (`renewSession`, one shared in-flight promise) and retries. Only when renewal fails does it sign out, via `AppLogout`, which keeps per-browser preferences (theme, area unit, layers…). Never `localStorage.clear()` on 401 again: that both logged users out every 15 minutes and wiped their settings.
+- Needs a backend deploy on Render for `/auth/refresh`. Test: `agro-workspace-testing/scripts/test_session.py`. Long browser tests must also set `refreshToken`, or they bounce to sign-in after 15 minutes.

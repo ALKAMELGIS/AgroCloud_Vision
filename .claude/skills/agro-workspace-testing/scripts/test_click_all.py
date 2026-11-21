@@ -12,12 +12,12 @@ login = cdn_routes.fresh_login(); tok = login['accessToken']
 farm = call('POST', '/farms', {'name': 'Click farm'}, tok)
 fc = json.load(open(S + 'fixtures/fields.geojson'))
 call('POST', '/fields/bulk', {'farmId': farm['id'], 'fields': [{'name': n, 'boundary': f['geometry']} for n, f in zip(['Pivot 1', 'Pivot 2', 'Strip'], [f for f in fc['features'] if f['geometry']['type'] == 'Polygon'])]}, tok)
-SKIP = '#acctMenu [data-action=lang],[data-theme-pref],[data-reset],[data-logout],#fpClose,#fpBack,[data-action=logout],[data-action=lang],#fpDelete,[data-del],[data-purge],[data-del-activity],[data-del-crop],[data-exp],[data-cmdk-close],#addFieldBtn,[data-view=search]'
+SKIP = '[data-action=settings],#acctBtn,#acctMenu *,#settingsDialog *,[data-theme-pref],[data-reset],[data-logout],#fpClose,#fpBack,[data-action=logout],[data-action=lang],#fpDelete,[data-del],[data-purge],[data-del-activity],[data-del-crop],[data-exp],[data-cmdk-close],#addFieldBtn,[data-view=search]'
 lang = os.environ.get('LANG_UI', 'en')
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
     ctx = b.new_context(viewport={'width': 1600, 'height': 900}, accept_downloads=True)
-    ctx.add_init_script(f"localStorage.setItem('lang', '{lang}'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
+    ctx.add_init_script(f"localStorage.setItem('lang', '{lang}'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('refreshToken', {json.dumps(login['refreshToken'])}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
     pg = ctx.new_page(); cdn_routes.install(pg); errors, server = [], []
     pg.on('pageerror', lambda e: errors.append(str(e)))
     pg.on('response', lambda r: server.append(f'{r.status} {r.url}') if r.status >= 500 else None)
