@@ -20,12 +20,14 @@
   const { INDICES, rampAt } = M;
 
   // ------------------------------------------------------------ the area (same as js/demo.js)
-  const AOI = { lng: -102.322, lat: 34.116, w: 3400, h: 2300 };
+  const AOI = { lng: -102.322, lat: 34.116, w: 5000, h: 3400 };     // the analysed area (Sentinel-2)
+  const OUTER = 3;                                                     // the satellite basemap reaches 3× further, so no empty ground shows
   const R = 6378137, DEG = Math.PI / 180;
   const toMerc = (lng, lat) => [lng * DEG * R, Math.log(Math.tan(Math.PI / 4 + lat * DEG / 2)) * R];
   const k = 1 / Math.cos(AOI.lat * DEG);
   const [mx, my] = toMerc(AOI.lng, AOI.lat);
   const BOX = [mx - AOI.w / 2 * k, my - AOI.h / 2 * k, mx + AOI.w / 2 * k, my + AOI.h / 2 * k];
+  const BIG = [mx - AOI.w / 2 * k * OUTER, my - AOI.h / 2 * k * OUTER, mx + AOI.w / 2 * k * OUTER, my + AOI.h / 2 * k * OUTER];
   const GW = Math.round(AOI.w / 10), GH = Math.round(AOI.h / 10);       // 10 m Sentinel-2 grid
   const HX = AOI.w / 2000, HZ = AOI.h / 2000;                          // half size in scene units (1 unit = 1 km)
   const HA_PX = 0.01;                                                 // one 10 m pixel = 0.01 ha
@@ -84,10 +86,10 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
     const r = await img.readRasters();
     return { blue: r[0], green: r[1], red: r[2], nir: r[3], nir08: r[4], swir16: r[5], scl: r[6] };
   }
-  function basemap(z = 16) {
+  function basemap(z, box) {
     const n = 2 ** z, size = 2 * Math.PI * R, px = (256 * n) / size;
     const X = (m) => (m + size / 2) * px, Y = (m) => (size / 2 - m) * px;
-    const x0 = X(BOX[0]), x1 = X(BOX[2]), y0 = Y(BOX[3]), y1 = Y(BOX[1]);
+    const x0 = X(box[0]), x1 = X(box[2]), y0 = Y(box[3]), y1 = Y(box[1]);
     const tx0 = Math.floor(x0 / 256), tx1 = Math.floor(x1 / 256), ty0 = Math.floor(y0 / 256), ty1 = Math.floor(y1 / 256);
     const cv = document.createElement('canvas'); cv.width = Math.round(x1 - x0); cv.height = Math.round(y1 - y0);
     const ctx = cv.getContext('2d');
@@ -102,50 +104,60 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
     }
     return Promise.all(jobs).then(() => cv);
   }
-  // pivots: the live demo's cache, else found here in the clear NDVI (centres along gradients, as js/demo.js)
-  function pivotsFrom(ndvi) {
-    let cached = [];
-    try {
-      const c = JSON.parse(localStorage.getItem('agroDemoPivots:v1') || 'null');
-      if (c && c.circles) cached = c.circles.map((p) => ({ x: (p.cx - mx) / k / 1000, z: (p.cy - my) / k / 1000, r: p.r / 1000 }));
-    } catch { /* none */ }
-    let found = [];
-    try { found = detect(ndvi); } catch { found = []; }
-    if (found.length >= Math.max(2, cached.length)) return found;
-    if (cached.length >= 2) return cached;
-    throw new Error('no pivots found');
-  }
-  function detect(ndvi) {
-    const W = GW, H = GH, g = new Float32Array(W * H), mag = new Float32Array(W * H), gx = new Float32Array(W * H), gy = new Float32Array(W * H);
-    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { let s = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) s += ndvi[(y + j) * W + x + i] || 0; g[y * W + x] = s / 9; }
+  // Centre pivots: circular edges in the red, NIR and SWIR bands of the clear date. Hough votes give candidates; each is
+  // then fitted (centre ±3 px, radius ±3 px) to the circle whose rim is an edge pointing outwards all the way round.
+  // Only circles that are pivots for sure are kept: rim ≥ 70 % edge, wholly inside the area, radius 240–720 m.
+  function pivotsFrom(B) {
+    const W = GW, H = GH, N = W * H;
+    const norm = (a) => { const v = Array.from(a).filter(Number.isFinite).sort((x, y) => x - y), lo = v[Math.floor(v.length * 0.02)], hi = v[Math.floor(v.length * 0.98)], o = new Float32Array(N); for (let i = 0; i < N; i++) o[i] = clamp((a[i] - lo) / (hi - lo || 1), 0, 1); return o; };
+    const smooth = (a) => { const g = new Float32Array(N); for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { let t = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) t += a[(y + j) * W + x + i]; g[y * W + x] = t / 9; } return g; };
+    const ch = [B.red, B.nir, B.swir16].map((a) => smooth(norm(a)));
+    const GX = new Float32Array(N), GY = new Float32Array(N), MAG = new Float32Array(N);
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-      const a = (i, j) => g[(y + j) * W + x + i];
-      const sx = a(1, -1) + 2 * a(1, 0) + a(1, 1) - a(-1, -1) - 2 * a(-1, 0) - a(-1, 1), sy = a(-1, 1) + 2 * a(0, 1) + a(1, 1) - a(-1, -1) - 2 * a(0, -1) - a(1, -1);
-      const i = y * W + x; gx[i] = sx; gy[i] = sy; mag[i] = Math.hypot(sx, sy);
+      let gx = 0, gy = 0, m = 0;
+      for (const g of ch) {
+        const a = (i, j) => g[(y + j) * W + x + i];
+        const sx = a(1, -1) + 2 * a(1, 0) + a(1, 1) - a(-1, -1) - 2 * a(-1, 0) - a(-1, 1), sy = a(-1, 1) + 2 * a(0, 1) + a(1, 1) - a(-1, -1) - 2 * a(0, -1) - a(1, -1);
+        m += sx * sx + sy * sy; if (Math.abs(sx) + Math.abs(sy) > Math.abs(gx) + Math.abs(gy)) { gx = sx; gy = sy; }
+      }
+      const i = y * W + x; MAG[i] = Math.sqrt(m); GX[i] = gx; GY[i] = gy;
     }
-    const thr = Math.max(0.12, Array.from(mag).sort((a, b) => b - a)[Math.floor(W * H * 0.12)] || 0);
-    const RAD = []; for (let r = 24; r <= 58; r += 2) RAD.push(r);
-    const acc = RAD.map(() => new Float32Array(W * H));
+    const thr = Array.from(MAG).sort((a, b) => b - a)[Math.floor(N * 0.15)];
+    const rim = (cx, cy, r) => {
+      let hit = 0;
+      for (let q = 0; q < 96; q++) {
+        const a = q / 96 * Math.PI * 2, ux = Math.cos(a), uy = Math.sin(a);
+        for (const dr of [-1, 0, 1]) {
+          const x = Math.round(cx + ux * (r + dr)), y = Math.round(cy + uy * (r + dr)); if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) continue;
+          const i = y * W + x; if (MAG[i] < thr) continue;
+          if (Math.abs((GX[i] * ux + GY[i] * uy) / (Math.hypot(GX[i], GY[i]) || 1)) > 0.75) { hit++; break; }
+        }
+      }
+      return hit / 96;
+    };
+    const RAD = []; for (let r = 24; r <= 72; r += 2) RAD.push(r);
+    const acc = RAD.map(() => new Float32Array(N));
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-      const i = y * W + x, m = mag[i]; if (m < thr) continue;
-      RAD.forEach((r, ri) => { for (const sg of [1, -1]) { const cx = Math.round(x + sg * gx[i] / m * r), cy = Math.round(y + sg * gy[i] / m * r); if (cx >= 0 && cy >= 0 && cx < W && cy < H) acc[ri][cy * W + cx]++; } });
+      const i = y * W + x; if (MAG[i] < thr) continue;
+      const g = Math.hypot(GX[i], GY[i]) || 1, ux = GX[i] / g, uy = GY[i] / g;
+      RAD.forEach((r, ri) => { for (const sg of [1, -1]) { const cx = Math.round(x + sg * ux * r), cy = Math.round(y + sg * uy * r); if (cx >= 0 && cy >= 0 && cx < W && cy < H) acc[ri][cy * W + cx]++; } });
     }
-    const cands = [];
-    RAD.forEach((r, ri) => { const A = acc[ri]; for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { let s = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) s += A[(y + j) * W + x + i]; const sc = s / (2 * Math.PI * r); if (sc > 0.28 && x - r >= 0 && y - r >= 0 && x + r < W && y + r < H) cands.push({ x, y, r, sc }); } });
-    cands.sort((a, b) => b.sc - a.sc);
+    let cands = [];
+    RAD.forEach((r, ri) => { const A = acc[ri]; for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { let t = 0; for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) t += A[(y + j) * W + x + i]; const v = t / (2 * Math.PI * r); if (v > 0.35) cands.push({ x, y, r, v }); } });
+    cands = cands.sort((a, b) => b.v - a.v).slice(0, 400).map((c) => {
+      let best = { x: c.x, y: c.y, r: c.r, s: rim(c.x, c.y, c.r) };
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) for (let dr = -3; dr <= 3; dr++) { const t = rim(c.x + dx, c.y + dy, c.r + dr); if (t > best.s) best = { x: c.x + dx, y: c.y + dy, r: c.r + dr, s: t }; }
+      return best;
+    }).sort((a, b) => b.s - a.s);
     const out = [];
     for (const c of cands) {
-      if (out.length >= 8) break;
-      if (out.some((o) => Math.hypot(o.x - c.x, o.y - c.y) < (o.r + c.r) * 0.92)) continue;
-      let si = 0, ni = 0, so = 0, no = 0;   // one crop inside, something else just outside
-      for (let y = Math.max(0, c.y - c.r - 6); y < Math.min(H, c.y + c.r + 6); y++) for (let x = Math.max(0, c.x - c.r - 6); x < Math.min(W, c.x + c.r + 6); x++) {
-        const dd = Math.hypot(x - c.x, y - c.y), v = ndvi[y * W + x] || 0;
-        if (dd < c.r * 0.85) { si += v; ni++; } else if (dd > c.r * 1.05 && dd < c.r * 1.2) { so += v; no++; }
-      }
-      if (!ni || !no || Math.abs(si / ni - so / no) < 0.05) continue;
-      out.push(c);
+      if (c.s < 0.7) break;
+      if (c.x - c.r < 1 || c.y - c.r < 1 || c.x + c.r > W - 2 || c.y + c.r > H - 2) continue;   // wholly inside the area
+      if (out.some((o) => Math.hypot(o.x - c.x, o.y - c.y) < (o.r + c.r) * 0.8)) continue;
+      out.push(c); if (out.length >= 10) break;
     }
-    return out.map((c) => ({ x: -HX + (c.x + 0.5) * 0.01, z: HZ - (c.y + 0.5) * 0.01, r: c.r * 0.01 }));
+    if (out.length < 2) throw new Error('no pivots found');
+    return out.map((c) => ({ x: -HX + (c.x + 0.5) * 0.01, z: HZ - (c.y + 0.5) * 0.01, r: c.r * 0.01, rim: c.s }));
   }
 
   let loading = null;
@@ -153,10 +165,9 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
     if (loading) return loading;
     loading = timeout((async () => {
       const sc = await scenes();
-      const [img, clear, cloudy] = await Promise.all([basemap(16), bandsFor(sc.clear[0]), sc.cloudy ? bandsFor(sc.cloudy[0]).catch(() => null) : Promise.resolve(null)]);
-      const ndvi = new Float32Array(GW * GH); for (let i = 0; i < ndvi.length; i++) ndvi[i] = INDICES.ndvi.f({ nir: clear.nir[i], red: clear.red[i] }) || 0;
-      const pivots = pivotsFrom(ndvi);
-      return { img, clear, cloudy: cloudy && sc.cloudy ? cloudy : null, days: sc.days, clearDay: sc.clear, cloudyDay: cloudy ? sc.cloudy : null, pivots };
+      const [img, outer, clear, cloudy] = await Promise.all([basemap(16, BOX), basemap(14, BIG), bandsFor(sc.clear[0]), sc.cloudy ? bandsFor(sc.cloudy[0]).catch(() => null) : Promise.resolve(null)]);
+      const pivots = pivotsFrom(clear);
+      return { img, outer, clear, cloudy: cloudy && sc.cloudy ? cloudy : null, days: sc.days, clearDay: sc.clear, cloudyDay: cloudy ? sc.cloudy : null, pivots };
     })(), 25000, 'satellite data');
     loading.catch(() => { loading = null; });
     return loading;
@@ -223,9 +234,9 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
   }
 
   // ------------------------------------------------------------ an image laid on the ground in 3D (affine triangles)
-  function drawGround(ctx, cam, img, N = 18, M2 = 13) {
+  function drawGround(ctx, cam, img, N = 18, M2 = 13, hx = HX, hz = HZ) {
     const W = img.width, H = img.height;
-    const P = (u, v) => cam.p(-HX + u * 2 * HX, 0, HZ - v * 2 * HZ);
+    const P = (u, v) => cam.p(-hx + u * 2 * hx, 0, hz - v * 2 * hz);
     const tri = (a, b, c, ua, ub, uc) => {
       // screen a,b,c ← image ua,ub,uc (pixels); grow the triangle a little so neighbours meet without seams
       const cx = (a[0] + b[0] + c[0]) / 3, cy = (a[1] + b[1] + c[1]) / 3, g = (p) => [p[0] + (p[0] - cx) * 0.02 + Math.sign(p[0] - cx) * 0.6, p[1] + (p[1] - cy) * 0.02 + Math.sign(p[1] - cy) * 0.6];
@@ -303,7 +314,8 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
       const sweep = state.forced !== null ? 1 : clamp(local / SWEEP_T, 0, 1), sx = -HX + ease(sweep) * 2 * HX;
       const cam = camera(W, H, st.yaw, st.pitch, Math.min(W, H * 1.7) * 0.36 * (opts.zoom || 1), H * (opts.cy || 0.54));
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      drawGround(ctx, cam, data.img);
+      drawGround(ctx, cam, data.outer, 24, 18, HX * OUTER, HZ * OUTER);   // the wide basemap first, then the sharp one over the area
+      drawGround(ctx, cam, data.img, 20, 14);
       // the index layer: this step left of the swath, the previous step right of it
       const half = (from, to) => { ctx.beginPath(); quad(ctx, cam.p(from, 0, -HZ), cam.p(to, 0, -HZ), cam.p(to, 0, HZ), cam.p(from, 0, HZ)); };
       const tCur = texture(cur), tPrev = sweep < 1 ? texture(prev) : null;
