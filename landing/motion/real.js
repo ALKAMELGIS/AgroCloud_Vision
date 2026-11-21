@@ -66,8 +66,18 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
     const cloudy = days.find(([day, c]) => c >= 15 && c <= 75 && day !== clear[0]) || null;
     return { days, clear, cloudy };
   }
+  // the instance's L2A layer to hang the evalscript on (its names look like "3_NDVI"; "-L1C" ones are top of atmosphere)
+  let layerP = null;
+  function layer() {
+    if (!layerP) layerP = cachedFetch(shUrl('wms', { SERVICE: 'WMS', REQUEST: 'GetCapabilities', VERSION: '1.3.0' }), 'layers').then((r) => r.text()).then((xml) => {
+      const names = [...new DOMParser().parseFromString(xml, 'text/xml').getElementsByTagName('Layer')]
+        .map((l) => [...l.children].find((c) => c.localName === 'Name')).filter(Boolean).map((n) => n.textContent.trim());
+      return names.find((n) => /NDVI/i.test(n) && !/L1C/i.test(n)) || names.find((n) => !/L1C|SAR|ORTHO|DECIBEL|LINEAR/i.test(n)) || names[0] || 'NDVI';
+    }).catch(() => '3_NDVI');
+    return layerP;
+  }
   async function bandsFor(day) {
-    const res = await cachedFetch(shUrl('wms', { SERVICE: 'WMS', REQUEST: 'GetMap', VERSION: '1.3.0', LAYERS: 'NDVI', CRS: 'EPSG:3857', BBOX: BOX.join(','),
+    const res = await cachedFetch(shUrl('wms', { SERVICE: 'WMS', REQUEST: 'GetMap', VERSION: '1.3.0', LAYERS: await layer(), CRS: 'EPSG:3857', BBOX: BOX.join(','),
       WIDTH: String(GW), HEIGHT: String(GH), FORMAT: 'image/tiff', TIME: day + '/' + day, MAXCC: '100', SHOWLOGO: 'false', EVALSCRIPT: btoa(SCRIPT) }), 'bands');
     await loadScript(GEOTIFF);
     const img = await (await GeoTIFF.fromArrayBuffer(await res.arrayBuffer())).getImage();
