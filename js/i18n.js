@@ -186,6 +186,7 @@
     'Sun': 'أحد', 'Mon': 'اثنين', 'Tue': 'ثلاثاء', 'Wed': 'أربعاء', 'Thu': 'خميس', 'Fri': 'جمعة', 'Sat': 'سبت',
     '3D ring': 'حلقة ثلاثية الأبعاد', 'Drag to turn 360° · double-click to reset': 'اسحب للتدوير 360° · نقر مزدوج للإرجاع',
     'mean, min–max band': 'المتوسط، ونطاق الصغرى والعظمى', 'right axis': 'المحور الأيمن',
+    'weekly total': 'المجموع الأسبوعي', 'weekly mean': 'المتوسط الأسبوعي',
     'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
     'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
     'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',

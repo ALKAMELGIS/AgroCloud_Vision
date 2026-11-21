@@ -83,12 +83,13 @@ with sync_playwright() as p:
     after = pg.evaluate("Imagery.current().day")
     check('clicking a point opens that date on the map', after != before and pg.locator('#tlChips [aria-current=true]').count() == 1, (before, after))
     # weather
-    for w, sel in [('rain', 'rect.ts-weather'), ('temp', 'path.ts-weather'), ('soil', 'path.ts-weather')]:
+    for w, sel in [('rain', 'path.ts-weather'), ('temp', 'path.ts-weather'), ('soil', 'path.ts-weather')]:
         pg.click(f'#tsWeather [data-w={w}]'); pg.wait_for_timeout(700)
         info = pg.evaluate(f"(() => {{ const e = document.querySelector('#tsSvg {sel}:not(.ts-weather-band)'); return e && [e.getAttribute('stroke') || e.getAttribute('fill'), +(e.getAttribute('opacity') || 1)]; }})()")
         exp = {'temp': '#c2511f', 'rain': '#2f6fb3', 'soil': '#167a73'}[w] if pg.evaluate("Theme.current") == 'light' else {'temp': '#f0894a', 'rain': '#62a3dc', 'soil': '#4cc3b0'}[w]
         check(f'weather overlay: {w} in its own colour, clearly visible', info and info[0] == exp and info[1] >= 0.7, info)
-    check('weather legend and right axis', 'Soil moisture' in pg.inner_text('#tsLegend'))
+        check(f'weather {w} is one line, no band, fill or bars', pg.locator('#tsSvg .ts-weather').count() == 1 and pg.locator('#tsSvg rect.ts-weather, #tsSvg .ts-weather-band').count() == 0)
+    check('weather legend', 'Soil moisture' in pg.inner_text('#tsLegend'))
     pg.screenshot(path=S + 'shots/t2_timeseries_weather.png')
     # zoom strip
     wb = pg.locator('#tsWindow').bounding_box()
