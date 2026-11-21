@@ -259,6 +259,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
   }
 
   // ------------------------------------------------------------ the scene
+  const MESH = [30, 20];   // triangles across the area: fine enough that the image bends with the 3D ground like the outlines do
   function hero(canvas, onState, opts = {}, data) {
     const { fields, sel } = prepare(data);
     // six dates, newest last, always including the two the scene shows (the clear one and the cloudy one)
@@ -279,10 +280,19 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
     const state = { forced: null, key: null, filter: null, contrast: true, lastStep: -1 };
     const ares = new Map(), tex = new Map();
     const res = (f, key, which) => { const kk = f.name + key + which; if (!ares.has(kk)) ares.set(kk, analyse(f, key, data[which])); return ares.get(kk); };
+    // one image per step: the sharp basemap with the step's index layer painted into it, so both are laid on the ground
+    // by the same mesh and cannot drift apart (two meshes bend an image differently under perspective)
     const texture = (s) => {
-      const key = state.key || (s.idx === 'natural' ? null : s.idx); if (!key) return null;
+      const key = state.key || (s.idx === 'natural' ? null : s.idx); if (!key) return data.img;
       const kk = [key, s.B, state.contrast, state.filter ? [...state.filter].join('.') : ''].join('|');
-      if (!tex.has(kk)) { if (tex.size > 12) tex.clear(); tex.set(kk, layerTexture(fields, data[s.B], key, state.contrast, sel, state.filter, (f, kx) => res(f, kx, s.B))); }
+      if (!tex.has(kk)) {
+        if (tex.size >= 4) tex.delete(tex.keys().next().value);
+        const layer = layerTexture(fields, data[s.B], key, state.contrast, sel, state.filter, (f, kx) => res(f, kx, s.B));
+        const cv = document.createElement('canvas'); cv.width = data.img.width; cv.height = data.img.height;
+        const c2 = cv.getContext('2d'); c2.drawImage(data.img, 0, 0); c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = 'high';
+        c2.drawImage(layer, 0, 0, cv.width, cv.height);
+        tex.set(kk, cv);
+      }
       return tex.get(kk);
     };
     // where the cloud is on the cloudy date (centre of SCL 8/9/10 pixels), for the puffs above it
@@ -314,13 +324,15 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
       const sweep = state.forced !== null ? 1 : clamp(local / SWEEP_T, 0, 1), sx = -HX + ease(sweep) * 2 * HX;
       const cam = camera(W, H, st.yaw, st.pitch, Math.min(W, H * 1.7) * 0.36 * (opts.zoom || 1), H * (opts.cy || 0.54));
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      drawGround(ctx, cam, data.outer, 24, 18, HX * OUTER, HZ * OUTER);   // the wide basemap first, then the sharp one over the area
-      drawGround(ctx, cam, data.img, 20, 14);
-      // the index layer: this step left of the swath, the previous step right of it
+      drawGround(ctx, cam, data.outer, 16, 12, HX * OUTER, HZ * OUTER);   // the wide basemap first, then the sharp area over it
+      // the area: this step left of the swath, the previous step right of it (one mesh each, the same mesh as the outlines' ground)
       const half = (from, to) => { ctx.beginPath(); quad(ctx, cam.p(from, 0, -HZ), cam.p(to, 0, -HZ), cam.p(to, 0, HZ), cam.p(from, 0, HZ)); };
       const tCur = texture(cur), tPrev = sweep < 1 ? texture(prev) : null;
-      if (tCur) { ctx.save(); half(-HX, sx); ctx.clip(); drawGround(ctx, cam, tCur, 14, 10); ctx.restore(); }
-      if (tPrev) { ctx.save(); half(sx, HX); ctx.clip(); drawGround(ctx, cam, tPrev, 14, 10); ctx.restore(); }
+      if (!tPrev || tPrev === tCur) drawGround(ctx, cam, tCur, MESH[0], MESH[1]);
+      else {
+        ctx.save(); half(-HX, sx); ctx.clip(); drawGround(ctx, cam, tCur, MESH[0], MESH[1]); ctx.restore();
+        ctx.save(); half(sx, HX); ctx.clip(); drawGround(ctx, cam, tPrev, MESH[0], MESH[1]); ctx.restore();
+      }
       // field outlines (the open field in white)
       fields.forEach((f) => {
         ctx.beginPath();
