@@ -250,7 +250,10 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
   // ------------------------------------------------------------ the scene
   function hero(canvas, onState, opts = {}, data) {
     const { fields, sel } = prepare(data);
-    const strip = data.days.slice(0, 6).reverse();
+    // six dates, newest last, always including the two the scene shows (the clear one and the cloudy one)
+    const must = [data.clearDay, data.cloudyDay].filter(Boolean).map(([dd]) => dd);
+    const strip = [...new Map([...data.days.filter(([dd]) => must.includes(dd)), ...data.days].map((x) => [x[0], x])).values()]
+      .slice(0, 6).sort((a, b) => (a[0] < b[0] ? -1 : 1));
     const dateIxOf = (day) => Math.max(0, strip.findIndex(([dd]) => dd === day));
     const cloudy = !!data.cloudy;
     const STEPS = [
