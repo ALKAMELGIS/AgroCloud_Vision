@@ -112,7 +112,7 @@ with sync_playwright() as p:
     ha_, hb_ = pg.inner_text('#hoverA'), pg.inner_text('#hoverB')
     check('hover readout on both screens', 'NDVI' in ha_ and 'NDMI' in hb_, (ha_ + ' | ' + hb_).replace('\n', ' '))
     check('screens stay in sync', pg.evaluate("Imagery.views[1].getMap().getZoom()") == c1[1])
-    pg.screenshot(path=SH + 's3_split.png')
+    pg.screenshot(path=SH + 's3_split.png'); pg.locator('#hoverA').screenshot(path=SH + 'hover_readout.png')
 
     # swipe: one map, screen B right of a draggable divider
     pg.click('#swipeBtn'); pg.click('#compareMenu [data-compare=swipe]'); pg.wait_for_timeout(400)

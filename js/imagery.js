@@ -965,13 +965,15 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B05, s.B08, s.B8A, s.
       if (!el || !map || (k === 1 && !state_.split)) return;
       if (swipeSide >= 0 && swipeSide !== k) { el.classList.add('hidden'); return; }
       const r = v.sr.get(f.id) || v.results.get(f.id); const idx = INDICES[v.indexKey];
-      let lines = `<div class="font-medium">${escapeHtml(name)}</div>`;
+      // value first and bold, what it means under it, the field last and small
+      let lines = '';
       if (r && !idx.rgb) {
         const val = valueAt(r, latlng);
         if (val !== undefined) lines += Number.isNaN(val)
-          ? `<div>${idx.label}: —</div><div class="text-white/70">Cloud or shadow</div>`
-          : `<div class="num">${idx.label}: ${val.toFixed(2)}</div><div class="text-white/70">${labelFor(v.indexKey, val)}</div>`;
-      } else if (r) lines += `<div class="text-white/70">${idx.label} · ${fmtDay(r.scene.day)}</div>`;
+          ? `<div class="hr-value">${idx.label}: —</div><div class="hr-label">Cloud or shadow</div>`
+          : `<div class="hr-value">${idx.label}: ${val.toFixed(2)}</div><div class="hr-label">${labelFor(v.indexKey, val)}</div>`;
+      } else if (r) lines += `<div class="hr-value">${idx.label}</div><div class="hr-label">${fmtDay(r.scene.day)}</div>`;
+      lines += `<div class="hr-field">${escapeHtml(name)}</div>`;
       const pt = map.latLngToContainerPoint(latlng);
       el.innerHTML = lines + '<span class="hr-dot"></span>';
       el.style.left = pt.x + 'px'; el.style.top = pt.y + 'px';
