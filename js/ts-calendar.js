@@ -50,7 +50,9 @@
     const k = heatKey;
     const meas = ts.points.filter((p) => p.v[k]).map((p) => ({ t: p.t, v: p.v[k].mean, p }));
     const from = t0(ts.from), to = t0(ts.to);
-    const dow = (t) => (new Date(t).getUTCDay() + 6) % 7;
+    // rows start on the week day chosen in Settings (Saturday, Sunday or Monday)
+    const ws = window.Prefs ? Prefs.weekStart : 1;
+    const dow = (t) => (new Date(t).getUTCDay() - ws + 7) % 7;
     const start = from - dow(from) * DAY;
     const cells = []; let j = 0;
     for (let t = from; t <= to; t += DAY) {
@@ -163,7 +165,7 @@
       el.innerHTML = `
         <svg class="tsc-heat" width="${box.width}" height="${top + 7 * cs}" style="width:${box.width}px;height:${top + 7 * cs}px" aria-label="${d.label} by day">
           ${months.map(([col, t]) => `<text x="${(gx + col * cs).toFixed(1)}" y="10" class="ts-axis">${new Date(t).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })}</text>`).join('')}
-          ${[[0, 'Mon'], [2, 'Wed'], [4, 'Fri']].map(([rw, l]) => `<text x="${gx - 8}" y="${top + rw * cs + sz / 2 + 3}" text-anchor="end" class="ts-axis">${l}</text>`).join('')}
+          ${[0, 2, 4].map((rw) => [rw, ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][((window.Prefs ? Prefs.weekStart : 1) + rw) % 7]]).map(([rw, l]) => `<text x="${gx - 8}" y="${top + rw * cs + sz / 2 + 3}" text-anchor="end" class="ts-axis">${l}</text>`).join('')}
           ${rects}
         </svg>
         <div class="tsc-stats">${statsHtml(d)}</div>`;

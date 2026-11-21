@@ -29,7 +29,7 @@ with sync_playwright() as p:
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(3000)
     pg.screenshot(path=S + f'shots/th_{theme}_1_main.png')
     check(f'{theme}: theme applied before paint', pg.evaluate("document.documentElement.dataset.theme") == theme)
-    for sel in ['#fieldsList .field-card', '.nav-row[data-view=leaderboard]', '#tlChips', '#imgIndex']:
+    for sel in ['#fieldsList .field-card', '.nav-row[data-view=leaderboard]', '#tlChips', '#imgIndex', '.acct-name']:
         cr = contrast(pg, sel); check(f'{theme}: text contrast {sel} ≥ 4.5', cr >= 4.5, round(cr, 2))
     pg.locator('#fieldsList .field-card', has_text='Pivot 1').click(); pg.wait_for_timeout(1500)
     pg.click('#tsBtn'); expect(pg.locator('#tsStatus')).to_contain_text('clear dates', timeout=30000); pg.wait_for_timeout(1200)
@@ -40,7 +40,7 @@ with sync_playwright() as p:
     pg.click('#navItems [data-view=leaderboard]'); pg.wait_for_timeout(800)
     pg.screenshot(path=S + f'shots/th_{theme}_4_leader.png')
     pg.keyboard.press('Escape')
-    pg.click('[data-action=theme]'); pg.wait_for_timeout(500)
+    pg.click('#acctBtn'); pg.click(f'[data-theme-pref={"dark" if theme == "light" else "light"}]'); pg.wait_for_timeout(500)
     other = 'dark' if theme == 'light' else 'light'
     check('switch toggles and stores', pg.evaluate("document.documentElement.dataset.theme") == other and pg.evaluate("localStorage.getItem('theme')") == other)
     pg.reload(); expect(pg.locator('#fieldsList .field-card')).to_have_count(3)

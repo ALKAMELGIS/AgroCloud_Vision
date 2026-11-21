@@ -19,21 +19,31 @@
   root.lang = lang;
   root.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
-  // Theme (dark / light) is set here too, before first paint, so there is no flash.
-  let theme = 'light';   // light by default; dark only when chosen
-  try { theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'; } catch { /* storage off */ }
-  root.dataset.theme = theme;
+  // Theme is set here too, before first paint, so there is no flash.
+  // Preference: 'light' (default), 'dark' or 'system' (follows the device).
+  let themePref = 'light';
+  try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'system') themePref = t; } catch { /* storage off */ }
+  const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+  const resolve = (p) => (p === 'system' ? (mq && mq.matches ? 'dark' : 'light') : p);
+  root.dataset.theme = resolve(themePref);
+  try { if (localStorage.getItem('reduceMotion') === '1') root.classList.add('reduce-motion'); } catch { /* ignore */ }
+  const applyTheme = (t) => {
+    if (t === root.dataset.theme) return;
+    const still = root.classList.contains('reduce-motion') || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (!still) root.classList.add('theme-fade');
+    root.dataset.theme = t;
+    document.dispatchEvent(new CustomEvent('theme:change', { detail: t }));
+    setTimeout(() => root.classList.remove('theme-fade'), 320);
+  };
+  if (mq) mq.addEventListener('change', () => { if (themePref === 'system') applyTheme(resolve('system')); });
   window.Theme = {
     get current() { return root.dataset.theme; },
+    get pref() { return themePref; },
     set(t) {
-      t = t === 'light' ? 'light' : 'dark';
-      if (t === root.dataset.theme) return;
-      const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!still) root.classList.add('theme-fade');
-      root.dataset.theme = t;
-      try { localStorage.setItem('theme', t); } catch { /* ignore */ }
-      document.dispatchEvent(new CustomEvent('theme:change', { detail: t }));
-      setTimeout(() => root.classList.remove('theme-fade'), 320);
+      themePref = t === 'dark' || t === 'system' ? t : 'light';
+      try { localStorage.setItem('theme', themePref); } catch { /* ignore */ }
+      applyTheme(resolve(themePref));
+      document.dispatchEvent(new CustomEvent('theme:pref', { detail: themePref }));
     },
     toggle() { this.set(root.dataset.theme === 'light' ? 'dark' : 'light'); },
     /** Reads a CSS variable of the current theme (for canvas and inline SVG). */
@@ -162,6 +172,18 @@
     'Date on the map': 'التاريخ المعروض على الخريطة', 'contrast': 'تباين',
     'Selected on the map': 'المحدد على الخريطة', 'Show all': 'عرض الكل', 'Show all values': 'عرض كل القيم', 'Click a range to show it on the map': 'اضغط على مدى لعرضه على الخريطة', 'Show on the map': 'عرض على الخريطة', 'Value classes': 'فئات القيم',
     'All fields of the farm on this date': 'كل حقول المزرعة في هذا التاريخ',
+    'Settings': 'الإعدادات', 'General': 'عام', 'Map and imagery': 'الخريطة والصور', 'Account': 'الحساب', 'Language': 'اللغة', 'Arabic mirrors the layout right to left': 'العربية تعكس الواجهة من اليمين إلى اليسار',
+    'Area unit': 'وحدة المساحة', 'Field, zone and class areas': 'مساحات الحقول والمناطق والفئات', 'Hectares': 'هكتار', 'Acres': 'فدان أمريكي (acre)', 'Dunums': 'دونم',
+    'First day of the week': 'أول أيام الأسبوع', 'Heatmap rows and the calendar': 'صفوف الخريطة الحرارية والتقويم', 'Saturday': 'السبت', 'Sunday': 'الأحد', 'Monday': 'الاثنين',
+    'Theme': 'المظهر', 'Match device': 'حسب الجهاز', 'Reduce motion': 'تقليل الحركة', 'Turns off transitions and the heatmap and 3D animations': 'يوقف الانتقالات وحركة الخريطة الحرارية والمجسّم',
+    'Default layer': 'الطبقة الافتراضية', 'Shown when the workspace opens': 'تظهر عند فتح مساحة العمل', 'Imagery source': 'مصدر الصور',
+    'Sentinel-2 L2A from either service; the other is used if one fails': 'Sentinel-2 L2A من أي خدمة، والأخرى تُستخدم إذا تعطلت الأولى',
+    'Contrast stretch': 'تمديد التباين', 'Spread colours over each field’s own values (P2–P98)': 'توزيع الألوان على قيم كل حقل (P2–P98)', 'Pixel size': 'حجم البكسل',
+    '5 m and 2.5 m are sharpened by a model from 10 m bands': '5 م و2.5 م يحسّنها نموذج من نطاقات 10 م', 'Preferences': 'التفضيلات',
+    'Settings are kept in this browser and stay after you sign out': 'الإعدادات محفوظة في هذا المتصفح وتبقى بعد تسجيل الخروج', 'Reset to defaults': 'استعادة الافتراضي',
+    'Session': 'الجلسة', 'Preferences reset': 'تمت استعادة الإعدادات', 'Close': 'إغلاق',
+    'Appearance: light, dark or match device': 'المظهر: فاتح أو داكن أو حسب الجهاز', 'Area unit: hectares, acres or dunums': 'وحدة المساحة: هكتار أو فدان أمريكي أو دونم', 'Default map layer and imagery source': 'طبقة الخريطة الافتراضية ومصدر الصور',
+    'Sun': 'أحد', 'Mon': 'اثنين', 'Tue': 'ثلاثاء', 'Wed': 'أربعاء', 'Thu': 'خميس', 'Fri': 'جمعة', 'Sat': 'سبت',
     'Time series': 'السلسلة الزمنية', 'Off': 'إيقاف', 'Temp': 'الحرارة', 'Rain': 'الأمطار', 'Soil': 'التربة', 'Period': 'الفترة',
     'From': 'من', 'To': 'إلى', 'Download CSV': 'تنزيل CSV', 'Show the whole period': 'عرض الفترة كاملة', 'Temperature': 'الحرارة',
     'Soil moisture': 'رطوبة التربة', 'Finding images': 'جارٍ البحث عن الصور', 'No images in this period': 'لا توجد صور في هذه الفترة',

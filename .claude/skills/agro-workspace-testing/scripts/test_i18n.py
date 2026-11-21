@@ -3,7 +3,7 @@ import sys, os, json, urllib.request, re
 sys.path.insert(0, os.path.dirname(__file__))
 from playwright.sync_api import sync_playwright, expect
 import cdn_routes
-S = os.environ.get('WORK', os.getcwd()) + '/'
+S = os.environ.get('WORK', '/tmp/claude-0/-home-claude/765c94d1-5370-5f2f-8b07-c1be612c5cd8/scratchpad') + '/'
 API = 'http://localhost:4000/api/v1'
 def call(m, p, b=None, tok=None):
     r = urllib.request.Request(API + p, data=json.dumps(b).encode() if b is not None else None, method=m, headers={'Content-Type': 'application/json', **({'Authorization': 'Bearer ' + tok} if tok else {})})
@@ -32,10 +32,10 @@ with sync_playwright() as p:
     check('English: search and tools on the right edge of the map', tb['x'] > mb['x'] + mb['width'] - 80 and sb['x'] > mb['x'] + mb['width'] - 80, (tb['x'], sb['x'], mb['x'] + mb['width']))
     cb = pg.locator('.map-credit').bounding_box(); sc = pg.locator('#mapContainer .leaflet-control-scale').bounding_box()
     check('English: scale and credits top left, clear of the search', cb['x'] < mb['x'] + 40 and sc['x'] < mb['x'] + 200, (cb['x'], sc['x'], mb['x']))
-    check('language button offers Arabic', 'العربية' in pg.inner_text('[data-action=lang]'))
+    check('language button offers Arabic', 'العربية' in pg.text_content('[data-action=lang]'))
     pg.wait_for_timeout(1500); pg.screenshot(path=S + 'shots/l1_english.png')
 
-    pg.click('[data-action=lang]'); pg.wait_for_load_state('load')
+    pg.click('#acctBtn'); pg.click('[data-action=lang]'); pg.wait_for_load_state('load')
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3)
     pg.wait_for_timeout(2500)
     nav, side, main = xs(pg)
@@ -67,7 +67,7 @@ with sync_playwright() as p:
       while (w.nextNode()) { const n = w.currentNode, p = n.parentElement; const t = n.nodeValue.trim();
         if (t && /[A-Za-z]{3}/.test(t) && p && p.offsetParent && !p.closest('[translate=no],script,style,.leaflet-control-scale')) out.add(t); } return [...out]; }""")
     print('still English:', [x for x in left if not any(n in x for n in names + ['Liwa Farm', 'NDVI', 'Sentinel', 'Earth Search', 'Esri', '@agrocloud', 'MSAVI', 'NDRE', 'NDMI', 'ReCI', 'VMI', 'CSV', 'GIS', 'GeoJSON', 'K-means', 'S2'])][:40])
-    pg.click('[data-action=lang]'); pg.wait_for_load_state('load')
+    pg.click('#acctBtn'); pg.click('[data-action=lang]'); pg.wait_for_load_state('load')
     check('back to English', pg.evaluate("document.documentElement.dir") == 'ltr' and 'Fields' in pg.inner_text('#navItems'))
     pg.evaluate("localStorage.setItem('lang', 'ar')")
     pg2 = b.new_context(viewport={'width': 1280, 'height': 800}).new_page(); cdn_routes.install(pg2)
@@ -76,7 +76,7 @@ with sync_playwright() as p:
     check('sign-in page in Arabic', 'تسجيل الدخول' in pg2.inner_text('body') and pg2.evaluate("document.documentElement.dir") == 'rtl', pg2.inner_text('body')[:80])
     pg2.screenshot(path=S + 'shots/l5_signin_ar.png')
     pg.evaluate("localStorage.setItem('lang', 'en')")
-    pg.click('[data-action=logout]'); pg.wait_for_load_state('load')
+    pg.click('#acctBtn'); pg.click('[data-action=logout]'); pg.wait_for_load_state('load')
     check('language survives sign-out', pg.evaluate("localStorage.getItem('lang')") == 'en')
     check('no JS errors', not errors, errors)
     b.close()
