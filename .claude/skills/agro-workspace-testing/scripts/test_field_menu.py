@@ -86,7 +86,7 @@ with sync_playwright() as p:
     pg.reload(); expect(pg.locator('#fieldsList .field-row')).to_have_count(3); pg.wait_for_timeout(1500)
     check('display choices survive a reload', pg.evaluate(f"fieldStyle('{p1}').color") == '#0ea5e9' and pg.locator('#fieldsList .field-row').first.locator('.fm-flag').count() == 1)
 
-    menu('Pivot 1'); act('settings'); expect(pg.locator('#fpNameInput')).to_be_visible()
+    menu('Pivot 1'); act('settings'); expect(pg.locator('#fpNameInput')).to_be_visible(); pg.wait_for_timeout(500)
     check('field settings open the overview with the name focused', pg.evaluate("document.activeElement.id") == 'fpNameInput')
     pg.click('#fpClose')
 

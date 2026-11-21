@@ -298,7 +298,7 @@
       if (act === 'rename') return renameDialog(f);
       if (act === 'color') return colorDialog(f);
       if (act === 'style') return styleDialog(f);
-      if (act === 'settings') { await openFieldPanel(id, 'overview'); const n = document.getElementById('fpNameInput'); if (n) n.focus(); return; }
+      if (act === 'settings') { await openFieldPanel(id, 'overview'); setTimeout(() => { const n = document.getElementById('fpNameInput'); if (n) { n.focus(); n.select(); } }, 250); return; }
       if (act === 'edit') {
         if (readOnly()) return;
         if (FieldPrefs.get(id).hidden) { FieldPrefs.set(id, { hidden: false }); applyVisibility(); }

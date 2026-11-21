@@ -12,6 +12,19 @@ description: How AgroSyntra One is deployed and run — GitHub Pages serves the 
 | Database | Supabase project `AgroCloud` (ref `hrhhafiolowjxypbbxxb`, ap-south-1, free; PostGIS in schema `extensions`). Backend reads `DATABASE_URL` = session pooler URI (IPv4, TLS). Render Postgres `agrocloud-db` is the old copy | migrations in `backend/src/migrations` run on boot (`migrationsRun`); `DB_SYNCHRONIZE=false` |
 | Next.js app | Render `agrocloud-frontend` | optional second client |
 
+## Is Render running the current backend?
+
+`Cannot POST /api/v1/…` (a 404 whose message starts with "Cannot") means the route is missing: Render runs an old
+build. On 21 Nov 2026 the live server still lacked DELETE /fields/:id, restore, history, /fields/check and
+/auth/refresh, so delete, archive and session renewal failed on the site. Check from any browser console:
+`fetch('https://agrocloud-backend-e9ea.onrender.com/api/v1/fields/check',{method:'POST'}).then(r=>r.status)` —
+401 = current build, 404 = old build. The workspace turns such a 404 into "The server is out of date … Redeploy"
+(`outdated()` in workspace.html).
+- Fix: Render → agrocloud-backend → Manual Deploy → Deploy latest commit. Also check Settings → Build & Deploy points
+  to `ALKAMELGIS/AgroSyntra_One`, branch `main`, Auto-Deploy on (the repo rename can leave the old link).
+- `.github/workflows/deploy-backend.yml` redeploys on every push touching `backend/` once the repository secret
+  `RENDER_DEPLOY_HOOK_URL` is set (Render → Settings → Deploy Hook), then waits until /fields/check answers 401.
+
 ## Schema changes (migrations)
 
 `synchronize` is off in production: it can drop a renamed column with its data.

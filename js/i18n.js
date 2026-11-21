@@ -86,7 +86,7 @@
     // fields panel
     'Search fields': 'ابحث في الحقول', 'Sort fields': 'ترتيب الحقول', 'Name': 'الاسم', 'Check fields with risks': 'افحص الحقول المعرّضة للمخاطر',
     'All': 'الكل', 'High NDVI drop': 'انخفاض كبير في NDVI', 'NDVI drop': 'انخفاض NDVI', 'No data': 'لا توجد بيانات', 'No risks': 'لا مخاطر',
-    'No crop': 'بدون محصول', 'Add fields': 'إضافة حقول', 'GIS layers': 'طبقات GIS', 'Recently deleted': 'المحذوفة مؤخراً', 'Archived': 'المؤرشفة', 'Archive': 'أرشفة', 'Archive: recoverable under Archived': 'أرشفة: يمكن استرجاعه من المؤرشفة', 'Restore': 'استرجاع',
+    'No crop': 'بدون محصول', 'Add fields': 'إضافة حقول', 'GIS layers': 'طبقات GIS', 'Recently deleted': 'المحذوفة مؤخراً', 'The server is out of date and does not have this action yet. Redeploy agrocloud-backend on Render (Manual Deploy → Deploy latest commit), then try again': 'الخادم قديم ولا يحتوي هذا الإجراء بعد. أعد نشر agrocloud-backend على Render (Manual Deploy ← Deploy latest commit) ثم حاول مرة أخرى', 'Archived': 'المؤرشفة', 'Archive': 'أرشفة', 'Archive: recoverable under Archived': 'أرشفة: يمكن استرجاعه من المؤرشفة', 'Restore': 'استرجاع',
     'Delete forever': 'حذف نهائي', 'Draw polygon': 'رسم مضلع', 'Draw circle': 'رسم دائرة', 'Select on map': 'التحديد على الخريطة', 'Upload file': 'رفع ملف',
     'Add GIS data': 'إضافة بيانات GIS', 'Draw a polygon field': 'ارسم حقلاً مضلعاً', 'Draw a pivot circle': 'ارسم دائرة محور', 'Select fields on the map': 'حدد الحقول على الخريطة',
     'Upload field boundaries': 'ارفع حدود الحقول', 'Show a file as a reference layer': 'اعرض ملفاً كطبقة مرجعية', 'Add GIS data layer': 'إضافة طبقة بيانات GIS',
