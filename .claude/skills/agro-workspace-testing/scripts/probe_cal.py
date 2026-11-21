@@ -55,7 +55,20 @@ with sync_playwright() as p:
     pg.click('.tsc-chips [data-hk=ndvi]'); pg.wait_for_timeout(1200)
     print('map follows chip:', pg.input_value('#imgIndex'))
     print('current date outlined:', pg.locator('.tsc-cell.is-cur').count())
+    pg.evaluate("TimeSeries.setMode('ring')"); pg.wait_for_timeout(450)
+    pg.screenshot(path=S + 'shots/r0_ring_mid.png', clip={'x': 560, 'y': 590, 'width': 1040, 'height': 310})
+    pg.wait_for_timeout(2000)
+    pg.screenshot(path=S + 'shots/r1_ring.png', clip={'x': 560, 'y': 590, 'width': 1040, 'height': 310})
+    cv = pg.locator('#tsAlt canvas').bounding_box(); hit = None
+    for dx in range(-160, 160, 20):
+        pg.mouse.move(cv['x'] + cv['width'] / 2 + dx, cv['y'] + cv['height'] * 0.75); pg.wait_for_timeout(60)
+        if pg.locator('#tsTip').is_visible(): hit = pg.inner_text('#tsTip').replace('\n', ' '); break
+    print('ring tip:', hit)
+    pg.mouse.move(cv['x'] + cv['width'] / 2, cv['y'] + cv['height'] / 2); pg.mouse.down(); pg.mouse.move(cv['x'] + cv['width'] / 2 + 200, cv['y'] + cv['height'] / 2, steps=8); pg.mouse.up(); pg.wait_for_timeout(300)
+    pg.screenshot(path=S + 'shots/r2_ring_turned.png', clip={'x': 560, 'y': 590, 'width': 1040, 'height': 310})
     pg.evaluate("TimeSeries.setMode('chart')"); pg.wait_for_timeout(1200)
+    pg.evaluate("TimeSeries.state.indices = ['ndvi']; TimeSeries.redraw()"); pg.wait_for_timeout(300)
+    pg.screenshot(path=S + 'shots/c7_chart.png', clip={'x': 560, 'y': 590, 'width': 1040, 'height': 310})
     print('chart back:', pg.locator('#tsSvg path.ts-line').count(), 'brush visible', pg.locator('#tsBrush').is_visible())
     print('errors', errors)
     b.close()

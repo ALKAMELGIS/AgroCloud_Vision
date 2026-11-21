@@ -149,7 +149,7 @@
 
   const heat = {
     draw(ctx) {
-      sky.hide();
+      sky.hide(); ring.hide();
       const d = build(ctx); legend(ctx, d);
       const el = ctx.el; el.className = 'ts-alt tsc-heatmode';
       const box = el.getBoundingClientRect();
@@ -191,7 +191,7 @@
     draw(ctx) {
       const d = build(ctx); legend(ctx, d);
       this.d = d; this.ctx = ctx;
-      const el = ctx.el;
+      const el = ctx.el; ring.hide();
       if (!el.classList.contains('tsc-skymode') || !this.canvas || !el.contains(this.canvas)) {
         el.className = 'ts-alt tsc-skymode';
         el.innerHTML = `<canvas class="tsc-canvas" aria-label="3D skyline"></canvas>
@@ -314,9 +314,114 @@
       };
       cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
       cv.addEventListener('pointerleave', () => { if (!this.drag) { this.hover = null; this.ctx.tipEl.hidden = true; this.loop(); } });
-      cv.addEventListener('dblclick', () => { this.yawFrom = this.yaw; this.yaw = YAW0; this.yawAt = performance.now(); this.loop(); });
+      cv.addEventListener('dblclick', () => { this.yawFrom = this.yaw; this.yaw = this.yaw0 != null ? this.yaw0 : YAW0; this.yawAt = performance.now(); this.loop(); });
     },
   };
 
-  window.TimeSeriesViews = { heat, sky };
+  // ------------------------------------------------------------ 3D ring (pivot)
+  // The period wraps once around a circle, like a centre pivot: each week is a sector
+  // (clockwise from the top), each weekday a concentric ring, column height = value.
+  // Same colours, estimates, hover, click and map link as the skyline; drag turns 360°.
+  const ring = Object.assign(Object.create(sky), {
+    canvas: null, d: null, ctx: null, yaw0: 0, yaw: 0, yawFrom: 0, yawAt: 0, growAt: -1e9, raf: 0, hover: null, polys: [], drag: null,
+    draw(ctx) {
+      const d = build(ctx); legend(ctx, d);
+      this.d = d; this.ctx = ctx;
+      const el = ctx.el; sky.hide();
+      if (!el.classList.contains('tsc-ringmode') || !this.canvas || !el.contains(this.canvas)) {
+        el.className = 'ts-alt tsc-skymode tsc-ringmode';
+        el.innerHTML = `<canvas class="tsc-canvas" aria-label="3D ring"></canvas>
+          <div class="tsc-corner tsc-tr"></div><div class="tsc-corner tsc-bl"></div>
+          <div class="tsc-hint">Drag to turn 360° · double-click to reset</div>`;
+        this.canvas = el.querySelector('canvas');
+        this.bind();
+      }
+      el.querySelector('.tsc-tr').innerHTML = statsHtml(d, 0, 2);
+      el.querySelector('.tsc-bl').innerHTML = statsHtml(d, 2, 4);
+      if (ctx.sinceSweep < 900 && !ctx.loading) this.growAt = performance.now() - ctx.sinceSweep;
+      this.loop();
+    },
+    render() {
+      const cv = this.canvas, d = this.d; if (!cv || !d || !cv.isConnected) return false;
+      const box = cv.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      if (cv.width !== Math.round(box.width * dpr) || cv.height !== Math.round(box.height * dpr)) {
+        cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+        cv.style.width = box.width + 'px'; cv.style.height = box.height + 'px';
+      }
+      const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, box.width, box.height);
+      const now = performance.now(), still = reduce();
+      const since = now - this.growAt;
+      const tilt = still ? 1 : easeInOut(clamp01(since / 750));
+      const pitch = FLAT + (PITCH + 0.1 - FLAT) * tilt;
+      const yk = still ? 1 : easeInOut(clamp01((now - this.yawAt) / 600));
+      const yaw = this.drag ? this.yaw : this.yawFrom + (this.yaw - this.yawFrom) * yk;
+      const W = Math.max(1, d.weeks);
+      // geometry: a small gap at the top marks where the period starts and ends
+      const gap = 0.12, dTh = (2 * Math.PI - gap) / W, th0 = -Math.PI / 2 + gap / 2;
+      const rIn = Math.max(2.4, 1 / dTh - 3.5), rOut = rIn + 7, Hmax = Math.max(1.6, rOut * 0.26);
+      const cy = Math.cos(yaw), sy = Math.sin(yaw), sp = Math.sin(pitch), cp = Math.cos(pitch);
+      const P = (x, y, z) => { const xr = x * cy - y * sy, yr = x * sy + y * cy; return [xr, yr * sp - z * cp, yr]; };
+      const G = (th, r) => [r * Math.cos(th), r * Math.sin(th)];
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i < 48; i++) { const [gx, gy] = G((i / 48) * 2 * Math.PI, rOut + 1.8); [0, Hmax].forEach((z) => { const [a, b] = P(gx, gy, z); x0 = Math.min(x0, a); x1 = Math.max(x1, a); y0 = Math.min(y0, b); y1 = Math.max(y1, b); }); }
+      const pad = 14, sc = Math.min((box.width - 2 * pad) / (x1 - x0 || 1), (box.height - 2 * pad) / (y1 - y0 || 1));
+      const ox = box.width / 2 - ((x0 + x1) / 2) * sc, oy = box.height / 2 - ((y0 + y1) / 2) * sc;
+      const S = (gx, gy, z) => { const [a, b] = P(gx, gy, z); return [ox + a * sc, oy + b * sc]; };
+      const SP = (th, r, z) => { const [gx, gy] = G(th, r); return S(gx, gy, z); };
+      const path = (pts) => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); };
+      let moving = !still && (since < 750 + W * 12 + 560 || yk < 1);
+      // floor: a soft annulus like the wet circle of a pivot
+      g.beginPath();
+      for (let i = 0; i <= 96; i++) { const [px, py] = SP((i / 96) * 2 * Math.PI, rOut + 0.55, 0); if (i) g.lineTo(px, py); else g.moveTo(px, py); }
+      for (let i = 96; i >= 0; i--) { const [px, py] = SP((i / 96) * 2 * Math.PI, rIn - 0.55, 0); g.lineTo(px, py); }
+      g.closePath(); g.fillStyle = `rgb(${INK} / .045)`; g.fill('evenodd'); g.strokeStyle = `rgb(${INK} / .1)`; g.lineWidth = 0.8; g.stroke();
+      const order = d.cells.map((c) => { const th = th0 + (c.col + 0.5) * dTh, r = rIn + c.row + 0.5; const [gx, gy] = G(th, r); return { c, depth: P(gx, gy, 0)[2] }; }).sort((p, q) => p.depth - q.depth);
+      const vis = (nx, ny) => nx * sy + ny * cy > 0.001, lit = (nx, ny) => nx * cy - ny * sy;
+      this.polys = []; g.lineJoin = 'round';
+      const N = 4;   // arc samples per sector edge
+      for (const { c } of order) {
+        const grow = still ? 1 : easeOut(clamp01((since - c.col * 12 - c.row * 6) / 560));
+        const z = c.v == null ? 0 : (0.12 + 0.88 * c.n) * Hmax * grow;
+        const a0 = th0 + (c.col + 0.07) * dTh, a1 = th0 + (c.col + 0.93) * dTh, r0 = rIn + c.row + 0.08, r1 = rIn + c.row + 0.92;
+        const arc = (r, zz, from, to) => Array.from({ length: N + 1 }, (_, i) => SP(from + ((to - from) * i) / N, r, zz));
+        const hot = this.hover === c;
+        const col = hot ? (window.Theme && Theme.current === 'light' ? shade(c.rgb, 0.82) : c.rgb.map((v) => Math.min(255, v + 34))) : c.rgb;
+        const shapes = [];
+        if (z > 0.01) {
+          const am = (a0 + a1) / 2;
+          const faces = [
+            { n: [Math.cos(am), Math.sin(am)], pts: () => [...arc(r1, 0, a0, a1), ...arc(r1, z, a1, a0)] },
+            { n: [-Math.cos(am), -Math.sin(am)], pts: () => [...arc(r0, 0, a0, a1), ...arc(r0, z, a1, a0)] },
+            { n: [Math.sin(a0), -Math.cos(a0)], pts: () => [SP(a0, r0, 0), SP(a0, r1, 0), SP(a0, r1, z), SP(a0, r0, z)] },
+            { n: [-Math.sin(a1), Math.cos(a1)], pts: () => [SP(a1, r0, 0), SP(a1, r1, 0), SP(a1, r1, z), SP(a1, r0, z)] },
+          ];
+          faces.forEach((f) => {
+            if (!vis(f.n[0], f.n[1])) return;
+            const pts = f.pts(); path(pts);
+            g.fillStyle = rgb(shade(col, lit(f.n[0], f.n[1]) > 0 ? 0.56 : 0.74)); g.fill();
+            shapes.push(pts);
+          });
+        }
+        const top = [...arc(r1, z, a0, a1), ...arc(r0, z, a1, a0)];
+        path(top); g.fillStyle = rgb(c.v == null ? BASE : col); g.fill();
+        if (c.cur) { g.strokeStyle = `rgb(${INK} / .95)`; g.lineWidth = 1.6; g.stroke(); }
+        else if (z > 0.01) { g.strokeStyle = `rgb(${INK} / .08)`; g.lineWidth = 0.6; g.stroke(); }
+        shapes.push(top);
+        this.polys.push({ c, shapes });
+      }
+      // month names around the rim
+      g.font = '10px "IBM Plex Sans", system-ui, sans-serif'; g.fillStyle = MUTED; g.textAlign = 'center';
+      let lastM = -1;
+      d.cells.forEach((c) => {
+        const m = new Date(c.t).getUTCMonth(); if (m === lastM) return; lastM = m;
+        const [px, py] = SP(th0 + (c.col + 0.5) * dTh, rOut + 1.4, 0);
+        g.fillText(new Date(c.t).toLocaleDateString(window.I18n && I18n.lang === 'ar' ? 'ar' : 'en-GB', { month: 'short', timeZone: 'UTC' }), px, py + 3);
+      });
+      if (yk < 1) moving = true;
+      return moving;
+    },
+  });
+  // pointer drag turns the ring a full turn and more
+  window.TimeSeriesViews = { heat, sky, ring };
 })();

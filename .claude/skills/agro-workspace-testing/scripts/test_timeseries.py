@@ -143,6 +143,16 @@ with sync_playwright() as p:
     lit = pg.evaluate("(() => { const c = document.querySelector('#tsAlt canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) n++; return n; })()")
     check('3D skyline drawn on canvas', lit > 5000, lit)
     check('choice of view remembered', pg.evaluate("localStorage.getItem('tsMode')") == 'sky')
+    pg.click('#tsModes [data-mode=ring]'); pg.wait_for_timeout(2200)
+    lit = pg.evaluate("(() => { const c = document.querySelector('#tsAlt canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) n++; return n; })()")
+    check('3D ring drawn', lit > 5000 and pg.locator('#tsAlt.tsc-ringmode').count() == 1, lit)
+    cv = pg.locator('#tsAlt canvas').bounding_box(); hit = False
+    for dx in range(-150, 151, 15):
+        for fy in (0.62, 0.72, 0.8):
+            pg.mouse.move(cv['x'] + cv['width'] / 2 + dx, cv['y'] + cv['height'] * fy); pg.wait_for_timeout(30)
+            if pg.locator('#tsTip').is_visible(): hit = True; break
+        if hit: break
+    check('ring hover reads a day', hit)
     pg.click('#tsModes [data-mode=chart]'); pg.wait_for_timeout(900)
     check('back to chart', pg.locator('#tsSvg path.ts-line').count() >= 1 and pg.locator('#tsBrush').is_visible())
     pg.click('#tsClose')

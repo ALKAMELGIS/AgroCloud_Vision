@@ -47,7 +47,7 @@
     open: false, fieldId: null, weather: 'none',
     indices: stored('tsIndices', 'ndvi').split(',').filter((k) => INDEX_KEYS.includes(k)),
     chart: CHARTS[stored('tsChart', 'area')] ? stored('tsChart', 'area') : 'area',
-    mode: ['chart', 'heat', 'sky'].includes(stored('tsMode', 'chart')) ? stored('tsMode', 'chart') : 'chart',
+    mode: ['chart', 'heat', 'sky', 'ring'].includes(stored('tsMode', 'chart')) ? stored('tsMode', 'chart') : 'chart',
     from: iso(Date.now() - 365 * DAY), to: iso(Date.now()),
     points: [], crops: [], weatherDays: null, weatherKey: '', view: null,
     token: 0, done: 0, total: 0, hover: null,
@@ -95,6 +95,7 @@
           <button type="button" role="tab" data-mode="chart" title="Chart">${icon('chartSpline')}</button>
           <button type="button" role="tab" data-mode="heat" title="Heatmap">${icon('heatmap')}</button>
           <button type="button" role="tab" data-mode="sky" title="3D skyline">${icon('cube')}</button>
+          <button type="button" role="tab" data-mode="ring" title="3D ring">${icon('donut')}</button>
         </div>
         <select id="tsChartType" class="ts-input ts-chart-type" title="Chart" aria-label="Chart">${Object.entries(CHARTS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
         <div class="ts-quick" id="tsQuick" role="group" aria-label="Period">
