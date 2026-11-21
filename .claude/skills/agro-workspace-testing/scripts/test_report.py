@@ -30,12 +30,13 @@ with sync_playwright() as p:
     pg = ctx.new_page(); cdn_routes.install(pg); pg.on('pageerror', lambda e: errors.append(str(e)))
     def weather(route):
         from urllib.parse import urlparse, parse_qs
-        q = parse_qs(urlparse(route.request.url).query); a = datetime.date.fromisoformat(q['start'][0]); e = datetime.date.fromisoformat(q['end'][0])
-        days = []; d = a
+        q = parse_qs(urlparse(route.request.url).query); a = datetime.date.fromisoformat(q['start_date'][0]); e = datetime.date.fromisoformat(q['end_date'][0])
+        t, hi, lo, rain, wind = [], [], [], [], []; d = a
         while d <= e:
-            k = (d - a).days; days.append({'date': d.isoformat(), 'temperatureMaxC': 41 if k % 4 == 0 else 34, 'temperatureMinC': 24, 'precipitationMm': 3.0 if k == 9 else 0, 'soilMoisture': 0.14}); d += datetime.timedelta(days=1)
-        route.fulfill(body=json.dumps({'days': days}), headers={'content-type': 'application/json', 'access-control-allow-origin': '*'})
-    pg.route('**/weather/field/*/history*', weather)
+            k = (d - a).days; t.append(d.isoformat()); hi.append(41 if k % 4 == 0 else 34); lo.append(24); rain.append(3.0 if k == 9 else 0); wind.append(10); d += datetime.timedelta(days=1)
+        hourly = {'time': [x + 'T12:00' for x in t], 'soil_moisture_0_to_7cm': [0.14] * len(t)}
+        route.fulfill(body=json.dumps({'daily': {'time': t, 'temperature_2m_max': hi, 'temperature_2m_min': lo, 'precipitation_sum': rain, 'windspeed_10m_max': wind}, 'hourly': hourly}), headers={'content-type': 'application/json', 'access-control-allow-origin': '*'})
+    pg.route('https://archive-api.open-meteo.com/**', weather)
     pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(2500)
     check('light theme by default', pg.evaluate("document.documentElement.dataset.theme") == 'light')
@@ -45,7 +46,7 @@ with sync_playwright() as p:
     with ctx.expect_page() as newp:
         pg.click('#rpField2')
     rp = newp.value
-    rp.route('**/weather/field/*/history*', weather)
+    rp.route('https://archive-api.open-meteo.com/**', weather)
     cdn_routes.install(rp); rp.on('pageerror', lambda e: errors.append('report: ' + str(e)))
     expect(rp.locator('section.page')).to_have_count(2, timeout=90000)
     rp.wait_for_timeout(1200)

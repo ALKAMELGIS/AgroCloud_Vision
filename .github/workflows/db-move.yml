@@ -4,9 +4,10 @@
 #   RENDER_DATABASE_URL  Render → agrocloud-db → Connections → External Database URL
 #   DATABASE_URL         Supabase → Connect → Session pooler URI (with the password)
 #
-# The Supabase tables already exist (baseline migration). This copies the rows
-# only, in one transaction, and refuses to run if Supabase already has data, so
-# run it BEFORE pointing the backend at Supabase (the backend seeds an owner).
+# The Supabase tables already exist. In one transaction this empties them, copies
+# the rows from Render, then gives every copied user a Supabase sign-in with the
+# same password (public.sync_auth_users) and makes sure the owner account exists.
+# After it succeeds, Render can be deleted.
 name: Move database to Supabase
 
 on:
@@ -35,14 +36,15 @@ jobs:
           ssl() { case "$1" in *sslmode=*) echo "$1" ;; *\?*) echo "$1&sslmode=require" ;; *) echo "$1?sslmode=require" ;; esac; }
           export SRC="$(ssl "$SRC")" DST="$(ssl "$DST")"
           docker run --rm -e SRC -e DST -v "$PWD:/w" -w /w postgres:17 bash -euo pipefail -c '
-            n=$(psql "$DST" -Atc "select count(*) from public.organizations")
-            [ "$n" = 0 ] || { echo "Supabase already has $n organisations; nothing copied."; exit 1; }
             echo "Source rows:"
             psql "$SRC" -Atc "select '\''organizations '\''||count(*) from organizations union all select '\''users '\''||count(*) from users union all select '\''farms '\''||count(*) from farms union all select '\''fields '\''||count(*) from fields"
             pg_dump "$SRC" --data-only --no-owner --no-privileges --schema=public \
               --exclude-table=public.migrations --exclude-table=public.spatial_ref_sys > data.sql
-            psql "$DST" -v ON_ERROR_STOP=1 --single-transaction -q -f data.sql
+            { echo "truncate public.weather_snapshots, public.scout_tasks, public.activity_logs, public.crops, public.field_history, public.fields, public.farms, public.users, public.organizations cascade;";
+              cat data.sql;
+              echo "select public.sync_auth_users(); select public.ensure_owner();"; } > move.sql
+            psql "$DST" -v ON_ERROR_STOP=1 --single-transaction -q -f move.sql
             echo "Supabase rows:"
             psql "$DST" -Atc "select '\''organizations '\''||count(*) from organizations union all select '\''users '\''||count(*) from users union all select '\''farms '\''||count(*) from farms union all select '\''fields '\''||count(*) from fields"
-            rm data.sql
+            rm data.sql move.sql
           '

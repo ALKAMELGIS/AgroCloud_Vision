@@ -67,6 +67,22 @@ def sh_mock(route):
         return route.fulfill(body=buf.getvalue(), headers={**cors, 'content-type': 'image/tiff'})
     return route.fulfill(status=400, body='<ServiceExceptionReport><ServiceException>bad</ServiceException></ServiceExceptionReport>', headers=cors)
 
+def meteo_mock(route):
+    """Open-Meteo forecast/archive: a steady made-up season (hot days above 35 °C, some rain, soil moisture)."""
+    import datetime, math, urllib.parse
+    q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(route.request.url).query))
+    a = datetime.date.fromisoformat(q.get('start_date')); b = datetime.date.fromisoformat(q.get('end_date'))
+    days = [a + datetime.timedelta(days=i) for i in range((b - a).days + 1)]
+    doy = lambda d: d.timetuple().tm_yday
+    tmax = [round(31 + 9 * math.sin((doy(d) - 100) / 365 * 2 * math.pi) + (3 if doy(d) % 9 == 0 else 0), 1) for d in days]
+    out = {'daily': {'time': [str(d) for d in days], 'temperature_2m_max': tmax, 'temperature_2m_min': [round(t - 12, 1) for t in tmax],
+                     'precipitation_sum': [round(8 * (doy(d) % 11 == 0) + 2.5 * (doy(d) % 17 == 0), 1) for d in days],
+                     'windspeed_10m_max': [round(12 + 6 * math.sin(doy(d) / 7), 1) for d in days]}}
+    if 'hourly' in q:
+        times = [f'{d}T{h:02d}:00' for d in days for h in range(0, 24, 6)]
+        out['hourly'] = {'time': times, 'soil_moisture_0_to_7cm': [round(0.2 + 0.08 * math.sin(i / 40), 3) for i in range(len(times))]}
+    return route.fulfill(body=json.dumps(out), headers={'access-control-allow-origin': '*', 'content-type': 'application/json'})
+
 def fonts_css():
     out = []
     for fam, pkg, subset in [('IBM Plex Sans', 'ibm-plex-sans', 'latin'), ('IBM Plex Sans Arabic', 'ibm-plex-sans-arabic', 'arabic')]:
@@ -74,14 +90,32 @@ def fonts_css():
             out.append(f"@font-face{{font-family:'{fam}';font-weight:{w};font-style:normal;src:url(https://fonts.gstatic.com/local/{pkg}/files/{pkg}-{subset}-{w}-normal.woff2) format('woff2');}}")
     return '\n'.join(out)
 
+# Tests put the old-style accessToken in localStorage; turn it into the supabase-js session that js/supa.js reads.
+SUPA_PRELUDE = r"""(function(){try{var t=localStorage.getItem('accessToken');if(t&&/\.mock$/.test(t)&&!localStorage.getItem('agrosyntra-auth')){var p=JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+localStorage.setItem('agrosyntra-auth',JSON.stringify({access_token:t,refresh_token:'r-'+p.sub,token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,user:{id:p.sub,email:p.email,aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{}}}));}}catch(e){}})();
+"""
+
 def install(page, api='http://localhost:4000/api/v1'):
+    import sbmock
     def handler(route):
         url = route.request.url
+        if url.startswith('https://hrhhafiolowjxypbbxxb.supabase.co/'):
+            r = route.request
+            if r.method == 'OPTIONS': return route.fulfill(status=204, headers=sbmock.CORS)
+            try:
+                st, out = sbmock.handle(r.method, url, r.headers, r.post_data)
+            except Exception as e:
+                st, out = 500, {'message': str(e)}
+            return route.fulfill(status=st, body='' if out is None else json.dumps(out), headers=sbmock.CORS)
+        if url.startswith('https://alkamelgis.github.io/AgroSyntra_One/js/supa.js'):
+            return route.fulfill(body=SUPA_PRELUDE + open(os.path.join(REPO, 'js/supa.js')).read(), headers={'content-type': 'application/javascript'})
         if url.startswith('https://fonts.googleapis.com/css2'):
             return route.fulfill(body=fonts_css(), headers={'content-type': 'text/css', 'access-control-allow-origin': '*'})
         if url.startswith('https://fonts.gstatic.com/local/'):
             path = os.path.join(LIBS, '@fontsource', url.split('/local/', 1)[1])
             return route.fulfill(path=path, headers={'content-type': 'font/woff2', 'access-control-allow-origin': '*'})
+        if url.startswith('https://api.open-meteo.com/v1/forecast') or url.startswith('https://archive-api.open-meteo.com/v1/archive'):
+            return meteo_mock(route)
         if url.startswith('https://services.sentinel-hub.com/ogc/'):
             if SHMOCK: return sh_mock(route)
             return route.abort()

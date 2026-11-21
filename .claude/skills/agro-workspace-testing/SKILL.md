@@ -1,15 +1,29 @@
 ---
 name: agro-workspace-testing
-description: How to run and test the AgroSyntra One static workspace (workspace.html, main.html, index.html on GitHub Pages) end to end in headless Chrome against a local NestJS + PostGIS backend, with the CDN libraries, Tailwind and Sentinel-2 imagery served locally. Use it before shipping any change to the workspace pages or js/*.js, when a change "works on my machine" but needs proof, or when the sandbox cannot reach the CDN, Render or satellite hosts.
+description: How to run and test the AgroSyntra One static workspace (workspace.html, main.html, index.html on GitHub Pages) end to end in headless Chrome against a local stand-in for Supabase (sbmock.py running the real SQL on PostGIS), with the CDN libraries, Tailwind and Sentinel-2 imagery served locally. Use it before shipping any change to the workspace pages or js/*.js, when a change "works on my machine" but needs proof, or when the sandbox cannot reach the CDN, Supabase or satellite hosts.
 ---
 
 # Testing the workspace end to end
 
-The live site is static HTML on GitHub Pages that calls the Render API
-(`https://agrocloud-backend-e9ea.onrender.com/api/v1`) and loads Leaflet,
-Tailwind, gdal3.js, geotiff.js and others from CDNs. A sandbox usually cannot
-reach any of those, so the tests intercept every request and answer it locally.
-That keeps the code under test byte-for-byte what users get.
+The live site is static HTML on GitHub Pages that talks to Supabase (Auth + `rpc('api')`, see agro-deploy) and loads
+Leaflet, Tailwind, gdal3.js, geotiff.js, supabase-js and others from CDNs. A sandbox cannot reach any of those, so the
+tests intercept every request and answer it locally. That keeps the code under test byte-for-byte what users get.
+
+## Supabase stand-in (`scripts/sbmock.py`) — replaces the NestJS backend
+
+- Database `sbtest`: `createdb sbtest`, `pg_dump --schema-only agrocloud_vision | psql sbtest` (the old schema),
+  `CREATE EXTENSION pgcrypto`, a stub `auth` schema (`auth.uid()` reading `request.jwt.claim.sub`, `auth.users`,
+  `auth.identities` with `unique(provider_id, provider)`, roles `anon`/`authenticated`), then
+  `psql sbtest -f supabase/migrations/*_api.sql` and `select public.ensure_owner()`.
+  SQL checks: `SB_DSN="host=localhost dbname=sbtest user=postgres password=…" python3 supabase/tests/test_api.py`.
+- `python3 sbmock.py serve` (keep running) answers the old REST shape on `http://localhost:4000/api/v1`
+  (`/auth/register`, `/auth/login` and every path through `public.api`), so `fresh_login()` and the tests' `call()`
+  set data up unchanged. Tokens are unsigned JWTs ending `.mock` with `sub` and `email`.
+- `cdn_routes.install(page)` sends `https://hrhhafiolowjxypbbxxb.supabase.co/*` to `sbmock.handle()` (auth token
+  password/refresh, logout, user; `rest/v1/rpc/{api,me,register_account}`) and prepends a prelude to `js/supa.js`
+  that turns a test's `accessToken` into the supabase-js session (`agrosyntra-auth`). supabase-js comes from
+  `GIS_LIBS` (`npm i @supabase/supabase-js@2.45.4`).
+- `test_session.py` tested the NestJS refresh endpoint and is retired; supabase-js refreshes the session itself.
 
 ## One-time setup
 
