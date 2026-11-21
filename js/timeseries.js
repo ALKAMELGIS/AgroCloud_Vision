@@ -32,6 +32,21 @@
     light: { ndvi: '#4a9a3a', savi: '#7f8c1f', evi: '#1f7d48', gndvi: '#5f9a4a', ndre: '#c2622f', msavi: '#a8822a', reci: '#25877a', ndmi: '#3577b5', ndwi: '#4f8fc0', bsi: '#8a5a32', si: '#8a7a64' },
   };
   const COLORS = { ...PALETTES[window.Theme && Theme.current === 'light' ? 'light' : 'dark'] };
+  // Several layers at once: index hues are too close (four greens), so each plotted layer takes
+  // the next colour of a categorical palette, in list order. One layer keeps its ramp colour.
+  const CATEGORICAL = {
+    light: ['#2563a8', '#d97a1e', '#1f8a4c', '#c0392b', '#8c5a2b', '#13808c', '#9c8a12', '#5f646b', '#b3478a', '#4b7d2a', '#3d4fa8'],
+    dark: ['#5b9bd5', '#f0a04b', '#4cc17f', '#e8665a', '#e6e1d6', '#4cc3cf', '#d8c24a', '#a0a6ae', '#d77fb4', '#93c25d', '#8f9be0'],
+  };
+  /** Colour of a plotted layer: categorical when several are plotted, its own hue otherwise. */
+  function colorOf(k) {
+    const keys = INDEX_KEYS.filter((x) => ts.indices.includes(x));
+    if (keys.length < 2) return COLORS[k];
+    const pal = CATEGORICAL[window.Theme && Theme.current === 'dark' ? 'dark' : 'light'];
+    const i = keys.indexOf(k);
+    return i < 0 ? COLORS[k] : pal[i % pal.length];
+  }
+  const seriesColors = () => Object.fromEntries(INDEX_KEYS.map((k) => [k, colorOf(k)]));
   const WEATHER_INK = '#9aa3ad';
   const WEATHER = {
     none: null,
@@ -149,12 +164,12 @@
   function fillIndices() {
     const I = window.Imagery; if (!I) return;
     const keys = keysOrdered();
-    $('tsIndex').innerHTML = `<span class="ts-multi-dots">${keys.map((k) => `<i style="background:${COLORS[k]}"></i>`).join('')}</span><span class="ts-multi-text">${keys.map((k) => I.indices[k].label).join(', ')}</span>${icon('chevronDown')}`;
+    $('tsIndex').innerHTML = `<span class="ts-multi-dots">${keys.map((k) => `<i style="background:${colorOf(k)}"></i>`).join('')}</span><span class="ts-multi-text">${keys.map((k) => I.indices[k].label).join(', ')}</span>${icon('chevronDown')}`;
     hydrateIcons($('tsIndex'));
     let lastGroup = '';
     menu.innerHTML = INDEX_KEYS.filter((k) => I.indices[k]).map((k) => (I.indices[k].group !== lastGroup ? `<div class="ts-opt-group">${(lastGroup = I.indices[k].group)}</div>` : '') + `
       <label class="ts-opt"><input type="checkbox" value="${k}"${ts.indices.includes(k) ? ' checked' : ''}${ts.indices.length === 1 && ts.indices[0] === k ? ' disabled' : ''}>
-        <i style="background:${COLORS[k]}"></i><span class="ts-opt-name">${I.indices[k].label}</span><span class="ts-opt-sub">${I.indices[k].name}</span></label>`).join('');
+        <i style="background:${ts.indices.includes(k) ? colorOf(k) : COLORS[k]}"></i><span class="ts-opt-name">${I.indices[k].label}</span><span class="ts-opt-sub">${I.indices[k].name}</span></label>`).join('');
     $('tsChartType').value = ts.chart;
     syncWeather();
   }
@@ -412,7 +427,7 @@
       const loading = ts.total > 0 && ts.done < ts.total;
       const pr = $('tsProgress'); pr.hidden = !loading; if (loading) pr.firstChild.style.width = Math.round((100 * ts.done) / ts.total) + '%';
       $('tsTip').hidden = true;
-      alt.draw({ ts, keys: keysOrdered(), colors: COLORS, el: $('tsAlt'), legendEl: $('tsLegend'), tipEl: $('tsTip'), loading, sinceSweep: performance.now() - ts.sweepAt, fmtShort, iso, t0, DAY });
+      alt.draw({ ts, keys: keysOrdered(), colors: seriesColors(), el: $('tsAlt'), legendEl: $('tsLegend'), tipEl: $('tsTip'), loading, sinceSweep: performance.now() - ts.sweepAt, fmtShort, iso, t0, DAY });
       return;
     }
     if (window.TimeSeriesViews) Object.values(TimeSeriesViews).forEach((v) => v.hide && v.hide());
@@ -475,11 +490,11 @@
     const mapKey = I.views && I.views[0] && I.views[0].indexKey;
     const flt = I.filter && I.filter.classes && I.filter.classes.size ? I.filter : null;
     ax.keys.forEach((k, ki) => {
-      const c = COLORS[k], Y = Yk(k), data = seriesOf(k, pts), vis = data.filter((d) => d.p.t >= a && d.p.t <= b);
+      const c = colorOf(k), Y = Yk(k), data = seriesOf(k, pts), vis = data.filter((d) => d.p.t >= a && d.p.t <= b);
       const [lo, hi] = ax.right.includes(k) ? ax.R : ax.L;
       const base = Y(Math.max(lo, Math.min(hi, 0)));
       // the layer shown on the map (or the only layer) is coloured by value with the map's ramp
-      const rampOn = ts.chart !== 'change' && (ax.keys.length === 1 || k === mapKey) && I.indices[k].ramp;
+      const rampOn = ts.chart !== 'change' && ax.keys.length === 1 && I.indices[k].ramp; void mapKey;
       const rr = rampOn ? rampRange(k, data) : null;
       const colOf = (v) => (rampOn ? I.css(I.rampAt(I.indices[k].ramp, Math.max(0, Math.min(1, (v - rr[0]) / (rr[1] - rr[0] || 1))))) : c);
       const edges = flt && flt.indexKey === k ? I.edgesFor(k) : null;
@@ -495,14 +510,16 @@
           const band = `${smoothPath(data.map((d) => [X(d.p.t), Y(d.hi)]))} L${data.slice().reverse().map((d) => `${X(d.p.t).toFixed(1)} ${Y(d.lo).toFixed(1)}`).join(' L')} Z`;
           back += `<path d="${band}" fill="${rampOn ? 'var(--t-3)' : c}" opacity="${rampOn ? 0.14 : 0.1}" class="ts-band${sweep ? ' is-enter' : ''}" style="animation-delay:${-off}ms"/>`;
         }
-        if (ts.chart === 'area' && data.length > 1) {
+        if (ts.chart === 'area' && data.length > 1 && single) {   // several layers: lines only, fills would stack into mud
           const fc = rampOn ? 'var(--t-3)' : c;
           defs += `<linearGradient id="tsFill-${k}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${fc}" stop-opacity="${rampOn ? 0.12 : single ? 0.22 : 0.12}"/><stop offset="1" stop-color="${fc}" stop-opacity="0"/></linearGradient>`;
           back += `<path d="${line} L${X(data[data.length - 1].p.t).toFixed(1)} ${base.toFixed(1)} L${X(data[0].p.t).toFixed(1)} ${base.toFixed(1)} Z" fill="url(#tsFill-${k})" class="ts-area${sweep ? ' is-enter' : ''}" style="animation-delay:${-off}ms"/>`;
         }
         // while dates stream in only the points show; the line sweeps in once the load is done
         if (line) front += `<path d="${line}" pathLength="1" fill="none" stroke="${stroke}" stroke-width="${rampOn ? 2.4 : 2}" stroke-linejoin="round" stroke-linecap="round" class="ts-line${sweep ? ' is-enter' : ''}" style="animation-delay:${ki * 60 - off}ms" data-k="${k}"/>`;
-        front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="3" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
+        // several layers over many dates: points only on the hovered date, so the lines stay readable
+        const showDots = single || vis.length <= 40;
+        front += vis.filter((d) => showDots || d.p === hov).map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="3" class="ts-dot${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
       } else if (ts.chart === 'scatter') {
         front += vis.map((d) => `<line x1="${X(d.p.t).toFixed(1)}" x2="${X(d.p.t).toFixed(1)}" y1="${Y(d.lo).toFixed(1)}" y2="${Y(d.hi).toFixed(1)}" stroke="${colOf(d.val)}" stroke-width="1.5" opacity="${faded(d.val) ? 0.1 : 0.35}" class="ts-whisker"/>`).join('');
         front += vis.map((d, i) => `<circle cx="${X(d.p.t).toFixed(1)}" cy="${Y(d.val).toFixed(1)}" r="3.5" class="ts-dot is-solid${d.p === hov ? ' is-hover' : ''}${isCur(d.p) ? ' is-current' : ''}${faded(d.val) ? ' is-faded' : ''}" style="--c:${colOf(d.val)}" data-k="${k}" data-t="${d.p.t}"/>`).join('');
@@ -542,7 +559,7 @@
     const years = ts.from.slice(0, 4) === ts.to.slice(0, 4) ? ts.to.slice(0, 4) : `${ts.from.slice(0, 4)}–${ts.to.slice(2, 4)}`;
     const single = ax.keys.length === 1;
     $('tsLegend').innerHTML = `
-      ${ax.keys.map((k, i) => `<span class="ts-key" data-k="${k}" role="button" tabindex="0" title="Show on the map"><i style="background:${ts.chart !== 'change' && (ax.keys.length === 1 || k === mapKeyNow()) && I.indices[k].ramp ? I.gradient(I.indices[k].ramp) : COLORS[k]}"${ts.chart !== 'change' && (ax.keys.length === 1 || k === mapKeyNow()) ? ' class="is-ramp"' : ''}></i>${I.indices[k].label}${ax.right.includes(k) ? ' <span class="ts-key-sub">right axis</span>' : ''}${i === 0 && !ax.right.includes(k) ? ` <span class="ts-key-sub" dir="ltr">${years}</span>` : ''}</span>`).join('')}
+      ${ax.keys.map((k, i) => `<span class="ts-key" data-k="${k}" role="button" tabindex="0" title="Show on the map"><i style="background:${ts.chart !== 'change' && ax.keys.length === 1 && I.indices[k].ramp ? I.gradient(I.indices[k].ramp) : colorOf(k)}"${ts.chart !== 'change' && ax.keys.length === 1 ? ' class="is-ramp"' : ''}></i>${I.indices[k].label}${ax.right.includes(k) ? ' <span class="ts-key-sub">right axis</span>' : ''}${i === 0 && !ax.right.includes(k) ? ` <span class="ts-key-sub" dir="ltr">${years}</span>` : ''}</span>`).join('')}
       ${ts.chart === 'change' ? '<span class="ts-key-sub">Change since previous date</span>' : ''}
       ${single && (ts.chart === 'area' || ts.chart === 'line') ? `<span class="ts-key"><i class="is-band" style="background:rgb(var(--ink) / .12)"></i>P10–P90</span>` : ''}
       ${ts.chart === 'scatter' ? '<span class="ts-key"><i class="is-whisker"></i>P10–P90</span>' : ''}
@@ -566,7 +583,7 @@
       const v = p.v[k]; if (!v) return '';
       let val = v.mean.toFixed(2);
       if (ts.chart === 'change') { const pr = prevOf(k); if (!pr) return ''; const dd = v.mean - pr.mean; val = (dd > 0 ? '+' : dd < 0 ? '−' : '') + Math.abs(dd).toFixed(2); }
-      return `<div class="ts-tip-row"><span class="ts-tip-k"><i style="background:${COLORS[k]}"></i>${I.indices[k].label}</span><b>${val}</b></div>`;
+      return `<div class="ts-tip-row"><span class="ts-tip-k"><i style="background:${colorOf(k)}"></i>${I.indices[k].label}</span><b>${val}</b></div>`;
     }).join('');
     const one = keys.length === 1 && p.v[keys[0]];
     el.innerHTML = `
@@ -621,7 +638,7 @@
     const X = (t) => ((t - a) / (b - a || 1)) * W;
     const Y = (v) => 3 + (1 - (v - y0) / (y1 - y0)) * (H - 6);
     const data = ts.points.filter((p) => p.v[k]);
-    svg.innerHTML = data.length > 1 ? `<path d="${smoothPath(data.map((p) => [X(p.t), Y(p.v[k].mean)]))}" fill="none" stroke="${COLORS[k]}" stroke-width="1.25" opacity=".7"/>` : '';
+    svg.innerHTML = data.length > 1 ? `<path d="${smoothPath(data.map((p) => [X(p.t), Y(p.v[k].mean)]))}" fill="none" stroke="${colorOf(k)}" stroke-width="1.25" opacity=".7"/>` : '';
     const [va, vb] = viewRange();
     const win = $('tsWindow');
     win.style.left = (X(va) / W) * 100 * (W / box.width) + '%';
@@ -687,5 +704,5 @@
   };
   setPeriod(ts.from, ts.to);
 
-  window.TimeSeries = { open: () => setOpen(true), close: () => setOpen(false), state: ts, load, colors: COLORS, redraw: () => draw(), setMode };
+  window.TimeSeries = { open: () => setOpen(true), close: () => setOpen(false), state: ts, load, colors: COLORS, colorOf, redraw: () => draw(), setMode };
 })();
