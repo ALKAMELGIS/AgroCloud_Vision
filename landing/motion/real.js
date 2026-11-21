@@ -168,7 +168,7 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
       const [img, outer, clear, cloudy] = await Promise.all([basemap(16, BOX), basemap(14, BIG), bandsFor(sc.clear[0]), sc.cloudy ? bandsFor(sc.cloudy[0]).catch(() => null) : Promise.resolve(null)]);
       const pivots = pivotsFrom(clear);
       return { img, outer, clear, cloudy: cloudy && sc.cloudy ? cloudy : null, days: sc.days, clearDay: sc.clear, cloudyDay: cloudy ? sc.cloudy : null, pivots };
-    })(), 25000, 'satellite data');
+    })(), 45000, 'satellite data');
     loading.catch(() => { loading = null; });
     return loading;
   }

@@ -92,10 +92,13 @@ The live, real-data version is the hero demo (`workspace.html?demo&tour`).
 ## Real imagery in the scenes (`landing/motion/real.js`)
 
 The hero scene (`#scene1`) and the sign-in art (`#authCanvas`) start on the field model, then `liveScene()` in
-`scenes.js` swaps to `AgroReal.hero()` when `AgroReal.load()` resolves (25 s limit; on failure the model stays):
-- ground = Esri World Imagery z16 tiles stitched for the demo AOI (Texas High Plains, −102.322, 34.116; 3.4 × 2.3 km);
-- fields = centre pivots found in the clear Sentinel-2 NDVI (radius 240–580 m, inside ≠ rim; demo cache as fallback);
-  the open field is the most varied among the large ones;
+`scenes.js` swaps to `AgroReal.hero()` when `AgroReal.load()` resolves (45 s limit, about 20 s uncached; on failure the model stays):
+- ground = Esri World Imagery: z16 over the analysed area (Texas High Plains, −102.322, 34.116; 5 × 3.4 km) and z14
+  three times wider around it (`OUTER`), drawn first, so tilting or turning never shows empty ground;
+- fields = centre pivots fitted to their real rims (`pivotsFrom`): Hough votes on red/NIR/SWIR edges, then each
+  candidate refined (centre and radius ±3 px) to the circle whose rim is an outward edge; kept only with ≥ 70 % of
+  the rim on an edge and wholly inside the area (radius 240–720 m). No cache, no guessed circles: a wrong or small
+  circle on the imagery is worse than a missing one. The open field is the most varied among the large ones;
 - index layers = Sentinel Hub WMS evalscript (B02 B03 B04 B08 B8A B11 SCL, FLOAT32) on the instance's L2A layer
   (found in GetCapabilities, e.g. `3_NDVI`; a wrong LAYERS name gives HTTP 400), for the latest clear date (< 5 %)
   and a cloudy one (15–75 %), with the system's formulas, SCL masking, P2–P98 contrast and ten classes;
