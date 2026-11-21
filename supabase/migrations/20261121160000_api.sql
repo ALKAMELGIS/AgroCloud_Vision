@@ -665,3 +665,7 @@ alter function public._msg(int, text, jsonb) set search_path = public;
 alter function public._fmt_ha(double precision) set search_path = public;
 alter function public._normalize_polygon(jsonb) set search_path = public;
 alter function public._role_in(text, text[]) set search_path = public;
+
+-- 21 Nov 2026: the owner account is now admin@agrosyntra.com. ensure_owner() was replaced on the project itself
+-- (it renames an old demo@agrocloud.test owner and sets the owner's password); the password is kept out of this
+-- public repository on purpose. Change it in Supabase → Authentication → Users.

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="landing/landing.css?v=20261121r9">
+<link rel="stylesheet" href="landing/landing.css?v=20261121r10">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -41,8 +41,8 @@
           <div><label class="lbl" for="organizationName">Organization or farm name</label><input id="organizationName" class="inp" placeholder="e.g. Liwa North Farms"></div>
           <div><label class="lbl" for="fullName">Full name</label><input id="fullName" class="inp" autocomplete="name"></div>
         </div>
-        <div><label class="lbl" for="email">Email</label><input id="email" name="agro-email" type="email" required autocomplete="off" value="demo@agrocloud.test" class="inp"></div>
-        <div><label class="lbl" for="password">Password</label><input id="password" name="agro-password" type="password" required minlength="8" autocomplete="new-password" value="Demo12345!" class="inp" placeholder="At least 8 characters"></div>
+        <div><label class="lbl" for="email">Email</label><input id="email" name="agro-email" type="email" required autocomplete="off" value="Admin@AgroSyntra.com" class="inp"></div>
+        <div><label class="lbl" for="password">Password</label><input id="password" name="agro-password" type="password" required minlength="8" autocomplete="current-password" value="" class="inp" placeholder="At least 8 characters"></div>
         <p id="errorMsg" class="auth-err hidden" role="alert"></p>
         <p id="waitMsg" class="auth-wait hidden num" role="status"></p>
         <button id="submitBtn" type="submit" class="btn btn-primary">Sign in</button>
@@ -111,8 +111,9 @@ function setMode(next) {
   document.getElementById('subtitleHint').textContent = mode === 'login' ? 'Your farms and fields open on the map right after' : 'You become its owner';
   registerFields.classList.toggle('hidden', mode !== 'register');
   // Owner account is prefilled for sign-in only; registering starts empty.
-  document.getElementById('email').value = mode === 'login' ? 'demo@agrocloud.test' : '';
-  document.getElementById('password').value = mode === 'login' ? 'Demo12345!' : '';
+  // the owner's e-mail is offered for sign-in; the password is never written in this public page
+  document.getElementById('email').value = mode === 'login' ? 'Admin@AgroSyntra.com' : '';
+  document.getElementById('password').value = '';
   submitBtn.textContent = mode === 'login' ? 'Sign in' : 'Create organization';
   toggleBtn.innerHTML = mode === 'login'
     ? `${T('No account yet?')} <span>${T('Create an organization')}</span>`
@@ -153,9 +154,9 @@ form.addEventListener('submit', async (e) => {
   }
 });
 </script>
-<script src="landing/motion/motion.js?v=20261121r9"></script>
-<script src="landing/motion/real.js?v=20261121r9"></script>
-<script src="landing/landing.js?v=20261121r9"></script>
-<script src="landing/scenes.js?v=20261121r9"></script>
+<script src="landing/motion/motion.js?v=20261121r10"></script>
+<script src="landing/motion/real.js?v=20261121r10"></script>
+<script src="landing/landing.js?v=20261121r10"></script>
+<script src="landing/scenes.js?v=20261121r10"></script>
 </body>
 </html>

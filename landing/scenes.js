@@ -10,22 +10,31 @@
   const t = (s) => (window.I18n ? I18n.t(s) : s);
   const f2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : '–');
   const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
-  // Start on the field model at once, then swap to real imagery (Esri basemap + Sentinel-2 indices) when it has loaded.
-  // The returned proxy always forwards to the current scene, so the page's controls keep working across the swap.
+  // The scene shows real imagery only (Esri basemap + Sentinel-2 indices): until it has loaded the stage shows a quiet
+  // loading state, never a drawn stand-in. Loading starts with the page, not when the scene scrolls into view.
+  const STEP_LABELS = ['Natural colour', 'NDVI · vegetation', 'NDVI · vegetation', 'NDMI · water content', 'NDWI · surface water', 'BSI · bare soil'].map((label) => ({ label }));
+  const realP = window.AgroReal ? AgroReal.load() : Promise.reject(new Error('real.js missing'));
+  realP.catch(() => {});
   function liveScene(canvas, onState, opts, onReal) {
-    let cur = AgroMotion.hero(canvas, onState, opts);
-    const proxy = {
-      get steps() { return cur.steps; }, get real() { return !!cur.real; },
-      show: (i) => cur.show(i), setIndex: (k) => cur.setIndex(k), toggleClass: (c) => cur.toggleClass(c), setContrast: (on) => cur.setContrast(on),
+    let cur = null;
+    const stage = canvas.parentElement;
+    stage.classList.add('is-loading');
+    const note = document.createElement('div'); note.className = 'sc-loading'; note.setAttribute('role', 'status');
+    note.innerHTML = `<span>${t('Loading Sentinel-2 imagery')}</span><i></i>`;
+    stage.appendChild(note);
+    realP.then((data) => {
+      cur = AgroReal.hero(canvas, onState, opts, data);
+      stage.classList.remove('is-loading'); note.remove();
+      if (onReal) onReal(data);
+    }).catch((e) => {
+      console.info('landing: satellite imagery not available', e && e.message);
+      note.innerHTML = `<span>${t('Satellite imagery is not available right now. Reload the page to try again')}</span>`;
+      note.classList.add('is-failed');
+    });
+    return {
+      get steps() { return cur ? cur.steps : STEP_LABELS; }, get real() { return !!cur; },
+      show: (i) => cur && cur.show(i), setIndex: (k) => cur && cur.setIndex(k), toggleClass: (c) => cur && cur.toggleClass(c), setContrast: (on) => cur && cur.setContrast(on),
     };
-    if (window.AgroReal) {
-      AgroReal.load().then((data) => {
-        const next = AgroReal.hero(canvas, onState, opts, data);
-        cur.stop(); cur = next;
-        if (onReal) onReal(data);
-      }).catch((e) => console.info('landing: real imagery not available, keeping the field model', e && e.message));
-    }
-    return proxy;
   }
   const credit = (el) => { if (el) el.hidden = false; };
 

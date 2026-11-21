@@ -29,7 +29,7 @@ Render is retired (21 Nov 2026, the user works from GitHub only): `render.yaml` 
   Unknown route → 404 "Cannot GET /api/v1/…".
 - Accounts: `register_account(org, name, email, password)` (anon) creates the organization, owner profile and the
   Supabase sign-in (auth.users + auth.identities, bcrypt via pgcrypto), then the page signs in. No confirmation email.
-  `ensure_owner()` keeps demo@agrocloud.test / Demo12345! (the prefilled owner); `sync_auth_users()` gives copied users
+  `ensure_owner()` keeps Admin@AgroSyntra.com (stored as admin@agrosyntra.com; its password lives only in Supabase, never in this public repo or page) (the prefilled owner); `sync_auth_users()` gives copied users
   a sign-in with their old bcrypt password.
 - Security: RLS on for every table with **no policies** — the browser reaches data only through `api()`/`me()`.
   Helpers `_*` have EXECUTE revoked from anon/authenticated. A new table must `ENABLE ROW LEVEL SECURITY`; a new route
