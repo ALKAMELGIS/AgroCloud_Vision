@@ -22,6 +22,8 @@ POST Earth Search /v1/search (intersects = field, last 150 days, tile cloud < 80
   → reflectance = DN·scale + offset → NDVI per pixel inside the polygon, SCL-masked
   → stats, 10 value classes, overlay per field in each view's `img` pane (z 395, under the outlines)
   → hover: UTM pixel lookup in each view's results → "Field · NDVI 0.85 · Dense vegetation" on both screens
+    (`.hover-readout`: a SOLID #111412 box, white text, in every theme. It used to fade with the theme's shadow
+    strength and was unreadable over the colours in light mode. Order: value in bold, its meaning, the field small)
   → risks: NDVI change vs the field's previous clear date on the same tile
      (high ≤ −0.10, low ≤ −0.03, no data when > 30% cloud) → chips, cards, leaderboard, notifications
 ```
