@@ -248,7 +248,10 @@ function evaluatePixel(s) { return [s.B02, s.B03, s.B04, s.B08, s.B8A, s.B11, s.
       const m22 = ((c[1] - a[1]) * (ub[0] - ua[0]) - (b[1] - a[1]) * (uc[0] - ua[0])) / den;
       const dx = a[0] - m11 * ua[0] - m21 * ua[1], dy = a[1] - m12 * ua[0] - m22 * ua[1];
       ctx.save(); ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(Bp[0], Bp[1]); ctx.lineTo(C[0], C[1]); ctx.closePath(); ctx.clip();
-      ctx.setTransform(m11, m12, m21, m22, dx, dy); ctx.drawImage(img, 0, 0); ctx.restore();
+      // only the triangle's own patch of the image (drawing the whole image per triangle costs ~10× the time)
+      const u0 = Math.max(0, Math.floor(Math.min(ua[0], ub[0], uc[0]) - 2)), v0 = Math.max(0, Math.floor(Math.min(ua[1], ub[1], uc[1]) - 2));
+      const u1 = Math.min(W, Math.ceil(Math.max(ua[0], ub[0], uc[0]) + 2)), v1 = Math.min(H, Math.ceil(Math.max(ua[1], ub[1], uc[1]) + 2));
+      ctx.setTransform(m11, m12, m21, m22, dx, dy); ctx.drawImage(img, u0, v0, u1 - u0, v1 - v0, u0, v0, u1 - u0, v1 - v0); ctx.restore();
     };
     for (let j = 0; j < M2; j++) for (let i = 0; i < N; i++) {
       const u0 = i / N, u1 = (i + 1) / N, v0 = j / M2, v1 = (j + 1) / M2;
