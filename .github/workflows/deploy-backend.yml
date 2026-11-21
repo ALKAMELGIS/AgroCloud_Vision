@@ -1,0 +1,31 @@
+# Redeploys agrocloud-backend on Render when backend/ changes on main, and checks it came up
+# with the current routes. Needs one repository secret: RENDER_DEPLOY_HOOK_URL
+# (Render → agrocloud-backend → Settings → Deploy Hook → copy the URL).
+name: Deploy backend to Render
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', 'render.yaml', '.github/workflows/deploy-backend.yml']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the deploy hook
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "::warning::Add the RENDER_DEPLOY_HOOK_URL secret to deploy automatically"; exit 0; fi
+          curl -fsS -X POST "$HOOK" > /dev/null && echo "Deploy started"
+      - name: Wait until the new routes answer
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          [ -z "$HOOK" ] && exit 0
+          # POST /fields/check exists only in current builds: 401 (needs sign-in) = new build, 404 = old build
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://agrocloud-backend-e9ea.onrender.com/api/v1/fields/check || true)
+            echo "try $i: $code"; [ "$code" = "401" ] && { echo "The new build is live"; exit 0; }
+            sleep 20
+          done
+          echo "::error::The server still answers with the old build after 20 minutes: open the deploy log on Render"; exit 1

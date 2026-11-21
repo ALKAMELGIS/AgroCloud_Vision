@@ -1,0 +1,76 @@
+databases:
+  - name: agrocloud-db
+    databaseName: agrocloud_vision
+    user: agrocloud
+    plan: free
+    postgresMajorVersion: 15
+
+services:
+  - type: web
+    name: agrocloud-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: agrocloud-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: agrocloud-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: agrocloud-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: agrocloud-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: agrocloud-db
+          property: database
+      # Supabase session pooler URI; when set it replaces the DB_* values above.
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SYNCHRONIZE
+        value: "false"
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 7d
+      - key: WEATHER_PROVIDER
+        value: open-meteo
+      - key: OPEN_METEO_FORECAST_URL
+        value: ""
+      - key: OPEN_METEO_ARCHIVE_URL
+        value: ""
+      - key: EOS_API_KEY
+        sync: false
+      - key: EOS_API_ID
+        sync: false
+      - key: EOS_API_BASE_URL
+        value: https://api-connect.eos.com
+
+  - type: web
+    name: agrocloud-frontend
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm run start -- -p $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://agrocloud-backend-e9ea.onrender.com/api/v1

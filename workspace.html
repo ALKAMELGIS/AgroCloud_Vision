@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Workspace — AgroSyntra One</title>
 <script src="js/demo.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="js/supa.js"></script>
 <script src="js/i18n.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" />
@@ -311,8 +309,7 @@
 </style>
 
 <script>
-// Requests keep their REST shape; js/supa.js answers them from Supabase (public.api).
-const API_BASE_URL = 'https://hrhhafiolowjxypbbxxb.supabase.co/api/v1';
+const API_BASE_URL = 'https://agrocloud-backend-e9ea.onrender.com/api/v1';
 // ?demo: the public demo answers the API itself (js/demo.js), read-only, without a session
 let token = window.DEMO ? 'demo' : localStorage.getItem('accessToken');
 if (!token) window.location.href = 'main.html';
@@ -424,7 +421,6 @@ function renewSession() {
 }
 async function authFetch(url, init = {}) {
   if (window.DEMO) return window.DEMO.api(url, init);
-  if (window.SB) return window.SB.api(url, init);
   const go = () => fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` } });
   let res = await go();
   if (res.status === 401 && await renewSession()) res = await go();
