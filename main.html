@@ -55,6 +55,7 @@
 
   <div class="auth-art" id="authScene">
     <canvas id="authCanvas" role="img" aria-label="Fields seen from a satellite: the pass turns natural colour into index values and masks a cloud"></canvas>
+    <span class="sc-credit" id="authCredit" hidden translate="no">Imagery © Esri, Maxar · Sentinel-2 L2A © Copernicus</span>
     <div class="sc-legend auth-legend" aria-hidden="true"><span id="authLeg">Natural colour</span><span class="num" id="authLo"></span><span class="sc-legbar" id="authSeg"></span><span class="num" id="authHi"></span><span class="sc-cloudkey"><i></i><span>cloud</span></span></div>
     <div class="auth-card">
       <div class="f-head"><b>Every field, every clear image</b><span class="num" id="authStep">Sentinel-2 · 10 m</span></div>
@@ -153,6 +154,7 @@ form.addEventListener('submit', async (e) => {
 });
 </script>
 <script src="landing/motion/motion.js"></script>
+<script src="landing/motion/real.js"></script>
 <script src="landing/landing.js"></script>
 <script src="landing/scenes.js"></script>
 </body>

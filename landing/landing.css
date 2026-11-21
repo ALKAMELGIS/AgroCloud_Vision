@@ -407,3 +407,8 @@ img, svg { display: block; max-width: 100%; }
   .sc2-period { display: none; }
   .sc2-legend { top: 86px; flex-wrap: wrap; inset-inline-end: 16px; }
 }
+
+/* real imagery credit (Esri basemap, Copernicus Sentinel-2) */
+.sc-credit { position: absolute; z-index: 2; inset-inline-end: 12px; top: 10px; padding: 2px 6px; border-radius: 4px; font-size: 10px; line-height: 14px; color: rgb(255 255 255 / .9); background: rgb(0 0 0 / .32); direction: ltr; pointer-events: none; }
+.sc-credit[hidden] { display: none; }
+.auth-art .sc-credit { top: auto; bottom: 8px; inset-inline-end: 8px; }

@@ -10,6 +10,25 @@
   const t = (s) => (window.I18n ? I18n.t(s) : s);
   const f2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : '–');
   const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+  // Start on the field model at once, then swap to real imagery (Esri basemap + Sentinel-2 indices) when it has loaded.
+  // The returned proxy always forwards to the current scene, so the page's controls keep working across the swap.
+  function liveScene(canvas, onState, opts, onReal) {
+    let cur = AgroMotion.hero(canvas, onState, opts);
+    const proxy = {
+      get steps() { return cur.steps; }, get real() { return !!cur.real; },
+      show: (i) => cur.show(i), setIndex: (k) => cur.setIndex(k), toggleClass: (c) => cur.toggleClass(c), setContrast: (on) => cur.setContrast(on),
+    };
+    if (window.AgroReal) {
+      AgroReal.load().then((data) => {
+        const next = AgroReal.hero(canvas, onState, opts, data);
+        cur.stop(); cur = next;
+        if (onReal) onReal(data);
+      }).catch((e) => console.info('landing: real imagery not available, keeping the field model', e && e.message));
+    }
+    return proxy;
+  }
+  const credit = (el) => { if (el) el.hidden = false; };
+
   const whenNear = (el, fn) => {
     if (!('IntersectionObserver' in window)) { fn(); return; }
     new IntersectionObserver((es, io) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); fn(); } }, { rootMargin: '200px' }).observe(el);
@@ -20,7 +39,7 @@
     const canvas = $('sc1Canvas'); if (!canvas || !window.AgroMotion) return;
     let s = null, playing = true, contrast = true, mean = 0, raf = 0;
     const steps = $('sc1Steps'), rows = $('sc1Rows'), dates = $('sc1Dates'), seg = $('sc1Seg'), sel = $('sc1Index');
-    const sc = AgroMotion.hero(canvas, (st) => { s = st; render(); count(st.mean); });
+    const sc = liveScene(canvas, (st) => { s = st; render(); count(st.mean); }, {}, () => credit($('sc1Credit')));
     // steps
     steps.innerHTML = sc.steps.map((x, i) => `<button type="button" class="sc-step" data-i="${i}"><span>${String(i + 1).padStart(2, '0')}</span>${t(x.label)}</button>`).join('');
     steps.addEventListener('click', (e) => { const b = e.target.closest('[data-i]'); if (!b) return; sc.setIndex(null); sc.show(+b.dataset.i); setPlaying(false); });
@@ -94,13 +113,13 @@
   function authScene() {
     const canvas = $('authCanvas'); if (!canvas || !window.AgroMotion) return;
     if (!canvas.offsetWidth) { const again = () => { if (canvas.offsetWidth) { removeEventListener('resize', again); authScene(); } }; addEventListener('resize', again); return; }
-    const sc = AgroMotion.hero(canvas, (s) => {
+    const sc = liveScene(canvas, (s) => {
       const step = sc.steps[s.step];
       $('authStep').textContent = `${String(s.step + 1).padStart(2, '0')} · ${t(step ? step.label : '')}`;
       $('authLeg').textContent = s.natural ? t('Natural colour') : s.indexLabel + (s.contrast ? ' · ' + t('contrast') : '');
       $('authLo').textContent = s.natural ? '' : f2(s.lo); $('authHi').textContent = s.natural ? '' : f2(s.hi);
       $('authSeg').innerHTML = s.natural ? '' : s.legend.map((c) => `<i style="background:${rgb(c)}"></i>`).join('');
-    }, canvas.offsetHeight > canvas.offsetWidth * 0.9 ? { pitch: 1.1, zoom: 1.45, cy: 0.5 } : {});
+    }, canvas.offsetHeight > canvas.offsetWidth * 0.9 ? { pitch: 1.1, zoom: 1.45, cy: 0.5 } : {}, () => credit($('authCredit')));
   }
 
   function init() {

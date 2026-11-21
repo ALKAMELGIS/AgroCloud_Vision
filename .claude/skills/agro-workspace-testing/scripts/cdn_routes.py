@@ -63,6 +63,8 @@ def sh_mock(route):
                 d = (xx - cx) ** 2 + (yy - cy) ** 2 < r * r
                 nir[d] = 0.45; red[d] = 0.05
         bands = [np.full((h, w), v, np.float32) for v in (0.04, 0.07)] + [red, np.full((h, w), 0.15, np.float32)] + [nir, nir, np.full((h, w), 0.2, np.float32), np.full((h, w), 4, np.float32)]
+        if 'bands: 7' in script:   # landing/motion/real.js: B02 B03 B04 B08 B8A B11 SCL
+            bands = [np.full((h, w), v, np.float32) for v in (0.04, 0.07)] + [red, nir, nir, np.full((h, w), 0.2, np.float32), np.full((h, w), 4, np.float32)]
         buf = io.BytesIO(); tifffile.imwrite(buf, np.stack(bands).astype(np.float32), photometric='minisblack', planarconfig='separate')
         return route.fulfill(body=buf.getvalue(), headers={**cors, 'content-type': 'image/tiff'})
     return route.fulfill(status=400, body='<ServiceExceptionReport><ServiceException>bad</ServiceException></ServiceExceptionReport>', headers=cors)
@@ -82,6 +84,15 @@ def meteo_mock(route):
         times = [f'{d}T{h:02d}:00' for d in days for h in range(0, 24, 6)]
         out['hourly'] = {'time': times, 'soil_moisture_0_to_7cm': [round(0.2 + 0.08 * math.sin(i / 40), 3) for i in range(len(times))]}
     return route.fulfill(body=json.dumps(out), headers={'access-control-allow-origin': '*', 'content-type': 'application/json'})
+
+_TILE = None
+def esri_tile():
+    global _TILE
+    if _TILE is None:
+        import io
+        from PIL import Image
+        buf = io.BytesIO(); Image.new('RGB', (256, 256), (196, 178, 140)).save(buf, 'PNG'); _TILE = buf.getvalue()
+    return _TILE
 
 def fonts_css():
     out = []
@@ -149,8 +160,8 @@ def install(page, api='http://localhost:4000/api/v1'):
             return route.fulfill(path=p, headers={'content-type': ct, 'access-control-allow-origin': '*'})
         if url.startswith('http://localhost') or url.startswith('data:') or url.startswith('blob:'):
             return route.continue_()
-        if 'arcgisonline' in url:  # map tiles: blank
-            return route.fulfill(status=204)
+        if 'arcgisonline' in url:  # map tiles: a plain desert-coloured tile (the landing scene needs real image bytes)
+            return route.fulfill(body=esri_tile(), headers={'content-type': 'image/png', 'access-control-allow-origin': '*'})
         print('BLOCKED', url)
         return route.abort()
     page.route('**/*', handler)

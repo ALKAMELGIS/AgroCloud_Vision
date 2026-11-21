@@ -379,5 +379,7 @@
     return { stop: m.stop, acts: ACTS, show(i) { st0.forced = i === null ? null : clamp(i, 0, 3); st0.lastAct = -1; } };
   }
 
-  window.AgroMotion = { hero, stats, rampAt, INDICES };
+  window.AgroMotion = { hero, stats, rampAt, INDICES,
+    // building blocks for landing/motion/real.js (the same scene on real imagery)
+    kit: { camera, mount, quad, edgesFor, classOf, KEEP_SCL, ease, clamp, mixc, pct, STEP_T, SWEEP_T } };
 })();
