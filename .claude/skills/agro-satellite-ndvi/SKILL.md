@@ -41,6 +41,13 @@ Index formulas (reflectance; 20 m bands sampled on the 10 m grid):
 
 EOS writes ReCI as N/Red − 1; it is treated as a typo for the red-edge form.
 
+## Earth Search catalogue quirk (Nov 2026)
+
+Sending `query: { eo:cloud_cover }` together with `sortby` makes Earth Search ignore `collections` and `bbox`: it
+returned Sentinel-1 GRD scenes from anywhere, so the timeline showed one "100 %" date and no index. `searchScenes`
+therefore sends no `query`, pages through `links[rel=next]` (limit 100, up to 8 pages), and keeps only items of
+`CONFIG.collection` whose id starts with `S2`, that have an SCL asset, overlap the fields and are under 95 % cloud.
+
 ## Time series (`js/timeseries.js`)
 
 - **Opening:** the chart button `#tsBtn` sits in the map tools under the ruler. It opens `#tsPanel`, a 304 px drawer under the map: `#mapMain.ts-open` shortens `#mapRow`, then both maps are invalidated.

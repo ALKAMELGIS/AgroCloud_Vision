@@ -137,6 +137,7 @@
     return [a, b, c, d];
   }
   const contains = (o, i) => o[0] <= i[0] && o[1] <= i[1] && o[2] >= i[2] && o[3] >= i[3];
+  const overlaps = (a, b) => a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
   function pointInRings(x, y, rings) {
     let inside = false;
     for (const ring of rings) {
@@ -168,17 +169,29 @@
     if (src === 'sh') { const sc = await shSearch(geoms, lookbackDays); sceneCache.set(cacheKey, sc); return sc; }
     const box = bboxOfGeoms(geoms);
     const end = new Date(), start = new Date(Date.now() - lookbackDays * 86400000);
+    // Earth Search ignores collections and bbox when a `query` filter is sent together with `sortby`
+    // (it returned Sentinel-1 radar from anywhere, Nov 2026), so no `query`: cloud is filtered here.
     const body = {
       collections: [CONFIG.collection],
       bbox: box,
       datetime: start.toISOString() + '/' + end.toISOString(),
-      query: { 'eo:cloud_cover': { lt: 95 } },
       sortby: [{ field: 'properties.datetime', direction: 'desc' }],
-      limit: 250,
+      limit: 100,
     };
-    const res = await fetch(CONFIG.stac, { method: 'POST', headers: { 'Content-Type': 'application/geo+json' }, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error('The Sentinel-2 catalogue did not answer (' + res.status + ')');
-    const fc = await res.json();
+    const items = [];
+    let req = { url: CONFIG.stac, method: 'POST', body };
+    for (let page = 0; req && page < 8; page++) {
+      const res = await fetch(req.url, req.method === 'GET' ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req.body) });
+      if (!res.ok) throw new Error('The Sentinel-2 catalogue did not answer (' + res.status + ')');
+      const page_ = await res.json();
+      items.push(...(page_.features || []));
+      const next = (page_.links || []).find((l) => l.rel === 'next');
+      req = next && (page_.features || []).length ? { url: next.href, method: next.method || 'GET', body: next.merge ? { ...body, ...next.body } : next.body } : null;
+    }
+    // keep only Sentinel-2 L2A over the fields, whatever the catalogue sends back
+    const fc = { features: items.filter((it) => (!it.collection || it.collection === CONFIG.collection)
+      && /^S2/.test(it.id) && it.assets && (it.assets.scl || it.assets.SCL)
+      && (!it.bbox || overlaps(it.bbox, box)) && +(it.properties['eo:cloud_cover'] ?? 100) < 95) };
     const tileOf = (it) => it.properties['s2:mgrs_tile'] || it.properties['grid:code'] || String(it.properties['proj:epsg'] || '');
     const counts = new Map();
     (fc.features || []).forEach((it) => { if (!it.bbox || contains(it.bbox, box)) counts.set(tileOf(it), (counts.get(tileOf(it)) || 0) + 1); });
