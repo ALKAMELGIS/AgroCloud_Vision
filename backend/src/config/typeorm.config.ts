@@ -10,7 +10,10 @@ export const typeOrmConfig: DataSourceOptions = {
   username: process.env.DB_USERNAME || 'agrocloud',
   password: process.env.DB_PASSWORD || 'change_me',
   database: process.env.DB_DATABASE || 'agrocloud_vision',
+  // Schema changes go through migrations (src/migrations), applied on start.
+  // DB_SYNCHRONIZE=true is for throwaway local databases only.
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
+  migrationsRun: process.env.DB_MIGRATIONS_RUN !== 'false',
   logging: process.env.NODE_ENV === 'development',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],

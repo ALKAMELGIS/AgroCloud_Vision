@@ -37,7 +37,7 @@ services:
           name: agrocloud-db
           property: database
       - key: DB_SYNCHRONIZE
-        value: "true"
+        value: "false"
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

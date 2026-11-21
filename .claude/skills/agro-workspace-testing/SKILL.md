@@ -19,7 +19,7 @@ apt-get install -y postgresql-16-postgis-3 && service postgresql start
 su postgres -c "psql -c \"CREATE USER agrocloud WITH PASSWORD 'change_me' SUPERUSER;\""
 su postgres -c "createdb -O agrocloud agrocloud_vision"
 su postgres -c "psql -d agrocloud_vision -c 'CREATE EXTENSION IF NOT EXISTS postgis;'"
-# 2. Backend (tables are created by DB_SYNCHRONIZE=true; owner account is seeded on start)
+# 2. Backend (tables are created by the migrations on start; owner account is seeded on start)
 cd backend && cp .env.example .env && npm install && npm run build && node dist/main   # keep running
 # 3. CDN packages, outside the repo
 npm i gdal3.js@2.8.1 shpjs@4.0.4 @tmcw/togeojson@5.8.1 jszip@3.10.1 proj4@2.11.0 \

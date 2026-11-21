@@ -9,8 +9,35 @@ description: How AgroOne is deployed and run — GitHub Pages serves the static 
 |---|---|---|
 | Static site (`*.html`, `js/`) | GitHub Pages, `main` branch root (`.nojekyll`) | about 1 minute after a push to `main` |
 | API (`backend/`) | Render web service `agrocloud-backend` (free, sleeps) | on push if auto-deploy is on, else **Manual Deploy** |
-| Database | Render Postgres 15 + PostGIS, `DB_SYNCHRONIZE=true` | new columns (e.g. `irrigation`, activity `product/rate/unit`) are created on boot |
+| Database | Render Postgres 15 + PostGIS (free: deleted after 30 days, no backups) | migrations in `backend/src/migrations` run on boot (`migrationsRun`); `DB_SYNCHRONIZE=false` |
 | Next.js app | Render `agrocloud-frontend` | optional second client |
+
+## Schema changes (migrations)
+
+`synchronize` is off in production: it can drop a renamed column with its data.
+Every entity change ships with a migration in the same commit:
+
+1. Make a scratch DB from the current schema (`createdb x`, `CREATE EXTENSION postgis`,
+   `DB_DATABASE=x npx typeorm migration:run -d dist/config/typeorm.config.js`).
+2. `DB_DATABASE=x npx typeorm-ts-node-commonjs migration:generate -d src/config/typeorm.config.ts src/migrations/<Name>`.
+3. Read it: a rename must be `RENAME COLUMN`, never DROP + ADD.
+4. Check there is no drift: the same generate again prints "No changes in database schema".
+
+`1795258352581-Baseline.ts` is the schema as of 2026-11-21. On a database that
+already has tables (built by the old synchronize) it records itself and does nothing.
+
+## CORS
+
+`main.ts` allows `https://alkamelgis.github.io`, `agrocloud-frontend*.onrender.com`
+and localhost only. More origins: env `CORS_ORIGINS` (comma-separated). A new
+custom domain or a renamed GitHub account must be added here, or every call fails.
+
+## Backups
+
+`.github/workflows/db-backup.yml` runs nightly (03:17 Dubai) and on demand:
+pg_dump (postgres:17 image) → gpg AES256 → workflow artifact kept 30 days.
+Needs secrets `DATABASE_URL` (Render external URL) and `BACKUP_PASSPHRASE`;
+without them it only warns. Restore steps are in the file's header.
 
 ## Order of release
 

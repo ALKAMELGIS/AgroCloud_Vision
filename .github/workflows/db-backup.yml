@@ -1,0 +1,66 @@
+# Nightly encrypted backup of the AgroOne database (Render PostgreSQL).
+#
+# Setup, once (GitHub → Settings → Secrets and variables → Actions):
+#   DATABASE_URL       Render → agrocloud-db → Connections → External Database URL
+#   BACKUP_PASSPHRASE  any long password; keep a copy somewhere safe
+#
+# Each run uploads agroone-<date>.dump.gpg as a workflow artifact (kept 30 days).
+# Restore:
+#   gpg --decrypt agroone-<date>.dump.gpg > agroone.dump
+#   pg_restore --no-owner --clean --if-exists -d "<new database url>" agroone.dump
+name: Database backup
+
+on:
+  schedule:
+    - cron: '17 23 * * *'   # 03:17 Dubai time
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check secrets
+        id: check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::warning::Add the DATABASE_URL and BACKUP_PASSPHRASE secrets to enable backups."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dump and encrypt
+        if: steps.check.outputs.ready == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          url="$DATABASE_URL"
+          case "$url" in *sslmode=*) ;; *\?*) url="$url&sslmode=require" ;; *) url="$url?sslmode=require" ;; esac
+          name="agroone-$(date -u +%Y-%m-%d).dump"
+          # pg_dump must be at least the server's version; the postgres:17 image covers 15–17.
+          docker run --rm -e URL="$url" -v "$PWD:/out" postgres:17 \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges "$URL" > /out/db.dump'
+          test -s db.dump
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 --output "$name.gpg" db.dump
+          rm db.dump
+          echo "NAME=$name.gpg" >> "$GITHUB_ENV"
+          ls -lh "$name.gpg"
+
+      - name: Upload
+        if: steps.check.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NAME }}
+          path: ${{ env.NAME }}
+          retention-days: 30
+          if-no-files-found: error
