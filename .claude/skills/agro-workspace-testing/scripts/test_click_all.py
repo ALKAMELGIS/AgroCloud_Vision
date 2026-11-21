@@ -34,7 +34,7 @@ with sync_playwright() as p:
                 if loc.evaluate(f"(e) => e.matches('{SKIP}') || e.disabled"): continue
                 if os.environ.get('VERBOSE'): print('  click', loc.evaluate("(e) => (e.id || '') + ' ' + e.textContent.trim().slice(0, 30)"), flush=True)
                 loc.click(timeout=600); clicked += 1; pg.wait_for_timeout(120)
-                if pg.locator('dialog[open]').count(): pg.keyboard.press('Escape')
+                if pg.locator('dialog[open]').count() or pg.locator('.fm-menu:visible').count(): pg.keyboard.press('Escape')
             except Exception:
                 pass
         print(f'{label}: {n} controls', flush=True)

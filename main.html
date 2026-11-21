@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/supa.js"></script>
 <script src="js/i18n.js"></script>
 <script src="landing/ar.js"></script>
 <title>Sign In — AgroSyntra One</title>
@@ -49,7 +51,6 @@
       <button id="toggleMode" type="button" class="auth-switch">No account yet? <span>Create an organization</span></button>
     </div>
 
-    <p class="auth-foot">The first request can take up to a minute while the server wakes up.</p>
   </div>
 
   <div class="auth-art" id="authScene">
@@ -67,7 +68,6 @@
 </div>
 
 <script>
-const API_BASE_URL = 'https://agrocloud-backend-e9ea.onrender.com/api/v1';
 const T = (x) => (window.I18n ? I18n.t(x) : x);
 
 let mode = 'login';
@@ -96,7 +96,8 @@ const store = {
   document.getElementById('signedWho').textContent = who;
   box.classList.remove('hidden');
   form.classList.add('hidden'); toggleBtn.classList.add('hidden');
-  document.getElementById('signedOther').addEventListener('click', () => {
+  document.getElementById('signedOther').addEventListener('click', async () => {
+    if (window.SB) await SB.signOut();
     AUTH_KEYS.forEach(store.del);
     box.classList.add('hidden'); form.classList.remove('hidden'); toggleBtn.classList.remove('hidden');
     document.getElementById('email').focus();
@@ -124,30 +125,6 @@ toggleBtn.addEventListener('click', () => setMode(mode === 'login' ? 'register' 
 // index.html links "Start free" here with ?mode=register
 if (new URLSearchParams(location.search).get('mode') === 'register') setMode('register');
 
-// The free server sleeps: the first request can fail or hang while it wakes.
-// Try for up to 90 s, telling the person what is happening.
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function call(path, body) {
-  const t0 = Date.now();
-  let last = null;
-  while (Date.now() - t0 < 90000) {
-    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 30000);
-    try {
-      const res = await fetch(API_BASE_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
-      clearTimeout(timer);
-      if (res.status === 502 || res.status === 503 || res.status === 504) { last = res.status; }
-      else {
-        let data = null; try { data = await res.json(); } catch { /* not JSON */ }
-        return { res, data };
-      }
-    } catch (err) { clearTimeout(timer); last = err; }
-    waitMsg.textContent = `${T('The server is waking up')} · ${Math.round((Date.now() - t0) / 1000)} ${T('s')}`;
-    waitMsg.classList.remove('hidden');
-    await sleep(3000);
-  }
-  throw new Error('Could not reach the server. It may be waking up (free tier), so try again in 30 to 60 seconds');
-}
-
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (busy) return;
@@ -160,20 +137,12 @@ form.addEventListener('submit', async (e) => {
   const password = document.getElementById('password').value;
 
   try {
-    const body = mode === 'login' ? { email, password }
-      : { organizationName: document.getElementById('organizationName').value.trim(), fullName: document.getElementById('fullName').value.trim(), email, password };
-    const { res, data } = await call(mode === 'login' ? '/auth/login' : '/auth/register', body);
-    if (!res.ok || !data || !data.accessToken) {
-      const m = data && data.message;
-      const text = typeof m === 'string' ? m : Array.isArray(m) ? m.join(', ') : (m && (Array.isArray(m.message) ? m.message.join(', ') : m.message));
-      throw new Error(text || (res.status === 401 ? 'Wrong email or password' : 'Authentication failed'));
-    }
-    store.set('accessToken', data.accessToken);
-    store.set('refreshToken', data.refreshToken);
-    store.set('user', JSON.stringify(data.user));
+    if (!window.SB) throw new Error('Could not load the sign-in service. Check the connection and reload the page');
+    if (mode === 'login') await SB.signIn(email, password);
+    else await SB.register(document.getElementById('organizationName').value.trim(), document.getElementById('fullName').value.trim(), email, password);
     window.location.href = 'workspace.html';
   } catch (err) {
-    errorMsg.textContent = err.message || 'Could not reach the server. It may be waking up (free tier), so try again in 30 to 60 seconds';
+    errorMsg.textContent = /fetch|network/i.test(err.message || '') ? 'Could not reach the server. Check the connection and try again' : err.message || 'Authentication failed';
     errorMsg.classList.remove('hidden');
   } finally {
     busy = false;

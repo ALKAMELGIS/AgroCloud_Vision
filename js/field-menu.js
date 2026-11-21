@@ -498,10 +498,10 @@
   // ------------------------------------------------------------ styles
   const css = document.createElement('style');
   css.textContent = `
-    .field-row { position: relative; }
-    .field-row .field-card { padding-inline-end: 40px; }
+    .field-row { position: relative; display: flex; align-items: center; gap: 2px; border-radius: 10px; }
+    .field-row .field-card { flex: 1; min-width: 0; }
     .field-row.is-hidden .field-card > svg { opacity: .35; }
-    .field-more { position: absolute; inset-inline-end: 6px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; color: var(--t-3, #6b7280); opacity: 0; transition: opacity .12s, background-color .12s, color .12s; }
+    .field-more { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; color: var(--t-3, #6b7280); opacity: 0; transition: opacity .12s, background-color .12s, color .12s; }
     .field-more .ico { width: 16px; height: 16px; }
     .field-row:hover .field-more, .field-more:focus-visible, .field-more[aria-expanded="true"], .field-row .field-card[aria-current="true"] ~ .field-more { opacity: 1; }
     .field-more:hover, .field-more[aria-expanded="true"] { background: var(--g-800, #f3f4f6); color: var(--t-1, #111827); }
