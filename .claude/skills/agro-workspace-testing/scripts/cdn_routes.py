@@ -8,7 +8,7 @@ def local_for(url):
         re.match(r'https://unpkg\.com/((?:@[^/]+/)?[^@/]+)@[^/]+/(.*)', url)
     if m: return os.path.join(LIBS, m.group(1), m.group(2).split('?')[0])
     if url.startswith('https://cdn.tailwindcss.com'): return TW
-    m = re.match(r'https://alkamelgis\.github\.io/AgroCloud_Vision/(.*)', url)
+    m = re.match(r'https://alkamelgis\.github\.io/AgroSyntra_One/(.*)', url)
     if m: return os.path.join(REPO, m.group(1).split('?')[0] or 'index.html')
     return None
 

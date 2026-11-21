@@ -1,6 +1,6 @@
 ---
 name: agro-workspace-testing
-description: How to run and test the AgroOne static workspace (workspace.html, main.html, index.html on GitHub Pages) end to end in headless Chrome against a local NestJS + PostGIS backend, with the CDN libraries, Tailwind and Sentinel-2 imagery served locally. Use it before shipping any change to the workspace pages or js/*.js, when a change "works on my machine" but needs proof, or when the sandbox cannot reach the CDN, Render or satellite hosts.
+description: How to run and test the AgroSyntra One static workspace (workspace.html, main.html, index.html on GitHub Pages) end to end in headless Chrome against a local NestJS + PostGIS backend, with the CDN libraries, Tailwind and Sentinel-2 imagery served locally. Use it before shipping any change to the workspace pages or js/*.js, when a change "works on my machine" but needs proof, or when the sandbox cannot reach the CDN, Render or satellite hosts.
 ---
 
 # Testing the workspace end to end
@@ -40,7 +40,7 @@ node -e "const c=require('fs').readFileSync('tw.out.css','utf8');require('fs').w
 
 | Request | Served from |
 |---|---|
-| `https://alkamelgis.github.io/AgroCloud_Vision/<path>` | the repo (`REPO`) |
+| `https://alkamelgis.github.io/AgroSyntra_One/<path>` | the repo (`REPO`) |
 | jsDelivr / unpkg package URLs | `GIS_LIBS` (node_modules) |
 | `cdn.tailwindcss.com` | `TAILWIND_SHIM` |
 | Render API | proxied to `http://localhost:4000/api/v1`, including OPTIONS |

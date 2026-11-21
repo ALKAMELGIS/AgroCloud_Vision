@@ -23,7 +23,7 @@ with sync_playwright() as p:
     pg = ctx.new_page(); cdn_routes.install(pg); errors = []
     pg.on('pageerror', lambda e: errors.append(str(e)))
     pg.on('request', lambda r: model_hits.append(r.url) if r.url.endswith('.onnx') else None)
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(3000)
     check('pixel size control in the dock, 10 m by default', pg.input_value('#imgRes') == '10')
     pg.locator('#fieldsList .field-card', has_text='Pivot 1').click(); pg.wait_for_timeout(1500)

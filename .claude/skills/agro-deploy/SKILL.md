@@ -1,6 +1,6 @@
 ---
 name: agro-deploy
-description: How AgroOne is deployed and run — GitHub Pages serves the static site (index.html, main.html, workspace.html, js/) from main, Render runs the NestJS backend + PostGIS (render.yaml) and the optional Next.js frontend, plus the local no-Docker setup and the git workflow from a shallow clone. Use it when changes don't show up on the site, the API sleeps or 404s on a new route, a deploy/env var/CORS question comes up, or when pushing changes.
+description: How AgroSyntra One is deployed and run — GitHub Pages serves the static site (index.html, main.html, workspace.html, js/) from main, Render runs the NestJS backend + PostGIS (render.yaml) and the optional Next.js frontend, plus the local no-Docker setup and the git workflow from a shallow clone. Use it when changes don't show up on the site, the API sleeps or 404s on a new route, a deploy/env var/CORS question comes up, or when pushing changes.
 ---
 
 # Deploying and running
@@ -69,7 +69,7 @@ After pushing, tell the user exactly which Render service to redeploy.
 
 - Clones are shallow. Push with `git -c push.negotiate=true push origin main`.
 - If the push is rejected, `git fetch --depth=50 origin main` and rebase. The user also merges PRs on GitHub, so expect new commits.
-- `gh` GraphQL is blocked here. Open PRs with the REST API: `gh api repos/ALKAMELGIS/AgroCloud_Vision/pulls -f title=… -f head=… -f base=main -F body=@file`.
+- `gh` GraphQL is blocked here. Open PRs with the REST API: `gh api repos/ALKAMELGIS/AgroSyntra_One/pulls -f title=… -f head=… -f base=main -F body=@file`.
 - The user prefers direct pushes to `main` for requested changes.
 - Never commit `.env` / `.env.local`; they are in `.gitignore`.
 - A stop hook flags uncommitted or unpushed work. Build output (`next-env.d.ts`, tsconfig rewrites) belongs in its own commit or should be excluded.

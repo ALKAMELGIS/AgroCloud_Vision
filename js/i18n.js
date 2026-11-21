@@ -1,5 +1,5 @@
 /*
- * AgroOne — interface language (English / Arabic)
+ * AgroSyntra One — interface language (English / Arabic)
  *
  * Load in <head> before the page renders. English is left-to-right with the sidebar on
  * the left; Arabic is right-to-left, so the whole layout mirrors (sidebar on the right).

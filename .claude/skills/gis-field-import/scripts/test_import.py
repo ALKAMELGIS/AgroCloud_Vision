@@ -5,7 +5,7 @@ import cdn_routes
 # Usage: GIS_LIBS=<node_modules> python3 test_import.py <fixturesDir>   (CHROME=/path/to/chrome optional)
 FX = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else 'fixtures') + '/'
 CHROME = os.environ.get('CHROME', '/usr/bin/google-chrome')
-HARNESS = '<!doctype html><meta charset="utf-8"><body><script src="https://alkamelgis.github.io/AgroCloud_Vision/js/gis-import.js"></script></body>'
+HARNESS = '<!doctype html><meta charset="utf-8"><body><script src="https://alkamelgis.github.io/AgroSyntra_One/js/gis-import.js"></script></body>'
 cases = [['fields.geojson'], ['fields_3857.geojson'], ['pivots_utm_shapefile.zip'], ['fields.kml'], ['fields.kmz'], ['fields.gpkg'], ['Farm_gdb.zip']]
 results = {}
 with sync_playwright() as p:

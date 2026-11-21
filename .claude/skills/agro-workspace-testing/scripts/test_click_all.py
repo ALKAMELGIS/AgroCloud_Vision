@@ -22,7 +22,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errors.append(str(e)))
     pg.on('response', lambda r: server.append(f'{r.status} {r.url}') if r.status >= 500 else None)
     pg.on('dialog', lambda d: d.dismiss())
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(3000)
     clicked = 0
     def click_all(scope, label):

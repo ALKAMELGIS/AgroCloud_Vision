@@ -25,7 +25,7 @@ with sync_playwright() as p:
     errors = []
     pg.on('pageerror', lambda e: errors.append(str(e)))
     pg.on('dialog', lambda d: d.accept())
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3)
     expect(pg.locator('#tlChips [data-scene]')).to_have_count(4, timeout=30000)
     check('newest clear date selected (15 Nov)', "15 Nov" in pg.locator('#tlChips [aria-current=true]').inner_text())

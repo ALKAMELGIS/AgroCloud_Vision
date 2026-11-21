@@ -35,7 +35,7 @@ with sync_playwright() as p:
     pg = ctx.new_page(); cdn_routes.install(pg); errors = []
     pg.route('**/weather/field/*/history*', weather)
     pg.on('pageerror', lambda e: errors.append(str(e)))
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(2500)
     tb = pg.locator('#tsBtn').bounding_box(); mb = pg.locator('#measureBtn').bounding_box()
     check('chart button sits under the ruler', abs(tb['x'] - mb['x']) < 1 and tb['y'] > mb['y'], (tb['y'], mb['y']))

@@ -16,7 +16,7 @@ call('POST', '/fields/bulk', {'farmId': farm['id'], 'fields': [{'name': names[i]
 ok = True
 def check(label, cond, extra=''):
     global ok; ok &= bool(cond); print(('PASS ' if cond else 'FAIL ') + label, str(extra)[:200])
-URL = f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}"
+URL = f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}"
 def xs(pg): return pg.evaluate("['navRail','sidePanel','mapMain'].map(id => Math.round(document.getElementById(id).getBoundingClientRect().left))")
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
@@ -72,7 +72,7 @@ with sync_playwright() as p:
     pg.evaluate("localStorage.setItem('lang', 'ar')")
     pg2 = b.new_context(viewport={'width': 1280, 'height': 800}).new_page(); cdn_routes.install(pg2)
     pg2.add_init_script("localStorage.setItem('lang', 'ar')")
-    pg2.goto('https://alkamelgis.github.io/AgroCloud_Vision/main.html'); pg2.wait_for_timeout(800)
+    pg2.goto('https://alkamelgis.github.io/AgroSyntra_One/main.html'); pg2.wait_for_timeout(800)
     check('sign-in page in Arabic', 'تسجيل الدخول' in pg2.inner_text('body') and pg2.evaluate("document.documentElement.dir") == 'rtl', pg2.inner_text('body')[:80])
     pg2.screenshot(path=S + 'shots/l5_signin_ar.png')
     pg.evaluate("localStorage.setItem('lang', 'en')")

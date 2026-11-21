@@ -31,7 +31,7 @@ with sync_playwright() as p:
     ctx = b.new_context(viewport={'width': 1400, 'height': 850})
     ctx.add_init_script(f"if (!sessionStorage.k) {{ sessionStorage.k = 1; localStorage.setItem('imgProvider', 'es'); localStorage.setItem('areaUnit', 'ac'); localStorage.setItem('theme', 'dark'); localStorage.setItem('accessToken', '{EXPIRED}'); localStorage.setItem('refreshToken', {json.dumps(r['refreshToken'])}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))}); }}")
     pg = ctx.new_page(); cdn_routes.install(pg); errors = []; pg.on('pageerror', lambda e: errors.append(str(e)))
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(1, timeout=30000)
     check('expired token renewed silently, fields load', 'workspace.html' in pg.url and pg.evaluate("localStorage.getItem('accessToken')") != EXPIRED)
     check('area unit preference applied (acres)', ' ac' in pg.inner_text('#fieldsList .field-card'))

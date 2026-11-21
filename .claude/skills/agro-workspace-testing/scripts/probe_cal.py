@@ -17,7 +17,7 @@ with sync_playwright() as p:
     ctx = b.new_context(viewport={'width': 1600, 'height': 900}, device_scale_factor=1)
     ctx.add_init_script(f"localStorage.setItem('imgProvider', 'es'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
     pg = ctx.new_page(); cdn_routes.install(pg); pg.on('pageerror', lambda e: errors.append(str(e)))
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(1); pg.wait_for_timeout(2000)
     pg.click('#tsBtn'); pg.click('#tsQuick [data-m="12"]')
     expect(pg.locator('#tsStatus')).to_contain_text('clear dates', timeout=30000)

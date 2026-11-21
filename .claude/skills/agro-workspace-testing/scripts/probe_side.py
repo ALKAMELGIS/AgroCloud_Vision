@@ -17,7 +17,7 @@ with sync_playwright() as p:
         ctx = b.new_context(viewport={'width': 1366, 'height': 650})
         ctx.add_init_script(f"localStorage.setItem('lang', '{lang}'); localStorage.setItem('imgProvider', 'es'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
         pg = ctx.new_page(); cdn_routes.install(pg)
-        pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+        pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
         expect(pg.locator('#fieldsList .field-card')).to_have_count(1); pg.wait_for_timeout(2000)
         pg.click('#tsBtn'); expect(pg.locator('#tsStatus')).not_to_be_empty(timeout=30000); pg.wait_for_timeout(1500)
         r = pg.evaluate("(() => { const s = document.querySelector('.ts-side'); const to = document.getElementById('tsTo').getBoundingClientRect(), sb = s.getBoundingClientRect(); return { sh: s.scrollHeight, ch: s.clientHeight, toBottom: to.bottom, sideBottom: sb.bottom, toW: to.width, val: document.getElementById('tsTo').value }; })()")

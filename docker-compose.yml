@@ -3,7 +3,7 @@ version: '3.9'
 services:
   db:
     image: postgis/postgis:15-3.4
-    container_name: agroone_db
+    container_name: agrosyntra_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: agrocloud
@@ -16,7 +16,7 @@ services:
 
   backend:
     build: ./backend
-    container_name: agroone_backend
+    container_name: agrosyntra_backend
     restart: unless-stopped
     depends_on:
       - db
@@ -29,7 +29,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: agroone_frontend
+    container_name: agrosyntra_frontend
     restart: unless-stopped
     depends_on:
       - backend
@@ -46,7 +46,7 @@ services:
   # backend/.env:  OPEN_METEO_FORECAST_URL=http://weather-api:8080/v1/forecast
   weather-api:
     image: ghcr.io/open-meteo/open-meteo
-    container_name: agroone_weather_api
+    container_name: agrosyntra_weather_api
     profiles: ['weather']
     restart: unless-stopped
     ports:

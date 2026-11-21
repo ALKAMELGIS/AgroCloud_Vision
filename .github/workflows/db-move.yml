@@ -1,4 +1,4 @@
-# One-time move of the AgroOne data from Render PostgreSQL to Supabase.
+# One-time move of the AgroSyntra One data from Render PostgreSQL to Supabase.
 #
 # Before running (GitHub → Settings → Secrets and variables → Actions):
 #   RENDER_DATABASE_URL  Render → agrocloud-db → Connections → External Database URL

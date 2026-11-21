@@ -11,7 +11,7 @@ def post(path, body, tok=None):
 login = cdn_routes.fresh_login()
 tok = login['accessToken']
 farm = post('/farms', {'name': 'Texas pivots'}, tok)
-URL = f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}"
+URL = f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}"
 
 def fields_count(page):
     return page.locator('#fieldsList .field-item').count()

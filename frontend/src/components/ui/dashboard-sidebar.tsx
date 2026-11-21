@@ -29,7 +29,7 @@ import {
  * AppSidebar (مبني على نمط shadcn/ui الأساسي).
  * مُقتبَس ومُطوَّع من مكوّن dashboard-sidebar القياسي الذي زوّدنا به المستخدم،
  * مع استبدال بيانات العرض التجريبية (Acme Corp / Projects / Team...) ببيانات
- * وحدات AgroOne الفعلية، ودعم اتجاه RTL للعربية.
+ * وحدات AgroSyntra One الفعلية، ودعم اتجاه RTL للعربية.
  *
  * ملاحظة RTL: هذا المكوّن مبني أصلاً باتجاه LTR (كما في مكوّنات shadcn القياسية)،
  * لذلك يُغلَّف داخلياً بـ dir="ltr" لضمان ثبات شريط التمرير والأيقونات؛
@@ -50,8 +50,8 @@ export type NavGroupData = {
   items: NavItemData[];
 };
 
-// ====== AgroOne navigation data ======
-export const agroOneNavGroups: NavGroupData[] = [
+// ====== AgroSyntra One navigation data ======
+export const agroSyntraNavGroups: NavGroupData[] = [
   {
     items: [
       { id: 'search', title: 'Search', icon: Search, shortcut: '⌘K' },
@@ -111,7 +111,7 @@ export const agroOneNavGroups: NavGroupData[] = [
   },
 ];
 
-export const agroOneBottomItems: NavItemData[] = [
+export const agroSyntraBottomItems: NavItemData[] = [
   { id: 'settings', title: 'Settings', icon: Settings, shortcut: '⌘,' },
   { id: 'logout', title: 'Log Out', icon: LogOut },
 ];
@@ -266,8 +266,8 @@ function NavItem({
 
 export function SidebarNav({
   className = '',
-  groups = agroOneNavGroups,
-  bottomItems = agroOneBottomItems,
+  groups = agroSyntraNavGroups,
+  bottomItems = agroSyntraBottomItems,
   activeId,
   onSelect,
   activeWorkspace,

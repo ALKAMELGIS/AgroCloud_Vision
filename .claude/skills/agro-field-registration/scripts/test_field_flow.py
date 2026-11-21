@@ -24,7 +24,7 @@ with sync_playwright() as p:
     pg = ctx.new_page(); cdn_routes.install(pg); errors = []
     pg.on('pageerror', lambda e: errors.append(str(e)))
     pg.on('dialog', lambda d: d.accept())
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(1)
 
     # 1. draw: the draft card opens beside the map, the shape stays editable

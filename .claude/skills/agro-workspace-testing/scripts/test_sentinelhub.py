@@ -23,7 +23,7 @@ with sync_playwright() as p:
     ctx.add_init_script(f"localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))}); localStorage.removeItem('imgProvider');")
     pg = ctx.new_page(); cdn_routes.install(pg); errors = []
     pg.on('pageerror', lambda e: errors.append(str(e)))
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#tlChips [data-scene]')).to_have_count(2, timeout=30000)   # 60% cloud date hidden
     check('Sentinel Hub is the default source', pg.evaluate("Imagery.provider()") == 'sh' and pg.locator('#imgSource').input_value() == 'sh')
     check('dates come from WFS DSS2', any(q.get('TYPENAMES') == 'DSS2' for q in cdn_routes.SHLOG))

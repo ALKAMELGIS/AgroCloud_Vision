@@ -20,7 +20,7 @@ with sync_playwright() as p:
     ctx = b.new_context(viewport={'width': 1600, 'height': 900})
     ctx.add_init_script(f"localStorage.setItem('imgProvider', 'es'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
     pg = ctx.new_page(); cdn_routes.install(pg); pg.on('pageerror', lambda e: errors.append(str(e)))
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(3000)
     check('legend is 10 value classes', pg.locator('#imgLegend .cls-seg').count() == 10)
     pg.locator('#fieldsList .field-card', has_text='Pivot 1').click()

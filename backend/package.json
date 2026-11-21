@@ -1,7 +1,7 @@
 {
-  "name": "agroone-vision-backend",
+  "name": "agrosyntra-one-backend",
   "version": "0.1.0",
-  "description": "AgroOne - Core Backend (Auth/RBAC, Farms, Fields, Crops, Activities, Weather)",
+  "description": "AgroSyntra One - Core Backend (Auth/RBAC, Farms, Fields, Crops, Activities, Weather)",
   "private": true,
   "scripts": {
     "build": "nest build",

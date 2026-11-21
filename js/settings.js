@@ -1,5 +1,5 @@
 /*
- * AgroOne — preferences, Settings window and the account menu.
+ * AgroSyntra One — preferences, Settings window and the account menu.
  *
  * Preferences live in this browser (localStorage) and survive sign-out:
  *   General     language, area unit (ha / ac / dunum), first day of the week

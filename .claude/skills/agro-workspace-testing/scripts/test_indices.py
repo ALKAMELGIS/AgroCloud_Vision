@@ -21,7 +21,7 @@ with sync_playwright() as p:
     ctx = b.new_context(viewport={'width': 1600, 'height': 900})
     ctx.add_init_script(f"localStorage.setItem('imgProvider', 'es'); localStorage.setItem('accessToken', {json.dumps(tok)}); localStorage.setItem('user', {json.dumps(json.dumps(login['user']))});")
     pg = ctx.new_page(); cdn_routes.install(pg); pg.on('pageerror', lambda e: errors.append(str(e)))
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(1); pg.wait_for_timeout(2500)
     groups = pg.evaluate("[...document.querySelectorAll('#imgIndex optgroup')].map((g) => g.label + ':' + g.children.length)")
     check('layer list grouped: vegetation, water, soil, image', groups == ['Vegetation:8', 'Water:2', 'Soil:2', 'Image:1'], groups)

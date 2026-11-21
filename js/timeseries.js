@@ -1,5 +1,5 @@
 /*
- * AgroOne — field time series
+ * AgroSyntra One — field time series
  *
  * A panel under the map (opened from the chart button in the map tools) that plots an
  * index for one field over a period: every Sentinel-2 date whose field is at most 40 %

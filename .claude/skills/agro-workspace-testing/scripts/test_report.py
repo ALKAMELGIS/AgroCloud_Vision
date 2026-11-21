@@ -36,7 +36,7 @@ with sync_playwright() as p:
             k = (d - a).days; days.append({'date': d.isoformat(), 'temperatureMaxC': 41 if k % 4 == 0 else 34, 'temperatureMinC': 24, 'precipitationMm': 3.0 if k == 9 else 0, 'soilMoisture': 0.14}); d += datetime.timedelta(days=1)
         route.fulfill(body=json.dumps({'days': days}), headers={'content-type': 'application/json', 'access-control-allow-origin': '*'})
     pg.route('**/weather/field/*/history*', weather)
-    pg.goto(f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}")
+    pg.goto(f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}")
     expect(pg.locator('#fieldsList .field-card')).to_have_count(3); pg.wait_for_timeout(2500)
     check('light theme by default', pg.evaluate("document.documentElement.dataset.theme") == 'light')
     pg.locator('#fieldsList .field-card', has_text='Pivot 1').click(); pg.wait_for_timeout(1500)

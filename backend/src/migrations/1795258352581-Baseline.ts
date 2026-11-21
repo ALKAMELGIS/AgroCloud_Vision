@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-/** Schema as of the AgroOne rename (2026-11-21). Later changes go in new migrations. */
+/** Schema as of the AgroSyntra One rename (2026-11-21). Later changes go in new migrations. */
 export class Baseline1795258352581 implements MigrationInterface {
     name = 'Baseline1795258352581'
 

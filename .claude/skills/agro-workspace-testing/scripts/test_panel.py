@@ -16,7 +16,7 @@ for f in fc['features']:
     g = f['geometry']
     if g['type'] == 'Polygon': items.append({'name': f['properties'].get('name') or 'Strip', 'boundary': g})
 call('POST', '/fields/bulk', {'farmId': farm['id'], 'fields': items}, tok)
-URL = f"https://alkamelgis.github.io/AgroCloud_Vision/workspace.html?farm={farm['id']}"
+URL = f"https://alkamelgis.github.io/AgroSyntra_One/workspace.html?farm={farm['id']}"
 ok = True
 def check(label, cond, extra=''):
     global ok; ok &= bool(cond); print(('PASS ' if cond else 'FAIL ') + label, extra)

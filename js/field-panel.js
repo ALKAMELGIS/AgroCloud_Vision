@@ -1,5 +1,5 @@
 /*
- * AgroOne — field panel (workspace.html)
+ * AgroSyntra One — field panel (workspace.html)
  *
  * Opens on the right when a field is clicked on the map or in the list.
  * Tabs: Overview (name, irrigation, farm, season, weather), Crops (seasons

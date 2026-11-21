@@ -36,7 +36,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-brand-50 p-4">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-        <h1 className="mb-1 text-2xl font-bold text-brand-900">AgroOne</h1>
+        <h1 className="mb-1 text-2xl font-bold text-brand-900">AgroSyntra One</h1>
         <p className="mb-6 text-sm text-gray-500">
           {mode === 'login' ? 'Sign in to your account' : 'Create a new organization'}
         </p>

@@ -1,11 +1,11 @@
-# AgroOne — Core (Phase 1)
+# AgroSyntra One — Core (Phase 1)
 
 A multi-tenant agricultural SaaS platform. This is the **real, working foundation**: a live NestJS backend, Next.js frontend, PostGIS database, auth/RBAC, and real weather data — no mock data. Later phases (satellite/NDVI, AI, IoT, mobile, billing) build on top of this same base.
 
 ## Structure
 
 ```
-AgroCloud_Vision/
+AgroSyntra_One/
 ├── backend/     # NestJS + TypeScript + PostgreSQL/PostGIS (API)
 ├── frontend/    # Next.js + React + Leaflet (web UI)
 └── docker-compose.yml
@@ -85,7 +85,7 @@ No code changes needed — `WeatherService` reads these at runtime and falls bac
 
 `frontend/src/components/ui/` follows the standard shadcn path:
 
-- `dashboard-sidebar.tsx` — the app's real sidebar (`SidebarNav` + `AppShell`), wired to live AgroOne modules and used in `app/dashboard/page.tsx`.
+- `dashboard-sidebar.tsx` — the app's real sidebar (`SidebarNav` + `AppShell`), wired to live AgroSyntra One modules and used in `app/dashboard/page.tsx`.
 - `frontend/src/lib/utils.ts` — the standard `cn()` Tailwind class helper.
 - `frontend/components.json` — shadcn CLI config.
 - Color tokens live in `globals.css` and are wired into `tailwind.config.js`.

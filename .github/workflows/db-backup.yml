@@ -1,13 +1,13 @@
-# Nightly encrypted backup of the AgroOne database (Supabase; public schema).
+# Nightly encrypted backup of the AgroSyntra One database (Supabase; public schema).
 #
 # Setup, once (GitHub → Settings → Secrets and variables → Actions):
 #   DATABASE_URL       Supabase → Connect → Session pooler URI (with the password)
 #   BACKUP_PASSPHRASE  any long password; keep a copy somewhere safe
 #
-# Each run uploads agroone-<date>.dump.gpg as a workflow artifact (kept 30 days).
+# Each run uploads agrosyntra-one-<date>.dump.gpg as a workflow artifact (kept 30 days).
 # Restore:
-#   gpg --decrypt agroone-<date>.dump.gpg > agroone.dump
-#   pg_restore --no-owner --clean --if-exists -d "<new database url>" agroone.dump
+#   gpg --decrypt agrosyntra-one-<date>.dump.gpg > agrosyntra-one.dump
+#   pg_restore --no-owner --clean --if-exists -d "<new database url>" agrosyntra-one.dump
 name: Database backup
 
 on:
@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           url="$DATABASE_URL"
           case "$url" in *sslmode=*) ;; *\?*) url="$url&sslmode=require" ;; *) url="$url?sslmode=require" ;; esac
-          name="agroone-$(date -u +%Y-%m-%d).dump"
+          name="agrosyntra-one-$(date -u +%Y-%m-%d).dump"
           # pg_dump must be at least the server's version; the postgres:17 image covers 15–17.
           docker run --rm -e URL="$url" -v "$PWD:/out" postgres:17 \
             sh -c 'pg_dump --format=custom --no-owner --no-privileges --schema=public --exclude-table=public.spatial_ref_sys "$URL" > /out/db.dump'

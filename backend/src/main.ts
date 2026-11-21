@@ -42,6 +42,6 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   await app.listen(port);
   // eslint-disable-next-line no-console
-  console.log(`AgroOne API running on http://localhost:${port}/api/v1`);
+  console.log(`AgroSyntra One API running on http://localhost:${port}/api/v1`);
 }
 bootstrap();

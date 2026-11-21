@@ -1,6 +1,6 @@
 ---
 name: agro-field-registration
-description: How AgroOne saves and manages field boundaries, OneSoil-style. Covers the editable New field card, server checks (crossing edges, ring closure, 100 m² to 10,000 ha, auto names "Field N"), overlap and duplicate handling (409 with reject/clip/allow, bulk skip), field history with boundary restore, and recoverable delete (Recently deleted, Undo, permanent delete). Use it for any change to adding, drawing, importing, editing, deleting or restoring fields, or for problems such as duplicate, overlapping, invalid or lost fields.
+description: How AgroSyntra One saves and manages field boundaries, OneSoil-style. Covers the editable New field card, server checks (crossing edges, ring closure, 100 m² to 10,000 ha, auto names "Field N"), overlap and duplicate handling (409 with reject/clip/allow, bulk skip), field history with boundary restore, and recoverable delete (Recently deleted, Undo, permanent delete). Use it for any change to adding, drawing, importing, editing, deleting or restoring fields, or for problems such as duplicate, overlapping, invalid or lost fields.
 ---
 
 # Field registration and management

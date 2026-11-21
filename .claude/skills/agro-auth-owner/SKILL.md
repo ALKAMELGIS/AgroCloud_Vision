@@ -1,6 +1,6 @@
 ---
 name: agro-auth-owner
-description: Sign-in, registration, roles and the default owner account in AgroOne — main.html (live sign-in on GitHub Pages), frontend/src/app/login (Next.js), JWT auth, the six roles, and the owner account seeded on every backend start (demo@agrocloud.test / Demo12345!, overridable with OWNER_EMAIL / OWNER_PASSWORD / OWNER_ORGANIZATION). Use it when someone cannot sign in, asks for the owner/admin account, sees "[object Object]" or another unreadable error, wants roles or permissions changed, or edits either login page.
+description: Sign-in, registration, roles and the default owner account in AgroSyntra One — main.html (live sign-in on GitHub Pages), frontend/src/app/login (Next.js), JWT auth, the six roles, and the owner account seeded on every backend start (demo@agrocloud.test / Demo12345!, overridable with OWNER_EMAIL / OWNER_PASSWORD / OWNER_ORGANIZATION). Use it when someone cannot sign in, asks for the owner/admin account, sees "[object Object]" or another unreadable error, wants roles or permissions changed, or edits either login page.
 ---
 
 # Auth and the owner account
