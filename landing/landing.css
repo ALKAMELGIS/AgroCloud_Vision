@@ -93,7 +93,7 @@ img, svg { display: block; max-width: 100%; }
 .hero-view { position: relative; margin-top: 56px; }
 
 /* the product window: a still of the workspace with plausible data */
-.app { display: grid; grid-template-columns: 248px 1fr; height: clamp(440px, 42vw, 600px); overflow: hidden; border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--sheet);
+.app { display: grid; grid-template-columns: 248px 1fr; height: clamp(520px, 50vw, 760px); overflow: hidden; border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--sheet);
   box-shadow: 0 40px 80px -40px rgb(22 32 26 / .45), 0 0 0 1px var(--line-2); }
 .app-side { display: flex; flex-direction: column; gap: 2px; padding: 16px 12px; border-inline-end: 1px solid var(--line); font-size: 13px; }
 .app-farm { display: flex; align-items: center; gap: 10px; padding: 4px 6px 14px; }
@@ -133,7 +133,7 @@ img, svg { display: block; max-width: 100%; }
 .f-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--ink-3); }
 .f-head b { font-size: 13px; font-weight: 500; color: var(--ink); }
 @media (max-width: 1000px) { .app { grid-template-columns: 1fr; } .app-side { display: none; } .f-trend { display: none; } }
-@media (max-width: 640px) { .app { height: 440px; } .f-field { width: 200px; } .f-legend { display: none; } .chip:nth-child(n+4) { display: none; } }
+@media (max-width: 640px) { .app { height: 620px; } .f-field { width: 200px; } .f-legend { display: none; } .chip:nth-child(n+4) { display: none; } }
 
 /* ------------------------------------------------------------ capability cards (5) */
 .cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 48px; }
@@ -266,3 +266,20 @@ img, svg { display: block; max-width: 100%; }
 .tool-art svg, .app-map > svg, .auth-art > svg { direction: ltr; }
 .chg, .f-field .big, .step-n { direction: ltr; unicode-bidi: isolate; }
 [dir="rtl"] .inp[type="email"], [dir="rtl"] .inp[type="password"] { direction: ltr; text-align: right; }
+
+/* ------------------------------------------------------------ live demo in the hero
+   The still (#demoPoster) holds the place; the real workspace (?demo&tour) loads in an iframe
+   when the hero is near the screen and fades in once its first image is drawn. On wide screens
+   it renders at desktop size (1440 px) scaled to fit; on narrow ones at its own compact layout. */
+.demo-stage { position: relative; }
+.demo-frame { position: absolute; top: 0; left: 0; border: 0; border-radius: var(--r-xl) var(--r-xl) 0 0; background: #fff;
+  transform-origin: 0 0; opacity: 0; transition: opacity .6s ease; }
+.demo-frame.is-ready { opacity: 1; }
+.demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 12px 18px; background: var(--sheet);
+  box-shadow: 0 0 0 1px var(--line-2); border-radius: 0 0 var(--r-lg) var(--r-lg); font-size: 13px; color: var(--ink-3); position: relative; z-index: 1; }
+.demo-live { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.demo-live i { width: 8px; height: 8px; border-radius: 99px; background: #b9b5a8; flex: none; }
+.demo-live.is-on i { background: var(--green); }
+.demo-step { flex: 1; min-width: 200px; color: var(--ink); font-weight: 500; }
+.demo-open { margin-inline-start: auto; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .demo-frame { transition: none; } }

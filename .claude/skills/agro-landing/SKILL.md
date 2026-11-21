@@ -17,6 +17,20 @@ description: The public pages of AgroSyntra One — the landing page (index.html
 
 `js/i18n.js` must load first, then `landing/ar.js`, in `<head>`.
 
+## Live demo in the hero (the real system, real Sentinel-2)
+
+- The hero's product view is the real workspace: `workspace.html?demo&tour` in an iframe (`#demoStage`), loaded when
+  the hero comes near the screen. The drawn still (`#demoPoster`) holds the place until the demo posts `ready`, then
+  the frame fades in. Wide screens: the workspace renders at 1440 px and is scaled to fit; under 760 px it runs its
+  own compact layout. The caption bar (`#demoStep`) shows each tour step (translated by `I18n.t`).
+- `js/demo.js` (first script in workspace.html) makes `?demo`: storage in memory (never touches a real session or
+  preferences), a read-only API with one farm in the Texas High Plains whose fields are the centre pivots detected in
+  the latest clear Sentinel-2 image (Hough circles on NDVI edges, cached 7 days in `agroDemoPivots:v1`; two fixed
+  circles if detection fails), weather straight from Open-Meteo. `?tour` drives the real controls: field, value
+  classes, a class filter, NDMI/NDWI/BSI, time series chart → heatmap → 3D skyline → 3D ring. A real touch pauses it
+  for 25 s; the wheel scrolls the page until the map is clicked.
+- Everything on screen is computed by the workspace itself: nothing about the analysis is faked. Keep it that way.
+
 ## Section order (follows EOS Crop Monitoring's product page)
 
 1. Hero: one-line promise, Start free + Sign in, then a still of the workspace (field list, pixel fields, field card with value classes, season curve, legend, date chips). This is the one colourful moment; everything else stays quiet.

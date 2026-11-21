@@ -54,7 +54,15 @@ def sh_mock(route):
         nir = 0.3 + 0.3 * col
         old = q['TIME'].split('/')[0] != str(datetime.date.today() - datetime.timedelta(days=5))
         if old: nir = nir + 0.1          # older date greener -> drop to now
-        bands = [np.full((h, w), v, np.float32) for v in (0.04, 0.07, 0.05, 0.15)] + [nir, nir, np.full((h, w), 0.2, np.float32), np.full((h, w), 4, np.float32)]
+        red = np.full((h, w), 0.05, np.float32)
+        if q.get('CRS') == 'EPSG:3857' and w > 200:
+            # the public demo (js/demo.js) looks for centre pivots: draw six green discs on dry ground
+            yy, xx = np.mgrid[0:h, 0:w]
+            nir = np.full((h, w), 0.22, np.float32); red = np.full((h, w), 0.16, np.float32)
+            for cx, cy, r in [(55, 60, 40), (150, 60, 40), (245, 62, 38), (60, 165, 40), (155, 168, 40), (280, 170, 30)]:
+                d = (xx - cx) ** 2 + (yy - cy) ** 2 < r * r
+                nir[d] = 0.45; red[d] = 0.05
+        bands = [np.full((h, w), v, np.float32) for v in (0.04, 0.07)] + [red, np.full((h, w), 0.15, np.float32)] + [nir, nir, np.full((h, w), 0.2, np.float32), np.full((h, w), 4, np.float32)]
         buf = io.BytesIO(); tifffile.imwrite(buf, np.stack(bands).astype(np.float32), photometric='minisblack', planarconfig='separate')
         return route.fulfill(body=buf.getvalue(), headers={**cors, 'content-type': 'image/tiff'})
     return route.fulfill(status=400, body='<ServiceExceptionReport><ServiceException>bad</ServiceException></ServiceExceptionReport>', headers=cors)

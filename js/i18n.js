@@ -249,6 +249,9 @@
 
   function tr(input) {
     if (lang !== 'ar' || !input || !/[A-Za-z]/.test(input)) return input;
+    // already translated (numbers wrapped in isolates below): translating again would wrap them
+    // again, change the text, wake the observer and loop until the tab runs out of memory
+    if (/[\u2066\u2069]/.test(input)) return input;
     const lead = input.match(/^\s*/)[0], tail = input.match(/\s*$/)[0];
     const s = input.trim();
     if (userNames().has(s)) return input;

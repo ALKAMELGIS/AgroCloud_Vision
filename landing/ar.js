@@ -20,6 +20,19 @@ window.I18n && I18n.add({
   'Jun': 'يونيو', 'Jul': 'يوليو', 'Aug': 'أغسطس', 'Sep': 'سبتمبر', 'Oct': 'أكتوبر', 'Nov': 'نوفمبر',
   'NDVI this season': 'NDVI هذا الموسم', 'Jun – Nov': 'يونيو – نوفمبر',
 
+  // live demo
+  'Live demo loads as you scroll': 'العرض الحي يُحمّل مع التمرير', 'Open the full demo': 'افتح العرض الكامل',
+  'Loading real Sentinel-2 data': 'جارٍ تحميل بيانات Sentinel-2 حقيقية',
+  'Live · real Sentinel-2 data, analysed in your browser': 'مباشر · بيانات Sentinel-2 حقيقية تُحلَّل في متصفحك',
+  'Pivot boundaries found on the image of': 'حدود المحاور مكتشفة من صورة',
+  'Your turn: the demo waits while you explore': 'دورك: العرض ينتظر بينما تستكشف',
+  'Every field on the latest clear image, NDVI': 'كل الحقول في آخر صورة صافية، NDVI',
+  'A field opens with its value classes in hectares': 'يُفتح الحقل بفئات قيمه بالهكتار',
+  'Click a class: only those pixels stay on the map': 'اضغط فئة: تبقى بكسلاتها وحدها على الخريطة',
+  'NDMI: water in the crop': 'NDMI: الماء في المحصول', 'NDWI: open water': 'NDWI: المياه المكشوفة', 'BSI: bare soil': 'BSI: التربة المكشوفة', 'Back to NDVI': 'العودة إلى NDVI',
+  'The whole season for this field': 'الموسم كاملاً لهذا الحقل', 'Heatmap: every day of the year': 'الخريطة الحرارية: كل يوم في السنة',
+  '3D skyline: drag to turn it': 'أعمدة ثلاثية الأبعاد: اسحب لتديرها', '3D ring: the pivot over the season': 'حلقة ثلاثية الأبعاد: المحور على مدار الموسم',
+
   // capabilities
   'What it does': 'ماذا يقدّم', 'Five ways it keeps a farm on track': 'خمس طرق تُبقي المزرعة على المسار الصحيح',
   'Each one works on the same field record, so a change you see on the map can become a task, a prescription or a page in a report.':

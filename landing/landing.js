@@ -273,6 +273,46 @@
       lb.addEventListener('click', () => I18n.setLang(ar ? 'en' : 'ar'));
     }
     const y = document.getElementById('year'); if (y) y.textContent = String(new Date().getFullYear());
+    setupDemo();
   }
+  // ------------------------------------------------------------ the live demo (real workspace)
+  function setupDemo() {
+    const stage = document.getElementById('demoStage'), poster = document.getElementById('demoPoster');
+    if (!stage || !poster || !('IntersectionObserver' in window)) return;
+    const status = document.getElementById('demoStatus'), live = document.getElementById('demoLive'), stepEl = document.getElementById('demoStep');
+    const ar = window.I18n && I18n.lang === 'ar';
+    let frame = null;
+    const fit = () => {
+      if (!frame) return;
+      const w = stage.clientWidth, h = poster.offsetHeight;
+      if (w >= 760) { const k = w / 1440; frame.style.width = '1440px'; frame.style.height = Math.round(h / k) + 'px'; frame.style.transform = `scale(${k})`; }
+      else { frame.style.width = w + 'px'; frame.style.height = h + 'px'; frame.style.transform = 'none'; }
+    };
+    const load = () => {
+      if (frame) return;
+      frame = document.createElement('iframe');
+      frame.className = 'demo-frame'; frame.title = 'AgroSyntra One live demo';
+      frame.setAttribute('loading', 'lazy'); frame.setAttribute('allow', 'fullscreen');
+      frame.src = 'workspace.html?demo&tour' + (ar ? '&lang=ar' : '');
+      stage.appendChild(frame); fit();
+      status.textContent = I18n.t('Loading real Sentinel-2 data');
+      if ('ResizeObserver' in window) new ResizeObserver(fit).observe(stage); else addEventListener('resize', fit);
+    };
+    new IntersectionObserver((es, io) => { if (es.some((e) => e.isIntersecting)) { load(); io.disconnect(); } }, { rootMargin: '300px' }).observe(stage);
+    addEventListener('message', (e) => {
+      if (!frame || e.source !== frame.contentWindow || !e.data || e.data.type !== 'agro-demo') return;
+      const d = e.data;
+      if (d.step === 'ready') {
+        frame.classList.add('is-ready'); live.classList.add('is-on');
+        status.textContent = I18n.t('Live · real Sentinel-2 data, analysed in your browser');
+        if (d.source && /^detected/.test(d.source)) stepEl.textContent = I18n.t('Pivot boundaries found on the image of') + ' ' + d.source.slice(9);
+      } else if (d.step === 'paused') {
+        stepEl.textContent = I18n.t('Your turn: the demo waits while you explore');
+      } else if (d.text) {
+        stepEl.textContent = I18n.t(d.text);
+      }
+    });
+  }
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

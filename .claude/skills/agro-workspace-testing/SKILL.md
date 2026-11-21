@@ -74,6 +74,10 @@ untranslated strings, Start free → register → workspace, sign in, wrong pass
 `test_responsive.py`: phones and upright tablets (390, 768, 820), English and Arabic — sheet peek/half/full,
 a field, the time series sheet, the drawer; fails on overlap, sideways scroll, page errors or a stuck sheet/drawer.
 
+`test_demo.py` (needs `SHMOCK=1`; the Sentinel Hub mock draws six pivots for the demo's EPSG:3857 request):
+the public demo detects the pivots, tours without a crashed tab in English and Arabic, writes no session to real
+storage, and shows inside the landing page at 1440 and 390.
+
 ## Lessons that cost time
 
 - **`npm install --no-save X` prunes everything not in package.json** in `GIS_LIBS`. Install test libs with `--save`, or fonts and Leaflet disappear and pages time out.
@@ -86,3 +90,6 @@ a field, the time series sheet, the drawer; fails on overlap, sideways scroll, p
 - **Restarting the API:** `pkill -f "node dist/main"` and start it again. Kill the old frontend's port before starting a new one.
 - **TypeORM foreign keys to uuid primary keys are `uuid` columns.** In raw SQL, compare with `::text` on both sides.
 - **`UPDATE … RETURNING` through `repo.query` returns `[rows, count]`.**
+- Arabic + a text with numbers could loop forever: `tr()` wrapped numbers in isolates again on every pass, the text
+  changed, the MutationObserver fired again, and the tab crashed (seen switching to NDWI). `tr()` now returns any text
+  that already holds U+2066/U+2069 unchanged. A test that clicks through indices in Arabic catches a regression.
